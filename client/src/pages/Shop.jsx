@@ -1,0 +1,432 @@
+import React, { useEffect, useState, useContext } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
+import axios from 'axios';
+import { Search, SlidersHorizontal, ArrowUpDown, RefreshCw, Heart } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { toast } from 'sonner';
+import Pagination from '../components/Pagination';
+import CountdownTimer from '../components/CountdownTimer';
+
+export default function Shop() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const { user } = useContext(AuthContext);
+  const [wishlistIds, setWishlistIds] = useState([]);
+
+  const fetchWishlist = async () => {
+    if (!user) return;
+    try {
+      const res = await axios.get('/wishlist');
+      if (res.data.success) {
+        setWishlistIds(res.data.data.products.map(p => p._id));
+      }
+    } catch (error) {
+      console.error('Error fetching wishlist:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [user]);
+
+  const handleToggleWishlist = async (e, productId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.warning('Please login to save items to your wishlist.');
+      return;
+    }
+    const isCurrentlyWishlisted = wishlistIds.includes(productId);
+    try {
+      if (isCurrentlyWishlisted) {
+        const res = await axios.delete(`/wishlist/${productId}`);
+        if (res.data.success) {
+          setWishlistIds(prev => prev.filter(id => id !== productId));
+          toast.success('Removed from wishlist');
+        }
+      } else {
+        const res = await axios.post('/wishlist', { productId });
+        if (res.data.success) {
+          setWishlistIds(prev => [...prev, productId]);
+          toast.success('Added to wishlist');
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling wishlist:', error);
+    }
+  };
+  
+  // Filter states
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [inStockOnly, setInStockOnly] = useState(searchParams.get('inStockOnly') === 'true');
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
+  const [pages, setPages] = useState(1);
+
+  const updateUrlParams = (newParams) => {
+    const updated = new URLSearchParams(searchParams);
+    Object.entries(newParams).forEach(([key, val]) => {
+      if (val === undefined || val === null || val === '') {
+        updated.delete(key);
+      } else {
+        updated.set(key, val);
+      }
+    });
+    setSearchParams(updated);
+  };
+
+  const sortOptions = [
+    { value: 'newest', label: 'NEWEST ARRIVALS' },
+    { value: 'price_asc', label: 'PRICE: LOW TO HIGH' },
+    { value: 'price_desc', label: 'PRICE: HIGH TO LOW' },
+    { value: 'name_asc', label: 'NAME: A TO Z' },
+    { value: 'name_desc', label: 'NAME: Z TO A' },
+  ];
+
+  // Sync search parameters from URL on load
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+    setSelectedCategory(searchParams.get('category') || '');
+    setInStockOnly(searchParams.get('inStockOnly') === 'true');
+    setPage(Number(searchParams.get('page')) || 1);
+    setSort(searchParams.get('sort') || 'newest');
+  }, [searchParams]);
+
+  // Fetch categories
+  useEffect(() => {
+    axios.get('/categories')
+      .then((res) => {
+        if (res.data.success) setCategories(res.data.data);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
+  // Fetch products when filters change
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (selectedCategory) params.append('category', selectedCategory);
+      if (minPrice) params.append('minPrice', minPrice);
+      if (maxPrice) params.append('maxPrice', maxPrice);
+      if (sort) params.append('sort', sort);
+      if (inStockOnly) params.append('inStockOnly', 'true');
+      params.append('page', page);
+      params.append('limit', 9);
+
+      const res = await axios.get(`/products?${params.toString()}`);
+      if (res.data.success) {
+        setProducts(res.data.data);
+        setPages(res.data.pages || 1);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [search, selectedCategory, sort, minPrice, maxPrice, inStockOnly, page]);
+
+  const handleClearFilters = () => {
+    setSearch('');
+    setSelectedCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSort('newest');
+    setInStockOnly(false);
+    setPage(1);
+    setSearchParams({});
+  };
+
+  const handleCategorySelect = (id) => {
+    setSelectedCategory(id);
+    updateUrlParams({ category: id, page: 1 });
+  };
+
+  return (
+    <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
+      {/* Header */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-text-primary">
+            The Accessories Catalog
+          </h1>
+          <p className="text-xs text-text-secondary mt-1">Browse premium belts, watches, chains, wallets & more.</p>
+        </div>
+
+        {/* Global Catalog Search */}
+        <div className="flex gap-2">
+          <div className="relative flex-1 md:w-80">
+            <input
+              type="text"
+              placeholder="Search accessories..."
+              className="form-input text-xs py-2.5 pl-10 pr-4"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <Search size={14} className="absolute left-3.5 top-3.5 text-text-secondary" />
+          </div>
+          
+          <button 
+            onClick={() => setShowMobileFilters(!showMobileFilters)} 
+            className="md:hidden flex items-center gap-1 bg-white border border-border-light text-xs text-text-primary py-2.5 px-4 rounded-xl cursor-pointer"
+          >
+            <SlidersHorizontal size={14} /> Filter
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Sidebar Filters (Desktop) */}
+        <aside className={`md:w-64 flex-shrink-0 space-y-4 ${showMobileFilters ? 'block' : 'hidden md:block'}`}>
+          {/* Categories */}
+          <div className="glass-card !p-4">
+            <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Categories</h4>
+            <div className="flex flex-col gap-1.5">
+              <button
+                onClick={() => handleCategorySelect('')}
+                className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer ${
+                  !selectedCategory 
+                    ? 'bg-[#141414] text-white font-bold' 
+                    : 'text-text-secondary hover:bg-neutral-50 hover:text-text-primary border border-border-light bg-white'
+                }`}
+              >
+                ALL ACCESSORIES
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat._id}
+                  onClick={() => handleCategorySelect(cat._id)}
+                  className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer truncate ${
+                    selectedCategory === cat._id 
+                      ? 'bg-[#141414] text-white font-bold' 
+                      : 'text-text-secondary hover:bg-neutral-50 hover:text-text-primary border border-border-light bg-white'
+                  }`}
+                >
+                  {cat.name.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pricing Filters */}
+          <div className="glass-card !p-4">
+            <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Price Range</h4>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                placeholder="Min"
+                className="form-input text-xs !py-2 !px-3"
+                value={minPrice}
+                onChange={(e) => {
+                  setMinPrice(e.target.value);
+                  updateUrlParams({ minPrice: e.target.value, page: 1 });
+                }}
+              />
+              <span className="text-text-secondary">-</span>
+              <input
+                type="number"
+                placeholder="Max"
+                className="form-input text-xs !py-2 !px-3"
+                value={maxPrice}
+                onChange={(e) => {
+                  setMaxPrice(e.target.value);
+                  updateUrlParams({ maxPrice: e.target.value, page: 1 });
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Availability (In Stock Filter) */}
+          <div className="glass-card !p-4">
+            <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Availability</h4>
+            <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
+              <input
+                type="checkbox"
+                checked={inStockOnly}
+                onChange={(e) => {
+                  setInStockOnly(e.target.checked);
+                  updateUrlParams({ inStockOnly: e.target.checked ? 'true' : '', page: 1 });
+                }}
+                className="w-4 h-4 rounded border-border-light text-[#141414] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+              />
+              <span className="text-xs font-mono text-text-secondary uppercase">In Stock Only</span>
+            </label>
+          </div>
+
+          {/* Sorting */}
+          <div className="glass-card !p-4 relative">
+            <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Sort By</h4>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+                className="w-full flex items-center justify-between form-input text-xs !py-2.5 !px-3 cursor-pointer font-mono bg-white text-left text-text-primary border border-border-light rounded-xl hover:border-text-primary transition-all focus:outline-none"
+              >
+                <span>{sortOptions.find(o => o.value === sort)?.label || 'SORT'}</span>
+                <span 
+                  className="text-text-secondary transition-transform duration-200 text-[10px]" 
+                  style={{ transform: sortDropdownOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}
+                >
+                  ▼
+                </span>
+              </button>
+              {sortDropdownOpen && (
+                <div className="absolute left-0 right-0 mt-1.5 bg-white border border-border-light rounded-xl shadow-lg z-30 overflow-hidden">
+                  {sortOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        updateUrlParams({ sort: opt.value, page: 1 });
+                        setSortDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3.5 py-2.5 text-xs font-mono transition-colors hover:bg-neutral-50 cursor-pointer ${
+                        sort === opt.value 
+                          ? 'bg-[#141414] text-white hover:bg-[#141414] font-bold' 
+                          : 'text-text-secondary'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Clear Filters */}
+          <button
+            onClick={handleClearFilters}
+            className="w-full flex items-center justify-center gap-2 border border-border-light text-[10px] font-mono tracking-wider text-text-secondary py-3 rounded-full hover:bg-neutral-50 hover:text-text-primary transition-colors cursor-pointer bg-white"
+          >
+            <RefreshCw size={12} /> RESET FILTERS
+          </button>
+        </aside>
+
+        {/* Product Catalog Grid */}
+        <div className="flex-1">
+          {loading ? (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 rounded-2xl shimmer-bg" />
+              ))}
+            </div>
+          ) : products.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-20 bg-white border border-border-light rounded-2xl">
+              <SlidersHorizontal className="text-text-secondary mb-3" size={32} />
+              <h3 className="font-bold text-sm text-text-primary uppercase tracking-wide">No Accessories Found</h3>
+              <p className="text-[11px] text-text-secondary mt-1 max-w-xs leading-relaxed">
+                We couldn't find matches. Try adjusting your search query or reset filter configurations.
+              </p>
+              <button 
+                onClick={handleClearFilters} 
+                className="btn-gold text-[10px] py-2.5 px-6 mt-4 uppercase tracking-widest"
+              >
+                Clear Filters
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((prod) => (
+                <Link
+                  key={prod._id}
+                  to={`/product/${prod._id}`}
+                  className="group flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
+                >
+                  <div className="relative h-auto aspect-square md:h-64 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
+                    {prod.images && prod.images.length > 0 ? (
+                      <img
+                        src={`http://localhost:5000${prod.images[0]}`}
+                        alt={prod.name}
+                        className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
+                      />
+                    ) : (
+                      <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
+                    )}
+                    {prod.stock === 0 && (
+                      <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
+                        Sold Out
+                      </span>
+                    )}
+
+                    {/* Discount Badge Overlay */}
+                    {prod.isDiscounted && (
+                      <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-20 shadow-sm">
+                        {prod.discountType === 'percentage' ? `${prod.discountValue}% OFF` : `₹${prod.discountValue} OFF`}
+                      </span>
+                    )}
+                    
+                    {/* Dynamic Heart/Wishlist Button */}
+                    {(!user || user.role !== 'admin') && (
+                      <button
+                        onClick={(e) => handleToggleWishlist(e, prod._id)}
+                        className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-20 flex items-center justify-center cursor-pointer"
+                        title="Save to Wishlist"
+                      >
+                        <Heart size={14} className={wishlistIds.includes(prod._id) ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500 transition-colors"} />
+                      </button>
+                    )}
+
+                    {/* Brand & Rating Overlays */}
+                    <span className="card-pill brand-pill">
+                      {prod.brand?.name || 'VAULT'}
+                    </span>
+                    <span className="card-pill rating-pill">
+                      ★ {prod.ratings?.average ? prod.ratings.average.toFixed(1) : '4.8'}
+                    </span>
+                  </div>
+                  <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
+                    <div>
+                      <span className="text-[9px] text-text-secondary uppercase tracking-widest font-mono">
+                        {prod.category?.name || 'ACCESSORIES'}
+                      </span>
+                      <h3 className="font-sans font-bold text-xs tracking-wide text-text-primary transition-colors mt-0.5 line-clamp-1">
+                        {prod.name}
+                      </h3>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-border-light">
+                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-text-primary font-mono font-bold text-xs">
+                            ₹{(prod.isDiscounted ? prod.finalPrice : prod.price).toLocaleString('en-IN')}
+                          </span>
+                          {prod.isDiscounted && (
+                            <span className="text-text-secondary font-mono text-[9.5px] line-through">
+                              ₹{prod.originalPrice.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-text-secondary text-[9px] font-mono hover:underline uppercase tracking-wider">Details</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination Component */}
+          <Pagination 
+            page={page} 
+            pages={pages} 
+            onPageChange={(newPage) => updateUrlParams({ page: newPage })} 
+            loading={loading} 
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

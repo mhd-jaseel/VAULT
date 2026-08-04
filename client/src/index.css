@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Override existing variables to map directly to new light theme */
+  --color-gold-light: #e6f7ee;
+  --color-gold: #141414;
+  --color-gold-dark: #000000;
+  --color-gold-shadow: #d1d5db;
+  
+  --color-dark-bg: #f5f5f6;
+  --color-dark-card: #ffffff;
+  --color-dark-border: #e5e5e5;
+  --color-dark-input: #ffffff;
+  
+  /* Reference palette specific tokens */
+  --color-brand-primary: #141414;
+  --color-brand-secondary: #ffffff;
+  --color-text-primary: #111111;
+  --color-text-secondary: #6b7280;
+  --color-border-light: #e5e5e5;
+  --color-tag-success-bg: #e6f7ee;
+  --color-tag-success-text: #16a34a;
+  --color-star-amber: #f5a623;
+
+  --font-sans: "Inter", "system-ui", sans-serif;
+  --font-mono: "JetBrains Mono", "ui-monospace", "Space Mono", monospace;
+  --font-display: "Inter", "system-ui", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-dark-bg text-text-primary font-sans antialiased;
+    background-image: none;
+    background-color: #f5f5f6;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-extrabold tracking-tight text-text-primary;
+  }
+  
+  /* Ensure clean default links */
+  a {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  /* Clean White Container Cards */
+  .glass-card {
+    @apply bg-white border border-border-light rounded-2xl p-6 transition-all duration-300 shadow-[0_1px_3px_rgba(0,0,0,0.05)];
+  }
+  
+  .glass-panel {
+    @apply bg-white border-b border-border-light;
+  }
+
+  /* Solid Near-Black Pill Button */
+  .btn-gold {
+    @apply bg-brand-primary text-white font-semibold font-mono text-xs tracking-wider py-3 px-6 rounded-full hover:bg-neutral-800 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2;
+  }
+
+  /* White Outline Pill Button */
+  .btn-dark {
+    @apply bg-white text-text-primary border border-border-light font-semibold font-mono text-xs tracking-wider py-3 px-6 rounded-full hover:bg-neutral-50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2;
+  }
+
+  /* Clean White Form Input */
+  .form-input {
+    @apply w-full bg-white border border-border-light rounded-xl px-4 py-3 text-text-primary placeholder-neutral-400 focus:outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary/20 transition-all duration-200;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-300 rounded-full hover:bg-neutral-400;
+  }
+}
+
+/* Shimmer placeholder styling */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Custom styles for checkout inputs */
+input[type="radio"]:checked + label {
+  @apply border-brand-primary bg-neutral-50 text-text-primary font-bold;
+}
+
+/* Brand/Rating Card Overlay style */
+.card-pill {
+  position: absolute;
+  bottom: 8px;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #555555;
+  border: 1px solid #e5e5e5;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  transition: opacity 200ms ease, transform 200ms ease;
+  will-change: opacity, transform;
+}
+
+.brand-pill {
+  left: 8px;
+}
+
+.rating-pill {
+  right: 8px;
+  transition-delay: 40ms;
+}
+
+/* Desktop hover reveal */
+@media (hover: hover) and (pointer: fine) {
+  .card-pill {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  .group:hover .card-pill {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile/touch fallback: always visible by default */
+@media (hover: none) {
+  .card-pill {
+    opacity: 1;
+    transform: translateY(0);
+    font-size: 8px;
+    padding: 2px 6px;
+  }
+}
