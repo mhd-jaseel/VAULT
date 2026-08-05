@@ -196,31 +196,14 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-8 px-4 md:px-12 py-6 max-w-7xl mx-auto w-full">
-      {/* Category Section (Dynamic 3-column Grid on Mobile, Standard list/grid on Desktop) */}
-      <section className="order-1 md:order-3 bg-white py-12 md:py-16">
-        <div className="flex flex-col gap-6 mb-12 px-2 md:px-0">
-          <div className="flex flex-col gap-2.5">
-            <span className="text-[8px] text-neutral-400 uppercase tracking-[0.25em] font-sans font-semibold leading-none">CURATED COLLECTIONS</span>
-            <h2 className="text-3xl md:text-4xl font-light text-neutral-900 font-sans tracking-wide leading-tight">Shop by Category</h2>
-          </div>
-
-          <div className="flex items-center justify-between w-full mt-2">
-            <div className="h-[1px] bg-neutral-100 flex-1 mr-6 hidden md:block" />
-            <Link
-              to="/shop"
-              className="group/btn text-[11px] font-sans font-semibold text-neutral-800 hover:text-neutral-950 flex items-center gap-1 tracking-wider uppercase transition-colors duration-300 py-1"
-              aria-label="Browse all categories"
-            >
-              Browse All <span className="inline-block transform transition-transform duration-300 group-hover/btn:translate-x-1.5">→</span>
-            </Link>
-          </div>
-        </div>
-
+      {/* Category Section (Responsive Unified Grid across Mobile, Tablet, and Desktop) */}
+      <section className="order-1 glass-card">
+        
         {loading ? (
-          <div className="grid grid-cols-3 gap-6 md:hidden">
-            {[...Array(6)].map((_, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            {[...Array(10)].map((_, i) => (
               <div key={i} className="flex flex-col items-center">
-                <div className="w-full aspect-[4/5] bg-neutral-50 rounded-[20px] mb-2 shimmer-bg" />
+                <div className="w-full aspect-[4/5] bg-neutral-50 rounded-[24px] mb-2 shimmer-bg" />
                 <div className="h-3 w-16 bg-neutral-50 shimmer-bg" />
               </div>
             ))}
@@ -229,22 +212,22 @@ export default function Home() {
           <div className="text-center text-neutral-400 py-10 text-xs font-sans tracking-wide">NO CATEGORIES FOUND. SETUP IN ADMIN.</div>
         ) : (
           <div>
-            {/* Mobile Redesigned 3-column Grid - No Borders, Generous Whitespace */}
-            <div className="grid grid-cols-3 gap-x-5 gap-y-7 md:hidden px-1">
+            {/* Mobile/Tablet/Desktop Responsive Grid */}
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 gap-y-8 px-1">
               {categories.map((cat) => (
-                <Link
+                <Link 
                   key={cat._id}
                   to={`/shop?category=${cat._id}`}
-                  className="flex flex-col items-center select-none active:scale-[0.98] transition-all duration-200 ease-out group will-change-transform"
+                  className="flex flex-col items-center select-none hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 ease-out group will-change-transform cursor-pointer"
                   aria-label={`View ${cat.name}`}
                 >
-                  {/* Premium Image Container - softly rounded corners, nearly invisible card background */}
-                  <div className="w-full aspect-[4/5] bg-[#FCFCFC] rounded-[20px] p-1.5 flex items-center justify-center overflow-hidden mb-2.5 transition-all duration-300 group-hover:bg-neutral-50/80 shadow-[0_2px_12px_rgba(0,0,0,0.01)] group-active:shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100/10">
+                  {/* Premium Image Container - softly rounded corners, uniform 1:1 aspect ratio */}
+                  <div className="w-full aspect-square bg-[#FCFCFC] rounded-[18px] flex items-center justify-center overflow-hidden mb-3.5 transition-all duration-300 group-hover:bg-neutral-50/80 shadow-[0_2px_12px_rgba(0,0,0,0.01)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] group-active:shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100/10">
                     {cat.image ? (
-                      <img
-                        src={`http://localhost:5000${cat.image}`}
-                        alt={cat.name}
-                        className="w-[90%] h-[90%] object-contain transition-transform duration-700 ease-out group-hover:scale-[1.03] group-active:scale-[1.03] opacity-0 onLoad-fade-in"
+                      <img 
+                        src={`http://localhost:5000${cat.image}`} 
+                        alt={cat.name} 
+                        className="w-full h-full object-cover rounded-[18px] transition-transform duration-500 ease-out group-hover:scale-[1.03] group-active:scale-[1.03] opacity-0 onLoad-fade-in"
                         loading="lazy"
                         onLoad={(e) => e.target.classList.remove('opacity-0')}
                       />
@@ -252,41 +235,30 @@ export default function Home() {
                       <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
                     )}
                   </div>
-                  {/* Premium Typography Name - Title Case, font weight 500-600, elegant spacing */}
-                  <span className="font-sans text-[13px] font-semibold text-neutral-900 text-center truncate w-full px-0.5 leading-none">
+                  {/* Premium Typography Name - Title Case, font weight 500-600, flexible layout to prevent truncation */}
+                  <span className="font-sans text-[11px] sm:text-[13px] font-semibold text-neutral-800 group-hover:text-neutral-955 text-center px-0.5 leading-tight transition-colors duration-300 w-full min-h-[2.5em] flex items-center justify-center break-words">
                     {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
                   </span>
                 </Link>
               ))}
             </div>
 
-            {/* Desktop Grid Layout (Untouched) */}
-            <div className="hidden md:grid md:grid-cols-5 gap-4">
-              {categories.map((cat) => (
-                <Link
-                  key={cat._id}
-                  to={`/shop?category=${cat._id}`}
-                  className="group relative h-40 rounded-2xl overflow-hidden border border-border-light bg-neutral-50 transition-all duration-300 hover:border-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+            {/* Editorial Footer Layout (Curated Collections -> Shop by Category -> Browse All ->) - Unified for Mobile and Desktop */}
+            <div className="flex flex-col gap-5 mt-14 px-2 select-none opacity-0 onLoad-fade-in text-left">
+              <div className="flex flex-col gap-2.5">
+                <span className="text-[9px] text-neutral-400 uppercase tracking-[0.35em] font-sans font-semibold leading-none">CURATED COLLECTIONS</span>
+                <h2 className="text-3xl md:text-4xl font-light text-neutral-900 font-sans tracking-wide leading-tight mt-1">Shop by Category</h2>
+              </div>
+              <div className="mt-4 flex items-center justify-between w-full">
+                <Link 
+                  to="/shop" 
+                  className="group/btn text-[12px] font-sans font-semibold text-neutral-800 hover:text-neutral-950 flex items-center gap-1.5 tracking-wider uppercase transition-colors duration-200 py-1.5"
+                  aria-label="Browse all categories"
                 >
-                  {cat.image ? (
-                    <img
-                      src={`http://localhost:5000${cat.image}`}
-                      alt={cat.name}
-                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-400 font-bold group-hover:text-text-primary transition-colors">
-                      VAULT
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
-                    <h3 className="font-mono font-bold text-xs tracking-wider uppercase text-white group-hover:text-white transition-colors">
-                      {cat.name}
-                    </h3>
-                    <p className="text-[9px] text-neutral-300 mt-0.5 truncate">{cat.description}</p>
-                  </div>
+                  Browse All <span className="inline-block transform transition-transform duration-300 group-hover/btn:translate-x-1.5">→</span>
                 </Link>
-              ))}
+                <div className="h-[1px] bg-neutral-100 flex-1 ml-6 hidden md:block" />
+              </div>
             </div>
           </div>
         )}

@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 import { AuthContext } from '../context/AuthContext';
 import Pagination from '../components/Pagination';
 import axios from 'axios';
-import { User, ClipboardList, MapPin, CheckCircle, ChevronRight } from 'lucide-react';
+import { User, ClipboardList, MapPin, CheckCircle, ChevronRight, LogOut } from 'lucide-react';
 
 export default function Profile() {
-  const { user, updateProfile } = useContext(AuthContext);
+  const { user, updateProfile, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('orders'); // 'orders' or 'profile'
@@ -94,6 +94,11 @@ export default function Profile() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   if (!user) return null;
 
   return (
@@ -109,9 +114,18 @@ export default function Profile() {
             <p className="text-xs text-text-secondary">{user.email}</p>
           </div>
         </div>
-        <span className="text-[9px] uppercase font-bold tracking-wider text-text-primary bg-neutral-100 px-3 py-1 rounded-full border border-border-light font-mono">
-          {user.role}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[9px] uppercase font-bold tracking-wider text-text-primary bg-neutral-100 px-3 py-1 rounded-full border border-border-light font-mono">
+            {user.role}
+          </span>
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center gap-1.5 py-1.5 px-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-sans font-bold tracking-widest uppercase transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            aria-label="Logout account"
+          >
+            <LogOut size={11} /> LOGOUT
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
