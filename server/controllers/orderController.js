@@ -2,8 +2,6 @@ import mongoose from 'mongoose';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Setting from '../models/Setting.js';
-import Notification from '../models/Notification.js';
-import { sendNotification } from '../socket/index.js';
 import { paginateAggregate } from '../utils/paginate.js';
 
 import Coupon from '../models/Coupon.js';
@@ -211,17 +209,6 @@ export const createOrder = async (req, res) => {
       await usage.save();
     }
 
-    // Create database Notification for admins
-    const notif = await Notification.create({
-      user: null, // admin
-      title: 'New Order Placed',
-      message: `Order #${createdOrder._id.toString().slice(-6)} placed by ${req.user.name} for ₹${grandTotal}`,
-      type: 'order_placed',
-    });
-
-    // Dispatch real-time Socket notification to Admins
-    sendNotification(null, notif);
-
     res.status(201).json({ success: true, data: createdOrder });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -300,17 +287,6 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const updatedOrder = await order.save();
-
-    // Create database Notification for the Customer
-    const notif = await Notification.create({
-      user: order.user,
-      title: `Order #${order._id.toString().slice(-6)} Updated`,
-      message: `Your order is now: ${status.toUpperCase()}. Note: ${note || 'No additional notes.'}`,
-      type: 'order_status_update',
-    });
-
-    // Notify customer in real time via Socket.IO
-    sendNotification(order.user, notif);
 
     res.json({ success: true, data: updatedOrder });
   } catch (error) {

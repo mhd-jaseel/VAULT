@@ -111,7 +111,7 @@ export default function Home() {
         const dealRes = await axios.get('/products?showOnHomepage=true&limit=4');
         const settingsRes = await axios.get('/settings');
         const bannersRes = await axios.get('/hero-banners');
-        
+
         if (catRes.data.success) setCategories(catRes.data.data);
         if (prodRes.data.success) setFeaturedProducts(prodRes.data.data);
         if (dealRes.data.success) setDealProducts(dealRes.data.data);
@@ -196,9 +196,105 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-8 px-4 md:px-12 py-6 max-w-7xl mx-auto w-full">
+      {/* Category Section (Dynamic 3-column Grid on Mobile, Standard list/grid on Desktop) */}
+      <section className="order-1 md:order-3 bg-white py-12 md:py-16">
+        <div className="flex flex-col gap-6 mb-12 px-2 md:px-0">
+          <div className="flex flex-col gap-2.5">
+            <span className="text-[8px] text-neutral-400 uppercase tracking-[0.25em] font-sans font-semibold leading-none">CURATED COLLECTIONS</span>
+            <h2 className="text-3xl md:text-4xl font-light text-neutral-900 font-sans tracking-wide leading-tight">Shop by Category</h2>
+          </div>
+
+          <div className="flex items-center justify-between w-full mt-2">
+            <div className="h-[1px] bg-neutral-100 flex-1 mr-6 hidden md:block" />
+            <Link
+              to="/shop"
+              className="group/btn text-[11px] font-sans font-semibold text-neutral-800 hover:text-neutral-950 flex items-center gap-1 tracking-wider uppercase transition-colors duration-300 py-1"
+              aria-label="Browse all categories"
+            >
+              Browse All <span className="inline-block transform transition-transform duration-300 group-hover/btn:translate-x-1.5">→</span>
+            </Link>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="grid grid-cols-3 gap-6 md:hidden">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="flex flex-col items-center">
+                <div className="w-full aspect-[4/5] bg-neutral-50 rounded-[20px] mb-2 shimmer-bg" />
+                <div className="h-3 w-16 bg-neutral-50 shimmer-bg" />
+              </div>
+            ))}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center text-neutral-400 py-10 text-xs font-sans tracking-wide">NO CATEGORIES FOUND. SETUP IN ADMIN.</div>
+        ) : (
+          <div>
+            {/* Mobile Redesigned 3-column Grid - No Borders, Generous Whitespace */}
+            <div className="grid grid-cols-3 gap-x-5 gap-y-7 md:hidden px-1">
+              {categories.map((cat) => (
+                <Link
+                  key={cat._id}
+                  to={`/shop?category=${cat._id}`}
+                  className="flex flex-col items-center select-none active:scale-[0.98] transition-all duration-200 ease-out group will-change-transform"
+                  aria-label={`View ${cat.name}`}
+                >
+                  {/* Premium Image Container - softly rounded corners, nearly invisible card background */}
+                  <div className="w-full aspect-[4/5] bg-[#FCFCFC] rounded-[20px] p-1.5 flex items-center justify-center overflow-hidden mb-2.5 transition-all duration-300 group-hover:bg-neutral-50/80 shadow-[0_2px_12px_rgba(0,0,0,0.01)] group-active:shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100/10">
+                    {cat.image ? (
+                      <img
+                        src={`http://localhost:5000${cat.image}`}
+                        alt={cat.name}
+                        className="w-[90%] h-[90%] object-contain transition-transform duration-700 ease-out group-hover:scale-[1.03] group-active:scale-[1.03] opacity-0 onLoad-fade-in"
+                        loading="lazy"
+                        onLoad={(e) => e.target.classList.remove('opacity-0')}
+                      />
+                    ) : (
+                      <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
+                    )}
+                  </div>
+                  {/* Premium Typography Name - Title Case, font weight 500-600, elegant spacing */}
+                  <span className="font-sans text-[13px] font-semibold text-neutral-900 text-center truncate w-full px-0.5 leading-none">
+                    {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
+                  </span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Desktop Grid Layout (Untouched) */}
+            <div className="hidden md:grid md:grid-cols-5 gap-4">
+              {categories.map((cat) => (
+                <Link
+                  key={cat._id}
+                  to={`/shop?category=${cat._id}`}
+                  className="group relative h-40 rounded-2xl overflow-hidden border border-border-light bg-neutral-50 transition-all duration-300 hover:border-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
+                >
+                  {cat.image ? (
+                    <img
+                      src={`http://localhost:5000${cat.image}`}
+                      alt={cat.name}
+                      className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-400 font-bold group-hover:text-text-primary transition-colors">
+                      VAULT
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
+                    <h3 className="font-mono font-bold text-xs tracking-wider uppercase text-white group-hover:text-white transition-colors">
+                      {cat.name}
+                    </h3>
+                    <p className="text-[9px] text-neutral-300 mt-0.5 truncate">{cat.description}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* Premium Hero Banner Carousel Wrapper */}
-      <section 
-        className="glass-card !p-8 md:!p-12 lg:!p-16 relative overflow-hidden w-full group/carousel"
+      <section
+        className="order-2 md:order-1 glass-card !p-8 md:!p-12 lg:!p-16 relative overflow-hidden w-full group/carousel"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
@@ -207,8 +303,8 @@ export default function Home() {
       >
         {activeBanners.map((slide, index) => {
           const isActive = index === currentIndex;
-          const bannerImageSrc = slide.imageUrl.startsWith('/') 
-            ? `http://localhost:5000${slide.imageUrl}` 
+          const bannerImageSrc = slide.imageUrl.startsWith('/')
+            ? `http://localhost:5000${slide.imageUrl}`
             : slide.imageUrl;
 
           if (!isActive) return null;
@@ -245,9 +341,9 @@ export default function Home() {
 
               {/* Featured Product Image with Info Overlay on Right */}
               <div className="lg:col-span-5 relative w-full h-64 md:h-80 lg:h-96 rounded-2xl bg-neutral-100 overflow-hidden flex items-center justify-center border border-border-light">
-                <img 
-                  src={bannerImageSrc} 
-                  alt={slide.imageAlt} 
+                <img
+                  src={bannerImageSrc}
+                  alt={slide.imageAlt}
                   loading={isActive ? "eager" : "lazy"}
                   className="w-full h-full object-cover"
                 />
@@ -280,9 +376,8 @@ export default function Home() {
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                  idx === currentIndex ? 'bg-text-primary w-4' : 'bg-neutral-300'
-                }`}
+                className={`w-2 h-2 rounded-full transition-all cursor-pointer ${idx === currentIndex ? 'bg-text-primary w-4' : 'bg-neutral-300'
+                  }`}
                 title={`Go to slide ${idx + 1}`}
               />
             ))}
@@ -290,95 +385,9 @@ export default function Home() {
         )}
       </section>
 
-      {/* Trust Badges */}
-      <section className="glass-card !p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
-            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
-              <Truck size={20} />
-            </div>
-            <div>
-              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Fast Shipping</h5>
-              <p className="text-[10px] text-text-secondary">Free delivery above ₹1500</p>
-            </div>
-          </div>
-
-          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
-            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
-              <ShieldCheck size={20} />
-            </div>
-            <div>
-              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Authentic Products</h5>
-              <p className="text-[10px] text-text-secondary">100% genuine guarantees</p>
-            </div>
-          </div>
-
-          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
-            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
-              <RefreshCw size={20} />
-            </div>
-            <div>
-              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Easy Returns</h5>
-              <p className="text-[10px] text-text-secondary">7-day hassle free options</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="glass-card">
-        <div className="flex items-end justify-between mb-6">
-          <div>
-            <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold">CURATED COLLECTIONS</span>
-            <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Shop By Category</h2>
-          </div>
-          <Link to="/shop" className="text-[10px] font-mono text-text-primary hover:underline flex items-center gap-0.5 tracking-wider">
-            VIEW ALL <ChevronRight size={12} />
-          </Link>
-        </div>
-
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-40 rounded-2xl shimmer-bg" />
-            ))}
-          </div>
-        ) : categories.length === 0 ? (
-          <div className="text-center text-text-secondary py-10 text-xs font-mono">NO CATEGORIES FOUND. SETUP IN ADMIN.</div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {categories.map((cat) => (
-              <Link 
-                key={cat._id}
-                to={`/shop?category=${cat._id}`}
-                className="group relative h-40 rounded-2xl overflow-hidden border border-border-light bg-neutral-50 transition-all duration-300 hover:border-text-primary shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
-              >
-                {cat.image ? (
-                  <img 
-                    src={`http://localhost:5000${cat.image}`} 
-                    alt={cat.name} 
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-neutral-100 flex items-center justify-center text-neutral-400 font-bold group-hover:text-text-primary transition-colors">
-                    VAULT
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4">
-                  <h3 className="font-mono font-bold text-xs tracking-wider uppercase text-white group-hover:text-white transition-colors">
-                    {cat.name}
-                  </h3>
-                  <p className="text-[9px] text-neutral-300 mt-0.5 truncate">{cat.description}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
       {/* Limited Time Offers / Today's Deals Section */}
       {dealProducts.length > 0 && (
-        <section className="glass-card border border-red-500/10 shadow-[0_4px_24px_rgba(239,68,68,0.03)] bg-gradient-to-br from-white to-red-500/[0.005]">
+        <section className="order-3 md:order-2 glass-card border border-red-500/10 shadow-[0_4px_24px_rgba(239,68,68,0.03)] bg-gradient-to-br from-white to-red-500/[0.005]">
           <div className="flex items-end justify-between mb-6">
             <div>
               <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold flex items-center gap-1">
@@ -459,7 +468,7 @@ export default function Home() {
           </div>
 
           {/* Mobile Carousel View (<768px) */}
-          <div 
+          <div
             className="block md:hidden relative overflow-hidden"
             onTouchStart={handleDealTouchStart}
             onTouchMove={handleDealTouchMove}
@@ -467,7 +476,7 @@ export default function Home() {
             onMouseEnter={() => setDealPaused(true)}
             onMouseLeave={() => setDealPaused(false)}
           >
-            <div 
+            <div
               className="flex transition-transform duration-500 ease-out"
               style={{ transform: `translateX(-${dealIndex * 100}%)` }}
             >
@@ -545,9 +554,8 @@ export default function Home() {
                   <button
                     key={idx}
                     onClick={() => setDealIndex(idx)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
-                      idx === dealIndex ? 'bg-red-500 w-5' : 'bg-neutral-300'
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === dealIndex ? 'bg-red-500 w-5' : 'bg-neutral-300'
+                      }`}
                     aria-label={`Go to slide ${idx + 1}`}
                   />
                 ))}
@@ -558,7 +566,7 @@ export default function Home() {
       )}
 
       {/* Featured Products */}
-      <section className="glass-card">
+      <section className="order-4 md:order-4 glass-card">
         <div className="flex items-end justify-between mb-6">
           <div>
             <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold">FEATURED PIECES</span>
@@ -580,7 +588,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {featuredProducts.map((prod) => (
-              <Link 
+              <Link
                 key={prod._id}
                 to={`/product/${prod._id}`}
                 className="group flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
@@ -588,9 +596,9 @@ export default function Home() {
                 {/* Product image centered on very light gray backdrop */}
                 <div className="relative h-auto aspect-square md:h-64 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
                   {prod.images && prod.images.length > 0 ? (
-                    <img 
-                      src={`http://localhost:5000${prod.images[0]}`} 
-                      alt={prod.name} 
+                    <img
+                      src={`http://localhost:5000${prod.images[0]}`}
+                      alt={prod.name}
                       className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
                     />
                   ) : (
@@ -601,7 +609,7 @@ export default function Home() {
                       Sold Out
                     </span>
                   )}
-                  
+
                   {/* Dynamic Heart/Wishlist Button */}
                   {(!user || user.role !== 'admin') && (
                     <button
@@ -639,6 +647,41 @@ export default function Home() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Trust Badges */}
+      <section className="order-5 md:order-5 glass-card !p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
+            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
+              <Truck size={20} />
+            </div>
+            <div>
+              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Fast Shipping</h5>
+              <p className="text-[10px] text-text-secondary">Free delivery above ₹1500</p>
+            </div>
+          </div>
+
+          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
+            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Authentic Products</h5>
+              <p className="text-[10px] text-text-secondary">100% genuine guarantees</p>
+            </div>
+          </div>
+
+          <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
+            <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">
+              <RefreshCw size={20} />
+            </div>
+            <div>
+              <h5 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">Easy Returns</h5>
+              <p className="text-[10px] text-text-secondary">7-day hassle free options</p>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );

@@ -2,25 +2,25 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import MobileNav from '../components/MobileNav';
-import NotificationDrawer from '../components/NotificationDrawer';
+import SidebarMenu from '../components/SidebarMenu';
 
 export default function Layout({ children }) {
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Top Navbar */}
-      <Header toggleNotifications={() => setNotifOpen(!notifOpen)} />
+      <Header onMenuClick={() => setMenuOpen(true)} />
 
       {/* Main Contents */}
       <main className="flex-grow pb-24 md:pb-8">
         {children}
       </main>
 
-      {/* Slide-out notifications log */}
-      <NotificationDrawer 
-        isOpen={notifOpen} 
-        onClose={() => setNotifOpen(false)} 
+      {/* Slide-out navigation menu */}
+      <SidebarMenu 
+        isOpen={menuOpen} 
+        onClose={() => setMenuOpen(false)} 
       />
 
       {/* Footer (hidden or styled appropriately for mobile first) */}

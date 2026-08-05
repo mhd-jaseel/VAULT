@@ -39,19 +39,3 @@ export const getIO = () => {
   }
   return io;
 };
-
-// Emit real-time notification
-export const sendNotification = (userId, notification) => {
-  try {
-    const activeIo = getIO();
-    if (userId) {
-      // Send to specific user
-      activeIo.to(userId.toString()).emit('new_notification', notification);
-    } else {
-      // Send to admins
-      activeIo.to('admins').emit('new_notification', notification);
-    }
-  } catch (error) {
-    console.error('Error sending socket notification:', error.message);
-  }
-};

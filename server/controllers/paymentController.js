@@ -1,7 +1,5 @@
 import Payment from '../models/Payment.js';
 import Order from '../models/Order.js';
-import Notification from '../models/Notification.js';
-import { sendNotification } from '../socket/index.js';
 import { paginateAggregate } from '../utils/paginate.js';
 
 // Submit manual payment verification info (Customer)
@@ -42,17 +40,6 @@ export const submitPayment = async (req, res) => {
     });
     await order.save();
 
-    // Create Notification for Admin
-    const notif = await Notification.create({
-      user: null, // admin
-      title: 'Payment Receipt Uploaded',
-      message: `User ${req.user.name} submitted receipt for Order #${orderId.toString().slice(-6)}`,
-      type: 'payment_submitted',
-    });
-
-    // Send admin notification
-    sendNotification(null, notif);
-
     res.status(201).json({ success: true, data: payment });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -83,17 +70,6 @@ export const verifyPayment = async (req, res) => {
         note: `Payment verified. Note: ${payment.adminNotes}`,
       });
       await order.save();
-
-      // Create Notification for the Customer
-      const notif = await Notification.create({
-        user: order.user,
-        title: 'Payment Verified',
-        message: `Your manual UPI payment for Order #${order._id.toString().slice(-6)} has been verified!`,
-        type: 'payment_status_update',
-      });
-
-      // Notify customer
-      sendNotification(order.user, notif);
     }
 
     res.json({ success: true, message: 'Payment verified successfully', data: payment });
@@ -126,17 +102,6 @@ export const rejectPayment = async (req, res) => {
         note: `Payment verification rejected. Reason: ${payment.adminNotes}`,
       });
       await order.save();
-
-      // Create Notification for Customer
-      const notif = await Notification.create({
-        user: order.user,
-        title: 'Payment Verification Failed',
-        message: `UPI Payment for Order #${order._id.toString().slice(-6)} was rejected: ${payment.adminNotes}`,
-        type: 'payment_status_update',
-      });
-
-      // Notify customer
-      sendNotification(order.user, notif);
     }
 
     res.json({ success: true, message: 'Payment rejected successfully', data: payment });

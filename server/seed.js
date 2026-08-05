@@ -71,12 +71,17 @@ const seedData = async () => {
       brandMap[b.name] = b._id;
     });
 
-    // Seed Categories one-by-one to trigger pre-save hooks
     const categoriesData = [
-      { name: 'Watches', description: 'Masterfully engineered chronographs and automatics.', image: '/uploads/watch_chrono.png' },
-      { name: 'Wallets', description: 'Structured bifold wallets and minimalist cardholders.', image: '/uploads/carbon_wallet.png' },
-      { name: 'Sunglasses', description: 'Signature polarised aviators and acetate frames.', image: '/uploads/gold_sunglasses.png' },
-      { name: 'Perfumes', description: 'Magnetising scents, oud extraits, and fresh parfums.', image: '/uploads/oud_perfume.png' },
+      { name: 'Wallets', description: 'Structured bifold wallets and minimalist cardholders.', image: '/uploads/wallet.png' },
+      { name: 'Perfumes', description: 'Magnetising scents, oud extraits, and fresh parfums.', image: '/uploads/perfume.png' },
+      { name: 'Sunglasses', description: 'Signature polarised aviators and acetate frames.', image: '/uploads/sunglasses.png' },
+      { name: 'Watches', description: 'Masterfully engineered chronographs and automatics.', image: '/uploads/watch.png' },
+      { name: 'Belts', description: 'Handcrafted premium leather belts with brushed buckles.', image: '/uploads/belt.png' },
+      { name: 'Caps', description: 'Minimalist luxury accessories for high end street styles.', image: '/uploads/cap.png' },
+      { name: 'Bracelets', description: 'Artisanal metal accents and minimal wrist wear.', image: '/uploads/bracelet.png' },
+      { name: 'Chains', description: 'Statement silver and gold necklaces with premium link styles.', image: '/uploads/chain.png' },
+      { name: 'Rings', description: 'Polished silver bands and modern statement rings.', image: '/uploads/ring.png' },
+      { name: 'Shoes', description: 'Tailored casual sneakers and handcrafted leather loafers.', image: '/uploads/shoe.png' },
     ];
 
     const seededCategories = [];
@@ -89,14 +94,83 @@ const seedData = async () => {
     }
     console.log('Seeded categories successfully.');
 
-    // Helper map to associate products
     const categoryMap = {};
     seededCategories.forEach((cat) => {
       categoryMap[cat.name] = cat._id;
     });
 
-    // Seed Products one-by-one
+    // Seed Products (20 pieces across categories)
     const productsData = [
+      // Wallets
+      {
+        name: 'Bifold Saffiano Wallet',
+        description: 'Structured bifold wallet in cross-grain Saffiano leather. Designed with 8 card slots, dual bill compartments, and RFID blocking lining.',
+        price: 3499,
+        category: categoryMap['Wallets'],
+        brand: brandMap['VAULT'],
+        stock: 25,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: true,
+        ratings: { average: 4.7, count: 42 }
+      },
+      {
+        name: 'Minimalist Carbon Cardholder',
+        description: 'Ultra-sleek carbon fiber cardholder with a spring-loaded quick access mechanism. Fits up to 6 cards comfortably.',
+        price: 2499,
+        category: categoryMap['Wallets'],
+        brand: brandMap['VAULT'],
+        stock: 30,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: false,
+        ratings: { average: 4.5, count: 18 }
+      },
+      // Perfumes
+      {
+        name: 'Oud Perfume Bottle',
+        description: 'A complex and magnetic blend of precious Cambodian oud, damask rose, warm amber, and hints of spiced cardamom. High concentration parfum.',
+        price: 8999,
+        category: categoryMap['Perfumes'],
+        brand: brandMap['VAULT'],
+        stock: 10,
+        images: ['/uploads/oud_perfume.png'],
+        isFeatured: true,
+        ratings: { average: 4.9, count: 35 }
+      },
+      {
+        name: 'Noir Absolute Extrait',
+        description: 'A dark, smoky scent profile with notes of leather, cedar wood, black pepper, and premium vanilla. Long lasting luxury projection.',
+        price: 9999,
+        category: categoryMap['Perfumes'],
+        brand: brandMap['Aethered'],
+        stock: 12,
+        images: ['/uploads/oud_perfume.png'],
+        isFeatured: true,
+        ratings: { average: 4.8, count: 20 }
+      },
+      // Sunglasses
+      {
+        name: 'Aviator Gold Sunglasses',
+        description: 'Signature gold-plated aviator frames with polarisation-coated gradient lenses. Provides 100% UV protection.',
+        price: 5999,
+        category: categoryMap['Sunglasses'],
+        brand: brandMap['VAULT'],
+        stock: 12,
+        images: ['/uploads/gold_sunglasses.png'],
+        isFeatured: true,
+        ratings: { average: 4.8, count: 29 }
+      },
+      {
+        name: 'Classic Black Acetate Sunglasses',
+        description: 'Premium acetate frames with polarized dark lenses. Hand-polished details for a signature aesthetic look.',
+        price: 4999,
+        category: categoryMap['Sunglasses'],
+        brand: brandMap['VAULT'],
+        stock: 15,
+        images: ['/uploads/gold_sunglasses.png'],
+        isFeatured: false,
+        ratings: { average: 4.7, count: 14 }
+      },
+      // Watches
       {
         name: 'Classic Leather Chrono',
         description: 'Masterfully engineered chronograph watch featuring a genuine calfskin leather strap, scratch-resistant sapphire crystal glass, and Japanese quartz movement.',
@@ -120,48 +194,142 @@ const seedData = async () => {
         ratings: { average: 4.9, count: 12 }
       },
       {
-        name: 'Bifold Saffiano Wallet',
-        description: 'Structured bifold wallet in cross-grain Saffiano leather. Designed with 8 card slots, dual bill compartments, and RFID blocking lining.',
-        price: 3499,
-        category: categoryMap['Wallets'],
+        name: 'Monaco Vintage Automatic',
+        description: 'Retro-inspired steel chronometer featuring high precision automatic movement and a sapphire display caseback.',
+        price: 34999,
+        category: categoryMap['Watches'],
+        brand: brandMap['Omega'],
+        stock: 5,
+        images: ['/uploads/watch_chrono.png'],
+        isFeatured: false,
+        ratings: { average: 4.9, count: 8 }
+      },
+      // Belts
+      {
+        name: 'Premium Suede Leather Belt',
+        description: 'Soft genuine Italian suede belt with modern silver buckle details. Handcrafted and tailored for luxury style.',
+        price: 3999,
+        category: categoryMap['Belts'],
+        brand: brandMap['VAULT'],
+        stock: 20,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: false,
+        ratings: { average: 4.6, count: 15 }
+      },
+      {
+        name: 'Brushed Buckle Leather Belt',
+        description: 'Full-grain calfskin leather belt with a custom brushed metal buckle. Timeless premium design.',
+        price: 4499,
+        category: categoryMap['Belts'],
+        brand: brandMap['VAULT'],
+        stock: 18,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: true,
+        ratings: { average: 4.8, count: 22 }
+      },
+      // Caps
+      {
+        name: 'Classic Luxury Cap',
+        description: 'Minimalist designer cap in premium cotton twill with an adjustable metal clasp and subtle brand branding.',
+        price: 2999,
+        category: categoryMap['Caps'],
         brand: brandMap['VAULT'],
         stock: 25,
         images: ['/uploads/carbon_wallet.png'],
-        isFeatured: true,
-        ratings: { average: 4.7, count: 42 }
+        isFeatured: false,
+        ratings: { average: 4.5, count: 10 }
       },
+      // Bracelets
       {
-        name: 'Minimalist Carbon Cardholder',
-        description: 'Ultra-sleek carbon fiber cardholder with a spring-loaded quick access mechanism. Fits up to 6 cards comfortably.',
-        price: 2499,
-        category: categoryMap['Wallets'],
+        name: 'Silver Cuff Bracelet',
+        description: 'Sleek brushed silver metal cuff featuring debossed geometric patterns. High quality, non-tarnish premium finish.',
+        price: 3499,
+        category: categoryMap['Bracelets'],
         brand: brandMap['VAULT'],
         stock: 30,
-        images: ['/uploads/carbon_wallet.png'],
-        isFeatured: false,
-        ratings: { average: 4.5, count: 18 }
-      },
-      {
-        name: 'Aviator Gold Sunglasses',
-        description: 'Signature gold-plated aviator frames with polarisation-coated gradient lenses. Provides 100% UV protection.',
-        price: 5999,
-        category: categoryMap['Sunglasses'],
-        brand: brandMap['VAULT'],
-        stock: 12,
-        images: ['/uploads/gold_sunglasses.png'],
+        images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 29 }
+        ratings: { average: 4.7, count: 19 }
       },
       {
-        name: 'Oud Perfume Bottle',
-        description: 'A complex and magnetic blend of precious Cambodian oud, damask rose, warm amber, and hints of spiced cardamom. High concentration parfum.',
-        price: 8999,
-        category: categoryMap['Perfumes'],
+        name: 'Minimal Braided Leather Wristlet',
+        description: 'Double loop hand-braided leather bracelet secured by a custom magnetic lock mechanism.',
+        price: 2499,
+        category: categoryMap['Bracelets'],
+        brand: brandMap['VAULT'],
+        stock: 40,
+        images: ['/uploads/watch_chrono.png'],
+        isFeatured: false,
+        ratings: { average: 4.6, count: 14 }
+      },
+      // Chains
+      {
+        name: 'Cuban Link Silver Chain',
+        description: 'Premium sterling silver Cuban link chain. 20 inches in length, featuring high polish shine and lobster clasp lock.',
+        price: 7999,
+        category: categoryMap['Chains'],
+        brand: brandMap['VAULT'],
+        stock: 15,
+        images: ['/uploads/watch_chrono.png'],
+        isFeatured: true,
+        ratings: { average: 4.8, count: 27 }
+      },
+      {
+        name: 'Minimalist Cable Chain Gold',
+        description: 'Elegant 18k gold-plated cable chain, designed for everyday subtle luxury wear.',
+        price: 6999,
+        category: categoryMap['Chains'],
         brand: brandMap['VAULT'],
         stock: 10,
-        images: ['/uploads/oud_perfume.png'],
+        images: ['/uploads/watch_chrono.png'],
+        isFeatured: false,
+        ratings: { average: 4.7, count: 12 }
+      },
+      // Rings
+      {
+        name: 'Polished Titanium Band',
+        description: 'Extremely durable matte-finished titanium ring band with a polished interior for maximum comfort.',
+        price: 2999,
+        category: categoryMap['Rings'],
+        brand: brandMap['VAULT'],
+        stock: 35,
+        images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.9, count: 35 }
+        ratings: { average: 4.8, count: 31 }
+      },
+      {
+        name: 'Sterling Silver Signet Ring',
+        description: 'Classic signet ring style crafted in solid sterling silver, hand-polished to a clean mirror finish.',
+        price: 3999,
+        category: categoryMap['Rings'],
+        brand: brandMap['VAULT'],
+        stock: 20,
+        images: ['/uploads/watch_chrono.png'],
+        isFeatured: false,
+        ratings: { average: 4.7, count: 16 }
+      },
+      // Shoes
+      {
+        name: 'Vanguard Leather Loafers',
+        description: 'Artisanal Italian calfskin leather loafers, featuring hand-stitched detailing and high traction rubber soles.',
+        price: 14999,
+        category: categoryMap['Shoes'],
+        brand: brandMap['VAULT'],
+        stock: 8,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: true,
+        ratings: { average: 4.9, count: 15 }
+      },
+      {
+        name: 'Urban Luxe Minimal Sneakers',
+        description: 'Sleek low-top white leather sneakers with soft inner lining and premium cupsole construction.',
+        price: 9999,
+        category: categoryMap['Shoes'],
+        brand: brandMap['VAULT'],
+        stock: 14,
+        images: ['/uploads/carbon_wallet.png'],
+        isFeatured: true,
+        ratings: { average: 4.8, count: 21 }
       }
     ];
 
