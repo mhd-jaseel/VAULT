@@ -3,6 +3,27 @@ import Product from '../models/Product.js';
 import Discount from '../models/Discount.js';
 import { paginateAggregate } from '../utils/paginate.js';
 import { calculateProductDiscounts } from '../services/discountService.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const deleteImageFiles = (imagePaths) => {
+  if (!imagePaths || !Array.isArray(imagePaths)) return;
+  imagePaths.forEach((img) => {
+    if (img && img.startsWith('/uploads/')) {
+      const fileName = img.replace('/uploads/', '');
+      const filePath = path.join(__dirname, '..', 'uploads', fileName);
+      fs.unlink(filePath, (err) => {
+        if (err && err.code !== 'ENOENT') {
+          console.error(`Failed to delete file: ${filePath}`, err);
+        }
+      });
+    }
+  });
+};
 
 // Get all products with filters, sorting & search
 export const getProducts = async (req, res) => {
@@ -246,9 +267,12 @@ export const updateProduct = async (req, res) => {
       });
     }
 
-    if (finalImages.length > 0 || (req.files && req.files.length > 0)) {
-      product.images = finalImages;
-    }
+    // Delete removed images from storage
+    const removedImages = product.images.filter((img) => !finalImages.includes(img));
+    deleteImageFiles(removedImages);
+
+    // Update product images
+    product.images = finalImages;
 
     const updatedProduct = await product.save();
     res.json({ success: true, data: updatedProduct });
@@ -264,6 +288,9 @@ export const deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
+
+    // Delete files from filesystem
+    deleteImageFiles(product.images);
 
     await Product.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Product deleted successfully' });

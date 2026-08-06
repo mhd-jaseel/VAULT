@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
 import Pagination from '../components/Pagination';
 import CountdownTimer from '../components/CountdownTimer';
+import ProductCard from '../components/ProductCard';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -340,80 +341,15 @@ export default function Shop() {
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((prod) => (
-                <Link
+              {products.map((prod, idx) => (
+                <ProductCard
                   key={prod._id}
-                  to={`/product/${prod._id}`}
-                  className="group flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
-                >
-                  <div className="relative h-auto aspect-square md:h-64 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
-                    {prod.images && prod.images.length > 0 ? (
-                      <img
-                        src={`http://localhost:5000${prod.images[0]}`}
-                        alt={prod.name}
-                        className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
-                      />
-                    ) : (
-                      <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
-                    )}
-                    {prod.stock === 0 && (
-                      <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
-                        Sold Out
-                      </span>
-                    )}
-
-                    {/* Discount Badge Overlay */}
-                    {prod.isDiscounted && (
-                      <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-20 shadow-sm">
-                        {prod.discountType === 'percentage' ? `${prod.discountValue}% OFF` : `₹${prod.discountValue} OFF`}
-                      </span>
-                    )}
-                    
-                    {/* Dynamic Heart/Wishlist Button */}
-                    {(!user || user.role !== 'admin') && (
-                      <button
-                        onClick={(e) => handleToggleWishlist(e, prod._id)}
-                        className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-20 flex items-center justify-center cursor-pointer"
-                        title="Save to Wishlist"
-                      >
-                        <Heart size={14} className={wishlistIds.includes(prod._id) ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500 transition-colors"} />
-                      </button>
-                    )}
-
-                    {/* Brand & Rating Overlays */}
-                    <span className="card-pill brand-pill">
-                      {prod.brand?.name || 'VAULT'}
-                    </span>
-                    <span className="card-pill rating-pill">
-                      ★ {prod.ratings?.average ? prod.ratings.average.toFixed(1) : '4.8'}
-                    </span>
-                  </div>
-                  <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
-                    <div>
-                      <span className="text-[9px] text-text-secondary uppercase tracking-widest font-mono">
-                        {prod.category?.name || 'ACCESSORIES'}
-                      </span>
-                      <h3 className="font-sans font-bold text-xs tracking-wide text-text-primary transition-colors mt-0.5 line-clamp-1">
-                        {prod.name}
-                      </h3>
-                    </div>
-                    <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-border-light">
-                      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-text-primary font-mono font-bold text-xs">
-                            ₹{(prod.isDiscounted ? prod.finalPrice : prod.price).toLocaleString('en-IN')}
-                          </span>
-                          {prod.isDiscounted && (
-                            <span className="text-text-secondary font-mono text-[9.5px] line-through">
-                              ₹{prod.originalPrice.toLocaleString('en-IN')}
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-text-secondary text-[9px] font-mono hover:underline uppercase tracking-wider">Details</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                  product={prod}
+                  index={idx}
+                  wishlistIds={wishlistIds}
+                  onToggleWishlist={handleToggleWishlist}
+                  user={user}
+                />
               ))}
             </div>
           )}

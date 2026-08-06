@@ -134,6 +134,34 @@ export default function AdminProducts() {
     setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const handleMoveExisting = (index, direction) => {
+    const updated = [...existingImages];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= updated.length) return;
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+    setExistingImages(updated);
+  };
+
+  const handleMoveNew = (index, direction) => {
+    const updatedFiles = [...newImageFiles];
+    const updatedPreviews = [...newImagePreviews];
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= updatedFiles.length) return;
+
+    const tempFile = updatedFiles[index];
+    updatedFiles[index] = updatedFiles[newIndex];
+    updatedFiles[newIndex] = tempFile;
+
+    const tempPreview = updatedPreviews[index];
+    updatedPreviews[index] = updatedPreviews[newIndex];
+    updatedPreviews[newIndex] = tempPreview;
+
+    setNewImageFiles(updatedFiles);
+    setNewImagePreviews(updatedPreviews);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -446,10 +474,29 @@ export default function AdminProducts() {
                       <button
                         type="button"
                         onClick={() => handleRemoveExistingImage(img)}
-                        className="absolute -top-1 -right-1 bg-red-900 border border-red-500 text-white rounded-full p-0.5 cursor-pointer"
+                        className="absolute -top-1 -right-1 bg-red-900 border border-red-500 text-white rounded-full p-0.5 cursor-pointer z-10"
                       >
                         <X size={10} />
                       </button>
+                      <div className="absolute bottom-0.5 left-0.5 right-0.5 flex justify-between bg-black/70 rounded px-1 py-0.5 z-10">
+                        <button
+                          type="button"
+                          disabled={i === 0}
+                          onClick={() => handleMoveExisting(i, -1)}
+                          className="text-[8px] hover:text-gold disabled:opacity-30 cursor-pointer text-zinc-400"
+                        >
+                          ◀
+                        </button>
+                        <span className="text-[7px] text-zinc-500 self-center">#{i+1}</span>
+                        <button
+                          type="button"
+                          disabled={i === existingImages.length - 1}
+                          onClick={() => handleMoveExisting(i, 1)}
+                          className="text-[8px] hover:text-gold disabled:opacity-30 cursor-pointer text-zinc-400"
+                        >
+                          ▶
+                        </button>
+                      </div>
                     </div>
                   ))}
                   {/* New Image Previews */}
@@ -459,10 +506,29 @@ export default function AdminProducts() {
                       <button
                         type="button"
                         onClick={() => handleRemoveNewImage(idx)}
-                        className="absolute -top-1 -right-1 bg-red-950 border border-red-500 text-white rounded-full p-0.5 cursor-pointer"
+                        className="absolute -top-1 -right-1 bg-red-955 border border-red-500 text-white rounded-full p-0.5 cursor-pointer z-10"
                       >
                         <X size={10} />
                       </button>
+                      <div className="absolute bottom-0.5 left-0.5 right-0.5 flex justify-between bg-black/70 rounded px-1 py-0.5 z-10">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveNew(idx, -1)}
+                          className="text-[8px] hover:text-gold disabled:opacity-30 cursor-pointer text-zinc-400"
+                        >
+                          ◀
+                        </button>
+                        <span className="text-[7px] text-zinc-500 self-center">#{idx+1}</span>
+                        <button
+                          type="button"
+                          disabled={idx === newImageFiles.length - 1}
+                          onClick={() => handleMoveNew(idx, 1)}
+                          className="text-[8px] hover:text-gold disabled:opacity-30 cursor-pointer text-zinc-400"
+                        >
+                          ▶
+                        </button>
+                      </div>
                     </div>
                   ))}
 

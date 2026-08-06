@@ -187,8 +187,8 @@ export default function ProductDetails() {
                 <button
                   key={index}
                   onClick={() => setActiveImage(img)}
-                  className={`relative w-20 h-20 rounded-xl overflow-hidden bg-neutral-50 border flex-shrink-0 cursor-pointer p-2 ${
-                    activeImage === img ? 'border-brand-primary' : 'border-border-light'
+                  className={`relative w-20 h-20 rounded-xl overflow-hidden bg-white border flex-shrink-0 cursor-pointer p-2 transition-all duration-200 ${
+                    activeImage === img ? 'border-neutral-900 ring-1 ring-neutral-900' : 'border-border-light hover:border-neutral-400'
                   }`}
                 >
                   <img src={`http://localhost:5000${img}`} alt="" className="max-h-full max-w-full object-contain mx-auto" />

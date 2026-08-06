@@ -167,12 +167,12 @@ export default function AdminCategories() {
               className="glass-card flex items-center justify-between border border-dark-border p-4 hover:border-zinc-800"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black flex-shrink-0 flex items-center justify-center border border-dark-border">
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-dark-border">
                   {cat.image ? (
                     <img 
                       src={`http://localhost:5000${cat.image}`} 
                       alt="" 
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <span className="text-zinc-800 font-bold text-xs">VAULT</span>
@@ -253,7 +253,7 @@ export default function AdminCategories() {
                 <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1.5">Category Image</label>
                 
                 {imagePreview ? (
-                  <div className="relative aspect-video rounded-xl overflow-hidden border border-dark-border bg-black flex items-center justify-center">
+                  <div className="relative aspect-video rounded-xl overflow-hidden border border-dark-border bg-white flex items-center justify-center">
                     <img src={imagePreview} alt="" className="w-full h-full object-contain" />
                     <button
                       type="button"

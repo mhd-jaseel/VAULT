@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
 import heroImg from '../assets/hero.png';
 import CountdownTimer from '../components/CountdownTimer';
+import ProductCard from '../components/ProductCard';
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
@@ -196,14 +197,14 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-8 px-4 md:px-12 py-6 max-w-7xl mx-auto w-full">
-      {/* Category Section (Responsive Unified Grid across Mobile, Tablet, and Desktop) */}
+      {/* Category Section (Perfect 3-Column Luxury Explore Grid) */}
       <section className="order-1 glass-card">
         
         {loading ? (
-          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {[...Array(10)].map((_, i) => (
+          <div className="grid grid-cols-3 gap-6 md:gap-8">
+            {[...Array(9)].map((_, i) => (
               <div key={i} className="flex flex-col items-center">
-                <div className="w-full aspect-[4/5] bg-neutral-50 rounded-[24px] mb-2 shimmer-bg" />
+                <div className="w-full aspect-square bg-neutral-50 mb-2 shimmer-bg" />
                 <div className="h-3 w-16 bg-neutral-50 shimmer-bg" />
               </div>
             ))}
@@ -212,54 +213,43 @@ export default function Home() {
           <div className="text-center text-neutral-400 py-10 text-xs font-sans tracking-wide">NO CATEGORIES FOUND. SETUP IN ADMIN.</div>
         ) : (
           <div>
-            {/* Mobile/Tablet/Desktop Responsive Grid */}
-            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 gap-y-8 px-1">
-              {categories.map((cat) => (
-                <Link 
-                  key={cat._id}
-                  to={`/shop?category=${cat._id}`}
-                  className="flex flex-col items-center select-none hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 ease-out group will-change-transform cursor-pointer"
-                  aria-label={`View ${cat.name}`}
-                >
-                  {/* Premium Image Container - softly rounded corners, uniform 1:1 aspect ratio */}
-                  <div className="w-full aspect-square bg-[#FCFCFC] rounded-[18px] flex items-center justify-center overflow-hidden mb-3.5 transition-all duration-300 group-hover:bg-neutral-50/80 shadow-[0_2px_12px_rgba(0,0,0,0.01)] group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)] group-active:shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-neutral-100/10">
-                    {cat.image ? (
-                      <img 
-                        src={`http://localhost:5000${cat.image}`} 
-                        alt={cat.name} 
-                        className="w-full h-full object-cover rounded-[18px] transition-transform duration-500 ease-out group-hover:scale-[1.03] group-active:scale-[1.03] opacity-0 onLoad-fade-in"
-                        loading="lazy"
-                        onLoad={(e) => e.target.classList.remove('opacity-0')}
-                      />
-                    ) : (
-                      <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
-                    )}
-                  </div>
-                  {/* Premium Typography Name - Title Case, font weight 500-600, flexible layout to prevent truncation */}
-                  <span className="font-sans text-[11px] sm:text-[13px] font-semibold text-neutral-800 group-hover:text-neutral-955 text-center px-0.5 leading-tight transition-colors duration-300 w-full min-h-[2.5em] flex items-center justify-center break-words">
-                    {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
-                  </span>
-                </Link>
-              ))}
+            {/* Responsive Grid - 3 cols on mobile/tablet, 4 on laptop, 5 on desktop >= 1400px */}
+            <div className="grid grid-cols-3 min-[992px]:grid-cols-4 min-[1400px]:grid-cols-5 gap-x-6 gap-y-10 md:gap-y-12 px-1">
+              {categories
+                .filter((cat) => 
+                  ['BELTS', 'BRACELETS', 'CAPS', 'CHAINS', 'CHAPPALS', 'EARRINGS', 'PERFUMES', 'RINGS', 'SHADES'].includes(cat.name.toUpperCase())
+                )
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((cat) => (
+                  <Link 
+                    key={cat._id}
+                    to={`/shop?category=${cat._id}`}
+                    className="flex flex-col items-center select-none cursor-pointer transition-all duration-[220ms] ease-out hover:-translate-y-[3px] group"
+                    aria-label={`View ${cat.name}`}
+                  >
+                    {/* Premium Image Container - white background, rounded corners, soft shadow */}
+                    <div className="w-full aspect-square bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-4 p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+                      {cat.image ? (
+                        <img 
+                          src={`http://localhost:5000${cat.image}`} 
+                          alt={cat.name} 
+                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] opacity-0 onLoad-fade-in"
+                          loading="lazy"
+                          onLoad={(e) => e.target.classList.remove('opacity-0')}
+                        />
+                      ) : (
+                        <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
+                      )}
+                    </div>
+                    {/* Premium Typography Name - Title Case, font weight 500, letter-spacing 0.5px, color #8A8A8A */}
+                    <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center">
+                      {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
+                    </span>
+                  </Link>
+                ))}
             </div>
 
-            {/* Editorial Footer Layout (Curated Collections -> Shop by Category -> Browse All ->) - Unified for Mobile and Desktop */}
-            <div className="flex flex-col gap-5 mt-14 px-2 select-none opacity-0 onLoad-fade-in text-left">
-              <div className="flex flex-col gap-2.5">
-                <span className="text-[9px] text-neutral-400 uppercase tracking-[0.35em] font-sans font-semibold leading-none">CURATED COLLECTIONS</span>
-                <h2 className="text-3xl md:text-4xl font-light text-neutral-900 font-sans tracking-wide leading-tight mt-1">Shop by Category</h2>
-              </div>
-              <div className="mt-4 flex items-center justify-between w-full">
-                <Link 
-                  to="/shop" 
-                  className="group/btn text-[12px] font-sans font-semibold text-neutral-800 hover:text-neutral-950 flex items-center gap-1.5 tracking-wider uppercase transition-colors duration-200 py-1.5"
-                  aria-label="Browse all categories"
-                >
-                  Browse All <span className="inline-block transform transition-transform duration-300 group-hover/btn:translate-x-1.5">→</span>
-                </Link>
-                <div className="h-[1px] bg-neutral-100 flex-1 ml-6 hidden md:block" />
-              </div>
-            </div>
+
           </div>
         )}
       </section>
@@ -372,167 +362,18 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Tablet & Desktop Grid View */}
-          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dealProducts.map((prod) => (
-              <Link
+          {/* Products Grid View (Asymmetric on Mobile, Responsive on Tablet & Desktop) */}
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {dealProducts.map((prod, idx) => (
+              <ProductCard
                 key={prod._id}
-                to={`/product/${prod._id}`}
-                className="group relative flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
-              >
-                <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light">
-                  {prod.images && prod.images.length > 0 ? (
-                    <img
-                      src={`http://localhost:5000${prod.images[0]}`}
-                      alt={prod.name}
-                      className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
-                    />
-                  ) : (
-                    <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
-                  )}
-                  {prod.stock === 0 && (
-                    <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
-                      Sold Out
-                    </span>
-                  )}
-
-                  {/* Discount Badge Overlay */}
-                  <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-20 shadow-sm">
-                    {prod.discountType === 'percentage' ? `${prod.discountValue}% OFF` : `₹${prod.discountValue} OFF`}
-                  </span>
-
-                  {/* Wishlist Button Overlay */}
-                  {(!user || user.role !== 'admin') && (
-                    <button
-                      onClick={(e) => handleToggleWishlist(e, prod._id)}
-                      className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm z-20 flex items-center justify-center cursor-pointer"
-                      title="Save to Wishlist"
-                    >
-                      <Heart size={13} className={wishlistIds.includes(prod._id) ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500"} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
-                  <div>
-                    <span className="text-[8px] text-text-secondary uppercase tracking-widest font-mono">
-                      {prod.category?.name || 'ACCESSORIES'}
-                    </span>
-                    <h3 className="font-sans font-bold text-xs tracking-wide text-text-primary mt-0.5 line-clamp-1">
-                      {prod.name}
-                    </h3>
-                  </div>
-
-                  <div className="mt-2 border-t border-border-light pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-text-primary font-mono font-bold text-xs">₹{prod.finalPrice?.toLocaleString('en-IN')}</span>
-                      <span className="text-text-secondary font-mono text-[10px] line-through">₹{prod.originalPrice?.toLocaleString('en-IN')}</span>
-                    </div>
-
-                    {/* Expiry Countdown Timer */}
-                    {prod.showCountdown && prod.discountEndDate && (
-                      <CountdownTimer endDate={prod.discountEndDate} />
-                    )}
-                  </div>
-                </div>
-              </Link>
+                product={prod}
+                index={idx}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={handleToggleWishlist}
+                user={user}
+              />
             ))}
-          </div>
-
-          {/* Mobile Carousel View (<768px) */}
-          <div
-            className="block md:hidden relative overflow-hidden"
-            onTouchStart={handleDealTouchStart}
-            onTouchMove={handleDealTouchMove}
-            onTouchEnd={handleDealTouchEnd}
-            onMouseEnter={() => setDealPaused(true)}
-            onMouseLeave={() => setDealPaused(false)}
-          >
-            <div
-              className="flex transition-transform duration-500 ease-out"
-              style={{ transform: `translateX(-${dealIndex * 100}%)` }}
-            >
-              {dealProducts.map((prod) => (
-                <div key={prod._id} className="w-full flex-shrink-0 px-1">
-                  <Link
-                    to={`/product/${prod._id}`}
-                    className="group relative flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden shadow-sm"
-                  >
-                    <div className="relative h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light">
-                      {prod.images && prod.images.length > 0 ? (
-                        <img
-                          src={`http://localhost:5000${prod.images[0]}`}
-                          alt={prod.name}
-                          loading="lazy"
-                          className="w-full h-full object-contain"
-                        />
-                      ) : (
-                        <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
-                      )}
-                      {prod.stock === 0 && (
-                        <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
-                          Sold Out
-                        </span>
-                      )}
-
-                      {/* Discount Badge Overlay */}
-                      <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-20 shadow-sm">
-                        {prod.discountType === 'percentage' ? `${prod.discountValue}% OFF` : `₹${prod.discountValue} OFF`}
-                      </span>
-
-                      {/* Wishlist Button Overlay */}
-                      {(!user || user.role !== 'admin') && (
-                        <button
-                          onClick={(e) => handleToggleWishlist(e, prod._id)}
-                          className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm z-20 flex items-center justify-center cursor-pointer"
-                          title="Save to Wishlist"
-                        >
-                          <Heart size={13} className={wishlistIds.includes(prod._id) ? "fill-red-500 text-red-500" : "text-neutral-400"} />
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="p-4 flex flex-col gap-1.5 justify-between">
-                      <div>
-                        <span className="text-[8px] text-text-secondary uppercase tracking-widest font-mono">
-                          {prod.category?.name || 'ACCESSORIES'}
-                        </span>
-                        <h3 className="font-sans font-bold text-xs tracking-wide text-text-primary mt-0.5 line-clamp-1">
-                          {prod.name}
-                        </h3>
-                      </div>
-
-                      <div className="mt-2 border-t border-border-light pt-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-text-primary font-mono font-bold text-xs">₹{prod.finalPrice?.toLocaleString('en-IN')}</span>
-                          <span className="text-text-secondary font-mono text-[10px] line-through">₹{prod.originalPrice?.toLocaleString('en-IN')}</span>
-                        </div>
-
-                        {/* Expiry Countdown Timer */}
-                        {prod.showCountdown && prod.discountEndDate && (
-                          <CountdownTimer endDate={prod.discountEndDate} />
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination Dots */}
-            {dealProducts.length > 1 && (
-              <div className="flex justify-center gap-2 mt-4">
-                {dealProducts.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setDealIndex(idx)}
-                    className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === dealIndex ? 'bg-red-500 w-5' : 'bg-neutral-300'
-                      }`}
-                    aria-label={`Go to slide ${idx + 1}`}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       )}
@@ -559,63 +400,15 @@ export default function Home() {
           <div className="text-center text-text-secondary py-10 text-xs font-mono">NO PRODUCTS AVAILABLE. SETUP IN ADMIN.</div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {featuredProducts.map((prod) => (
-              <Link
+            {featuredProducts.map((prod, idx) => (
+              <ProductCard
                 key={prod._id}
-                to={`/product/${prod._id}`}
-                className="group flex flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
-              >
-                {/* Product image centered on very light gray backdrop */}
-                <div className="relative h-auto aspect-square md:h-64 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
-                  {prod.images && prod.images.length > 0 ? (
-                    <img
-                      src={`http://localhost:5000${prod.images[0]}`}
-                      alt={prod.name}
-                      className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
-                    />
-                  ) : (
-                    <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
-                  )}
-                  {prod.stock === 0 && (
-                    <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
-                      Sold Out
-                    </span>
-                  )}
-
-                  {/* Dynamic Heart/Wishlist Button */}
-                  {(!user || user.role !== 'admin') && (
-                    <button
-                      onClick={(e) => handleToggleWishlist(e, prod._id)}
-                      className="absolute top-3 right-3 p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-[0_4px_12px_rgba(0,0,0,0.05)] z-20 flex items-center justify-center cursor-pointer"
-                      title="Save to Wishlist"
-                    >
-                      <Heart size={14} className={wishlistIds.includes(prod._id) ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500 transition-colors"} />
-                    </button>
-                  )}
-
-                  {/* Brand & Rating Overlays */}
-                  <span className="card-pill brand-pill">
-                    {prod.brand?.name || 'VAULT'}
-                  </span>
-                  <span className="card-pill rating-pill">
-                    ★ {prod.ratings?.average ? prod.ratings.average.toFixed(1) : '4.8'}
-                  </span>
-                </div>
-                <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
-                  <div>
-                    <span className="text-[9px] text-text-secondary uppercase tracking-widest font-mono">
-                      {prod.category?.name || 'ACCESSORIES'}
-                    </span>
-                    <h3 className="font-sans font-bold text-xs tracking-wide text-text-primary transition-colors mt-0.5 line-clamp-1">
-                      {prod.name}
-                    </h3>
-                  </div>
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-light">
-                    <span className="text-text-primary font-mono font-bold text-xs">₹{prod.price.toLocaleString('en-IN')}</span>
-                    <span className="text-text-secondary text-[9px] font-mono hover:underline uppercase tracking-wider">Details</span>
-                  </div>
-                </div>
-              </Link>
+                product={prod}
+                index={idx}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={handleToggleWishlist}
+                user={user}
+              />
             ))}
           </div>
         )}
