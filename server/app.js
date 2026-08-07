@@ -18,6 +18,10 @@ import brandRoutes from './routes/brandRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import discountRoutes from './routes/discountRoutes.js';
 
+// Models for sitemap
+import Product from './models/Product.js';
+import Category from './models/Category.js';
+
 const app = express();
 
 // Configure ESM paths
@@ -51,6 +55,47 @@ app.use('/api', heroBannerRoutes);
 app.use('/api', brandRoutes);
 app.use('/api', couponRoutes);
 app.use('/api', discountRoutes);
+
+// Sitemap and Robots.txt
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const products = await Product.find({}).select('_id updatedAt');
+    const categories = await Category.find({}).select('_id updatedAt');
+
+    const baseUrl = 'http://localhost:5173'; // Frontend base URL
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
+
+    // Add static pages
+    xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${baseUrl}/shop</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${baseUrl}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+
+    // Add products
+    products.forEach(p => {
+      xml += `  <url>\n    <loc>${baseUrl}/product/${p._id}</loc>\n    <lastmod>${(p.updatedAt || new Date()).toISOString().split('T')[0]}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+    });
+
+    // Add categories
+    categories.forEach(c => {
+      xml += `  <url>\n    <loc>${baseUrl}/shop?category=${c._id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    });
+
+    xml += `</urlset>`;
+
+    res.header('Content-Type', 'application/xml');
+    res.status(200).send(xml);
+  } catch (error) {
+    res.status(500).send('Error generating sitemap');
+  }
+});
+
+app.get('/robots.txt', (req, res) => {
+  const robots = `User-agent: *\nAllow: /\nSitemap: http://localhost:5000/sitemap.xml`;
+  res.header('Content-Type', 'text/plain');
+  res.send(robots);
+});
 
 // Base route
 app.get('/', (req, res) => {

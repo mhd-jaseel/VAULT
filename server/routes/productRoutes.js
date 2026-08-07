@@ -3,6 +3,7 @@ import {
   getProducts,
   getProductById,
   getRelatedProducts,
+  getDiscountedProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -18,6 +19,7 @@ router
   .post(protect, isAdmin, upload.array('images', 5), createProduct);
 
 router.get('/related/:id', getRelatedProducts);
+router.get('/discounted', getDiscountedProducts);
 
 router
   .route('/:id')

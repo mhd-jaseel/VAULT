@@ -91,7 +91,8 @@ export const calculateProductDiscounts = async (products) => {
       discountEndDate: bestDiscount.endDate,
       isDiscounted: discountAmount > 0,
       discountName: bestDiscount.discountName,
-      showCountdown: !!bestDiscount.showCountdown
+      showCountdown: !!bestDiscount.showCountdown,
+      priority: Number(bestDiscount.priority) || 0
     };
   });
 

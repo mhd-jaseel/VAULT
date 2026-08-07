@@ -39,6 +39,8 @@ export const updateSettings = async (req, res) => {
       heroDescription,
       heroProductName,
       heroProductPrice,
+      showDiscountsOnHomepage,
+      discountProductsDisplayOrder,
     } = req.body;
 
     settings.storeName = storeName || settings.storeName;
@@ -53,6 +55,13 @@ export const updateSettings = async (req, res) => {
     if (heroDescription !== undefined) settings.heroDescription = heroDescription;
     if (heroProductName !== undefined) settings.heroProductName = heroProductName;
     if (heroProductPrice !== undefined) settings.heroProductPrice = Number(heroProductPrice);
+
+    if (showDiscountsOnHomepage !== undefined) {
+      settings.showDiscountsOnHomepage = showDiscountsOnHomepage === 'true' || showDiscountsOnHomepage === true;
+    }
+    if (discountProductsDisplayOrder !== undefined) {
+      settings.discountProductsDisplayOrder = discountProductsDisplayOrder;
+    }
 
     // Handle logo and QR code file uploads
     if (req.files) {

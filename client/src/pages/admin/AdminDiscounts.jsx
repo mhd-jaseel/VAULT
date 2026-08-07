@@ -69,9 +69,47 @@ export default function AdminDiscounts() {
     fetchDiscounts();
   }, [page, search]);
 
+  const [globalShowDiscounts, setGlobalShowDiscounts] = useState(true);
+  const [globalDisplayOrder, setGlobalDisplayOrder] = useState('priority');
+
+  const fetchGlobalSettings = async () => {
+    try {
+      const res = await axios.get('/settings');
+      if (res.data.success) {
+        setGlobalShowDiscounts(res.data.data.showDiscountsOnHomepage ?? true);
+        setGlobalDisplayOrder(res.data.data.discountProductsDisplayOrder || 'priority');
+      }
+    } catch (err) {
+      console.error('Error fetching global settings:', err);
+    }
+  };
+
   useEffect(() => {
     fetchDependencies();
+    fetchGlobalSettings();
   }, []);
+
+  const handleToggleGlobalShow = async (e) => {
+    const nextVal = e.target.checked;
+    setGlobalShowDiscounts(nextVal);
+    try {
+      await axios.put('/settings', { showDiscountsOnHomepage: nextVal });
+      toast.success(nextVal ? 'Homepage Deals section enabled.' : 'Homepage Deals section disabled.');
+    } catch (err) {
+      toast.error('Failed to update settings.');
+    }
+  };
+
+  const handleDisplayOrderChange = async (e) => {
+    const nextVal = e.target.value;
+    setGlobalDisplayOrder(nextVal);
+    try {
+      await axios.put('/settings', { discountProductsDisplayOrder: nextVal });
+      toast.success(`Display order updated to ${nextVal}`);
+    } catch (err) {
+      toast.error('Failed to update settings.');
+    }
+  };
 
   const handleOpenAdd = () => {
     setIsEditing(false);
@@ -243,6 +281,38 @@ export default function AdminDiscounts() {
         >
           <Plus size={14} /> Create Offer
         </button>
+      </div>
+
+      {/* Homepage dynamic section settings controls */}
+      <div className="glass-card mb-6 !p-4 flex flex-col md:flex-row items-center justify-between gap-6 bg-dark-card border-dark-border text-gray-200">
+        <div className="flex flex-col">
+          <h3 className="text-xs font-bold uppercase tracking-wider font-mono text-[#111111]">Homepage Deals Section Settings</h3>
+          <p className="text-[10px] text-zinc-500 font-mono mt-0.5">Control the visibility and display order of the homepage dynamic discount section.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-6">
+          <label className="flex items-center gap-2 select-none cursor-pointer">
+            <input
+              type="checkbox"
+              checked={globalShowDiscounts}
+              onChange={handleToggleGlobalShow}
+              className="w-4 h-4 rounded border-dark-border bg-black/30 text-gold focus:ring-0 cursor-pointer"
+            />
+            <span className="text-xs font-mono font-bold text-zinc-800 uppercase">Show Discount Products on Home Page</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-zinc-800 uppercase">Display Order:</span>
+            <select
+              value={globalDisplayOrder}
+              onChange={handleDisplayOrderChange}
+              className="form-input text-xs !py-1.5 !px-3 bg-black/30 border-dark-border text-[#111111] font-mono cursor-pointer"
+            >
+              <option value="priority">Manual Priority</option>
+              <option value="highest">Highest Discount First</option>
+              <option value="lowest">Lowest Discount First</option>
+              <option value="latest">Latest Discount</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -461,6 +531,24 @@ export default function AdminDiscounts() {
                   </label>
                   <span className="text-[8px] text-zinc-500 block -mt-0.5">
                     Display a live countdown timer on the Home Page for this discount.
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 pb-1 select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="show_on_homepage"
+                  checked={showOnHomepage}
+                  onChange={(e) => setShowOnHomepage(e.target.checked)}
+                  className="w-4 h-4 rounded border-dark-border bg-black/30 text-gold focus:ring-0"
+                />
+                <div>
+                  <label htmlFor="show_on_homepage" className="text-[10px] font-mono text-zinc-400 uppercase cursor-pointer block font-bold">
+                    Show on Home Page
+                  </label>
+                  <span className="text-[8px] text-zinc-500 block -mt-0.5">
+                    Display products matching this discount in the dynamic Discount Products section on the homepage.
                   </span>
                 </div>
               </div>

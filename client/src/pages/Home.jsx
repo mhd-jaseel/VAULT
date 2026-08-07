@@ -7,11 +7,15 @@ import { toast } from 'sonner';
 import heroImg from '../assets/hero.png';
 import CountdownTimer from '../components/CountdownTimer';
 import ProductCard from '../components/ProductCard';
+import DiscountCountdown from '../components/DiscountCountdown';
+import { resolveImage } from '../utils/imageHelper';
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [dealProducts, setDealProducts] = useState([]);
+  const [discountProducts, setDiscountProducts] = useState([]);
+  const [tickTime, setTickTime] = useState(Date.now());
   const [settings, setSettings] = useState(null);
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,17 +109,26 @@ export default function Home() {
   const [touchEnd, setTouchEnd] = useState(null);
 
   useEffect(() => {
+    const timer = setInterval(() => {
+      setTickTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const catRes = await axios.get('/categories');
         const prodRes = await axios.get('/products?limit=4');
         const dealRes = await axios.get('/products?showOnHomepage=true&limit=4');
+        const discountRes = await axios.get('/products/discounted');
         const settingsRes = await axios.get('/settings');
         const bannersRes = await axios.get('/hero-banners');
 
         if (catRes.data.success) setCategories(catRes.data.data);
         if (prodRes.data.success) setFeaturedProducts(prodRes.data.data);
         if (dealRes.data.success) setDealProducts(dealRes.data.data);
+        if (discountRes.data.success) setDiscountProducts(discountRes.data.data);
         if (settingsRes.data.success) setSettings(settingsRes.data.data);
         if (bannersRes.data.success && bannersRes.data.data.length > 0) {
           setBanners(bannersRes.data.data);
@@ -136,7 +149,7 @@ export default function Home() {
 
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % activeLength);
-    }, 5500);
+    }, 6000);
 
     return () => clearInterval(timer);
   }, [banners, isPaused]);
@@ -197,9 +210,23 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-8 px-4 md:px-12 py-6 max-w-7xl mx-auto w-full">
-      {/* Category Section (Perfect 3-Column Luxury Explore Grid) */}
+      {/* Dynamic SEO JSON-LD Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "VAULT.CO",
+          "url": "http://localhost:5173",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "http://localhost:5173/shop?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        })}
+      </script>
+
+      {/* Category Section (Perfect 3-Column Luxury Explore Grid) - order-1 */}
       <section className="order-1 glass-card">
-        
         {loading ? (
           <div className="grid grid-cols-3 gap-6 md:gap-8">
             {[...Array(9)].map((_, i) => (
@@ -213,27 +240,25 @@ export default function Home() {
           <div className="text-center text-neutral-400 py-10 text-xs font-sans tracking-wide">NO CATEGORIES FOUND. SETUP IN ADMIN.</div>
         ) : (
           <div>
-            {/* Responsive Grid - 3 cols on mobile/tablet, 4 on laptop, 5 on desktop >= 1400px */}
             <div className="grid grid-cols-3 min-[992px]:grid-cols-4 min-[1400px]:grid-cols-5 gap-x-6 gap-y-10 md:gap-y-12 px-1">
               {categories
-                .filter((cat) => 
-                  ['BELTS', 'BRACELETS', 'CAPS', 'CHAINS', 'CHAPPALS', 'EARRINGS', 'PERFUMES', 'RINGS', 'SHADES'].includes(cat.name.toUpperCase())
+                .filter((cat) =>
+                  ['BELTS', 'BRACELETS', 'CAPS', 'CHAINS', 'PERFUMES', 'RINGS', 'SUNGLASSES', 'WALLETS', 'WATCHES'].includes(cat.name.toUpperCase())
                 )
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .map((cat) => (
-                  <Link 
+                  <Link
                     key={cat._id}
                     to={`/shop?category=${cat._id}`}
                     className="flex flex-col items-center select-none cursor-pointer transition-all duration-[220ms] ease-out hover:-translate-y-[3px] group"
                     aria-label={`View ${cat.name}`}
                   >
-                    {/* Premium Image Container - white background, rounded corners, soft shadow */}
-                    <div className="w-full aspect-square bg-white rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-4 p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+                    <div className="w-full aspect-square bg-[#FFFFFF] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-4 p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
                       {cat.image ? (
-                        <img 
-                          src={`http://localhost:5000${cat.image}`} 
-                          alt={cat.name} 
-                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] opacity-0 onLoad-fade-in"
+                        <img
+                          src={resolveImage(cat.image)}
+                          alt={cat.name}
+                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] opacity-0 onLoad-fade-in bg-[#FFFFFF]"
                           loading="lazy"
                           onLoad={(e) => e.target.classList.remove('opacity-0')}
                         />
@@ -241,22 +266,19 @@ export default function Home() {
                         <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
                       )}
                     </div>
-                    {/* Premium Typography Name - Title Case, font weight 500, letter-spacing 0.5px, color #8A8A8A */}
                     <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center">
                       {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
                     </span>
                   </Link>
                 ))}
             </div>
-
-
           </div>
         )}
       </section>
 
-      {/* Premium Hero Banner Carousel Wrapper */}
+      {/* Premium Hero Banner Carousel Wrapper - order-2 */}
       <section
-        className="order-2 md:order-1 glass-card !p-8 md:!p-12 lg:!p-16 relative overflow-hidden w-full group/carousel"
+        className="order-2 glass-card !p-8 md:!p-12 lg:!p-16 relative overflow-hidden w-full group/carousel"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
@@ -307,6 +329,7 @@ export default function Home() {
                   src={bannerImageSrc}
                   alt={slide.imageAlt}
                   loading={isActive ? "eager" : "lazy"}
+                  fetchPriority={isActive ? "high" : "low"}
                   className="w-full h-full object-cover"
                 />
                 {/* Floating Small Info Card Overlay */}
@@ -347,39 +370,43 @@ export default function Home() {
         )}
       </section>
 
-      {/* Limited Time Offers / Today's Deals Section */}
-      {dealProducts.length > 0 && (
-        <section className="order-3 md:order-2 glass-card border border-red-500/10 shadow-[0_4px_24px_rgba(239,68,68,0.03)] bg-gradient-to-br from-white to-red-500/[0.005]">
+      {/* Dynamic Discount Products Section - order-3 */}
+      {settings?.showDiscountsOnHomepage && discountProducts.length > 0 && (
+        <section className="order-3 glass-card">
           <div className="flex items-end justify-between mb-6">
             <div>
-              <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Limited Time Deals
-              </span>
-              <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Today's Deals</h2>
+              <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold">EXCLUSIVE OFFERS</span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">EXCLUSIVE OFFERS</h2>
+              <p className="text-xs text-text-secondary mt-1">Limited-time deals on premium VAULT accessories.</p>
             </div>
-            <Link to="/shop" className="text-[10px] font-mono text-text-primary hover:underline flex items-center gap-0.5 tracking-wider">
-              VIEW ALL DEALS <ChevronRight size={12} />
-            </Link>
           </div>
 
-          {/* Products Grid View (Asymmetric on Mobile, Responsive on Tablet & Desktop) */}
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dealProducts.map((prod, idx) => (
-              <ProductCard
-                key={prod._id}
-                product={prod}
-                index={idx}
-                wishlistIds={wishlistIds}
-                onToggleWishlist={handleToggleWishlist}
-                user={user}
-              />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {discountProducts.map((prod, idx) => (
+              <div key={prod._id} className="flex flex-col">
+                <DiscountCountdown
+                  endDate={prod.discountEndDate}
+                  showCountdown={prod.showCountdown}
+                  tickTime={tickTime}
+                  onExpire={() => {
+                    setDiscountProducts((prev) => prev.filter((p) => p._id !== prod._id));
+                  }}
+                />
+                <ProductCard
+                  product={prod}
+                  index={idx}
+                  wishlistIds={wishlistIds}
+                  onToggleWishlist={handleToggleWishlist}
+                  user={user}
+                />
+              </div>
             ))}
           </div>
         </section>
       )}
 
-      {/* Featured Products */}
-      <section className="order-4 md:order-4 glass-card">
+      {/* Featured Products (New Arrivals) - order-4 */}
+      <section className="order-4 glass-card">
         <div className="flex items-end justify-between mb-6">
           <div>
             <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold">FEATURED PIECES</span>
@@ -399,7 +426,7 @@ export default function Home() {
         ) : featuredProducts.length === 0 ? (
           <div className="text-center text-text-secondary py-10 text-xs font-mono">NO PRODUCTS AVAILABLE. SETUP IN ADMIN.</div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
             {featuredProducts.map((prod, idx) => (
               <ProductCard
                 key={prod._id}
@@ -414,8 +441,38 @@ export default function Home() {
         )}
       </section>
 
-      {/* Trust Badges */}
-      <section className="order-5 md:order-5 glass-card !p-6">
+      {/* Limited Time Offers / Today's Deals Section - order-5 */}
+      {dealProducts.length > 0 && (
+        <section className="order-5 glass-card border border-red-500/10 shadow-[0_4px_24px_rgba(239,68,68,0.03)] bg-gradient-to-br from-white to-red-500/[0.005]">
+          <div className="flex items-end justify-between mb-6">
+            <div>
+              <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Limited Time Deals
+              </span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Today's Deals</h2>
+            </div>
+            <Link to="/shop" className="text-[10px] font-mono text-text-primary hover:underline flex items-center gap-0.5 tracking-wider">
+              VIEW ALL DEALS <ChevronRight size={12} />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {dealProducts.map((prod, idx) => (
+              <ProductCard
+                key={prod._id}
+                product={prod}
+                index={idx}
+                wishlistIds={wishlistIds}
+                onToggleWishlist={handleToggleWishlist}
+                user={user}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Trust Badges - order-6 */}
+      <section className="order-6 glass-card !p-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           <div className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
             <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">

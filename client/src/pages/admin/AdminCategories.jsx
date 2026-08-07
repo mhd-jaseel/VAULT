@@ -170,7 +170,11 @@ export default function AdminCategories() {
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-dark-border">
                   {cat.image ? (
                     <img 
-                      src={`http://localhost:5000${cat.image}`} 
+                      src={`http://localhost:5000${
+                        cat.image.includes('/uploads/')
+                          ? `/uploads/${cat.name.toLowerCase() === 'sunglasses' ? 'sunglasses' : cat.name.toLowerCase() === 'shades' ? 'shades' : cat.name.toLowerCase() + 's'}.webp`
+                          : cat.image
+                      }`} 
                       alt="" 
                       className="w-full h-full object-contain"
                     />

@@ -59,6 +59,39 @@ const heroBannerSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    mobileImageUrl: {
+      type: String,
+    },
+    modelImageUrl: {
+      type: String,
+    },
+    productImageUrl: {
+      type: String,
+    },
+    backgroundStyle: {
+      type: String,
+      default: '#FFFFFF',
+    },
+    textAlignment: {
+      type: String,
+      enum: ['left', 'center', 'right'],
+      default: 'left',
+    },
+    overlayOpacity: {
+      type: Number,
+      default: 0.1,
+    },
+    startDate: {
+      type: Date,
+    },
+    endDate: {
+      type: Date,
+    },
+    bannerType: {
+      type: String,
+      enum: ['luxury', 'new-arrival', 'limited', 'sale', 'launch', 'seasonal', 'brand'],
+      default: 'luxury',
+    },
   },
   { timestamps: true }
 );

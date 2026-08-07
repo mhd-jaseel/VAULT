@@ -6,6 +6,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Share2 } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer';
+import { resolveImage } from '../utils/imageHelper';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -77,6 +78,86 @@ export default function ProductDetails() {
   useEffect(() => {
     fetchWishlist();
   }, [id, user]);
+
+  useEffect(() => {
+    if (!product) return;
+
+    const originalTitle = document.title;
+    document.title = `${product.name} | VAULT.CO`;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    const originalMetaDesc = metaDesc ? metaDesc.getAttribute('content') : '';
+    if (!metaDesc) {
+      metaDesc = document.createElement('meta');
+      metaDesc.setAttribute('name', 'description');
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.setAttribute('content', product.description || 'Premium accessories by VAULT.CO');
+
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', `${product.name} | VAULT.CO`);
+
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement('meta');
+      ogDesc.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute('content', product.description || 'Premium accessories by VAULT.CO');
+
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    if (product.images && product.images[0]) {
+      ogImage.setAttribute('content', `http://localhost:5000${product.images[0]}`);
+    }
+
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": product.name,
+      "image": product.images && product.images.map(img => resolveImage(img)),
+      "description": product.description,
+      "sku": product.sku || product._id,
+      "brand": {
+        "@type": "Brand",
+        "name": "VAULT.CO"
+      },
+      "offers": {
+        "@type": "Offer",
+        "url": window.location.href,
+        "priceCurrency": "INR",
+        "price": product.price,
+        "itemCondition": "https://schema.org/NewCondition",
+        "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+      }
+    };
+
+    const scriptId = 'product-jsonld';
+    let scriptTag = document.getElementById(scriptId);
+    if (!scriptTag) {
+      scriptTag = document.createElement('script');
+      scriptTag.id = scriptId;
+      scriptTag.type = 'application/ld+json';
+      document.head.appendChild(scriptTag);
+    }
+    scriptTag.text = JSON.stringify(structuredData);
+
+    return () => {
+      document.title = originalTitle;
+      if (metaDesc) metaDesc.setAttribute('content', originalMetaDesc);
+      const createdScript = document.getElementById(scriptId);
+      if (createdScript) createdScript.remove();
+    };
+  }, [product]);
 
   const handleToggleWishlist = async () => {
     if (!user) {
@@ -172,7 +253,7 @@ export default function ProductDetails() {
             </button>
             {activeImage ? (
               <img 
-                src={`http://localhost:5000${activeImage}`} 
+                src={resolveImage(activeImage)} 
                 alt={product.name} 
                 className="max-h-full max-w-full object-contain"
               />
@@ -191,7 +272,7 @@ export default function ProductDetails() {
                     activeImage === img ? 'border-neutral-900 ring-1 ring-neutral-900' : 'border-border-light hover:border-neutral-400'
                   }`}
                 >
-                  <img src={`http://localhost:5000${img}`} alt="" className="max-h-full max-w-full object-contain mx-auto" />
+                  <img src={resolveImage(img)} alt="" className="max-h-full max-w-full object-contain mx-auto" />
                 </button>
               ))}
             </div>

@@ -17,5 +17,9 @@ export default function AdminRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return (
+    <div className="admin-panel-theme bg-[#F7F7F5] min-h-screen text-[#111111] antialiased">
+      {children}
+    </div>
+  );
 }

@@ -56,6 +56,15 @@ const settingSchema = new mongoose.Schema(
       type: Number,
       default: 14999,
     },
+    showDiscountsOnHomepage: {
+      type: Boolean,
+      default: true,
+    },
+    discountProductsDisplayOrder: {
+      type: String,
+      enum: ['highest', 'lowest', 'latest', 'priority'],
+      default: 'priority',
+    },
   },
   { timestamps: true }
 );

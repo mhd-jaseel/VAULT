@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { toast } from 'sonner';
+import { resolveImage } from '../utils/imageHelper';
 
 export default function ProductCard({ product, index, wishlistIds, onToggleWishlist, user }) {
   const { addToCart } = useContext(CartContext);
@@ -80,7 +81,7 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
         <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light">
           {product.images && product.images.length > 0 ? (
             <img
-              src={`http://localhost:5000${product.images[0]}`}
+              src={resolveImage(product.images[0])}
               alt={product.name}
               className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
             />
@@ -168,7 +169,7 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
           {/* Product Image */}
           {product.images && product.images.length > 0 ? (
             <img
-              src={`http://localhost:5000${product.images[0]}`}
+              src={resolveImage(product.images[0])}
               alt={product.name}
               loading="lazy"
               className={`w-full h-full rounded-[16px] transition-transform duration-[220ms] ease-out ${isLarge ? 'object-cover' : 'object-contain'

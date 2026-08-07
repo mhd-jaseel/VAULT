@@ -7,8 +7,17 @@ import { paginateAggregate } from '../utils/paginate.js';
 export const getHeroBanners = async (req, res) => {
   try {
     const { page, limit = 5 } = req.query;
+    const now = new Date();
+    const query = {
+      isActive: true,
+      $and: [
+        { $or: [{ startDate: { $exists: false } }, { startDate: null }, { startDate: { $lte: now } }] },
+        { $or: [{ endDate: { $exists: false } }, { endDate: null }, { endDate: { $gte: now } }] }
+      ]
+    };
+
     if (page) {
-      const result = await paginateAggregate(HeroBanner, { isActive: true }, { order: 1 }, page, limit);
+      const result = await paginateAggregate(HeroBanner, query, { order: 1 }, page, limit);
       return res.json({
         success: true,
         data: result.data,
@@ -18,7 +27,7 @@ export const getHeroBanners = async (req, res) => {
       });
     }
 
-    const banners = await HeroBanner.find({ isActive: true }).sort({ order: 1 });
+    const banners = await HeroBanner.find(query).sort({ order: 1 });
     res.json({ success: true, data: banners });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -49,9 +58,6 @@ export const getAdminHeroBanners = async (req, res) => {
   }
 };
 
-// @desc    Create a new hero banner
-// @route   POST /admin/hero-banners
-// @access  Private/Admin
 export const createHeroBanner = async (req, res) => {
   try {
     const {
@@ -68,15 +74,36 @@ export const createHeroBanner = async (req, res) => {
       featuredPrice,
       order,
       isActive,
+      backgroundStyle,
+      textAlignment,
+      overlayOpacity,
+      startDate,
+      endDate,
+      bannerType,
     } = req.body;
 
     let imageUrl = req.body.imageUrl;
-    if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+    let mobileImageUrl = req.body.mobileImageUrl;
+    let modelImageUrl = req.body.modelImageUrl;
+    let productImageUrl = req.body.productImageUrl;
+
+    if (req.files) {
+      if (req.files.imageUrl && req.files.imageUrl[0]) {
+        imageUrl = `/uploads/${req.files.imageUrl[0].filename}`;
+      }
+      if (req.files.mobileImageUrl && req.files.mobileImageUrl[0]) {
+        mobileImageUrl = `/uploads/${req.files.mobileImageUrl[0].filename}`;
+      }
+      if (req.files.modelImageUrl && req.files.modelImageUrl[0]) {
+        modelImageUrl = `/uploads/${req.files.modelImageUrl[0].filename}`;
+      }
+      if (req.files.productImageUrl && req.files.productImageUrl[0]) {
+        productImageUrl = `/uploads/${req.files.productImageUrl[0].filename}`;
+      }
     }
 
     if (!imageUrl) {
-      return res.status(400).json({ success: false, message: 'Please upload an image or provide an image URL.' });
+      return res.status(400).json({ success: false, message: 'Please upload a desktop image or provide an image URL.' });
     }
 
     const banner = await HeroBanner.create({
@@ -94,6 +121,15 @@ export const createHeroBanner = async (req, res) => {
       featuredPrice: featuredPrice ? Number(featuredPrice) : undefined,
       order: order ? Number(order) : undefined,
       isActive: isActive === 'true' || isActive === true,
+      mobileImageUrl,
+      modelImageUrl,
+      productImageUrl,
+      backgroundStyle,
+      textAlignment,
+      overlayOpacity: overlayOpacity ? Number(overlayOpacity) : undefined,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      bannerType,
     });
 
     res.status(201).json({ success: true, data: banner });
@@ -126,6 +162,12 @@ export const updateHeroBanner = async (req, res) => {
       featuredPrice,
       order,
       isActive,
+      backgroundStyle,
+      textAlignment,
+      overlayOpacity,
+      startDate,
+      endDate,
+      bannerType,
     } = req.body;
 
     banner.badgeText = badgeText !== undefined ? badgeText : banner.badgeText;
@@ -138,15 +180,35 @@ export const updateHeroBanner = async (req, res) => {
     banner.imageAlt = imageAlt !== undefined ? imageAlt : banner.imageAlt;
     banner.featuredLabel = featuredLabel !== undefined ? featuredLabel : banner.featuredLabel;
     banner.featuredTitle = featuredTitle !== undefined ? featuredTitle : banner.featuredTitle;
+    banner.backgroundStyle = backgroundStyle !== undefined ? backgroundStyle : banner.backgroundStyle;
+    banner.textAlignment = textAlignment !== undefined ? textAlignment : banner.textAlignment;
+    banner.bannerType = bannerType !== undefined ? bannerType : banner.bannerType;
     
     if (featuredPrice !== undefined) banner.featuredPrice = Number(featuredPrice);
     if (order !== undefined) banner.order = Number(order);
     if (isActive !== undefined) banner.isActive = isActive === 'true' || isActive === true;
+    if (overlayOpacity !== undefined) banner.overlayOpacity = Number(overlayOpacity);
+    if (startDate !== undefined) banner.startDate = startDate ? new Date(startDate) : undefined;
+    if (endDate !== undefined) banner.endDate = endDate ? new Date(endDate) : undefined;
 
-    if (req.file) {
-      banner.imageUrl = `/uploads/${req.file.filename}`;
-    } else if (req.body.imageUrl !== undefined) {
-      banner.imageUrl = req.body.imageUrl;
+    if (req.files) {
+      if (req.files.imageUrl && req.files.imageUrl[0]) {
+        banner.imageUrl = `/uploads/${req.files.imageUrl[0].filename}`;
+      }
+      if (req.files.mobileImageUrl && req.files.mobileImageUrl[0]) {
+        banner.mobileImageUrl = `/uploads/${req.files.mobileImageUrl[0].filename}`;
+      }
+      if (req.files.modelImageUrl && req.files.modelImageUrl[0]) {
+        banner.modelImageUrl = `/uploads/${req.files.modelImageUrl[0].filename}`;
+      }
+      if (req.files.productImageUrl && req.files.productImageUrl[0]) {
+        banner.productImageUrl = `/uploads/${req.files.productImageUrl[0].filename}`;
+      }
+    } else {
+      if (req.body.imageUrl !== undefined) banner.imageUrl = req.body.imageUrl;
+      if (req.body.mobileImageUrl !== undefined) banner.mobileImageUrl = req.body.mobileImageUrl;
+      if (req.body.modelImageUrl !== undefined) banner.modelImageUrl = req.body.modelImageUrl;
+      if (req.body.productImageUrl !== undefined) banner.productImageUrl = req.body.productImageUrl;
     }
 
     const updatedBanner = await banner.save();
