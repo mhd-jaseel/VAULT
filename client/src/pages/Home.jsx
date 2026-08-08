@@ -4,7 +4,6 @@ import axios from 'axios';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
-import CountdownTimer from '../components/CountdownTimer';
 import ProductCard from '../components/ProductCard';
 import DiscountCountdown from '../components/DiscountCountdown';
 import { resolveImage } from '../utils/imageHelper';
@@ -14,7 +13,6 @@ const API_BASE = 'http://localhost:5000';
 export default function Home() {
   const [categories, setCategories] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
-  const [dealProducts, setDealProducts] = useState([]);
   const [discountProducts, setDiscountProducts] = useState([]);
   const [tickTime, setTickTime] = useState(Date.now());
   const [settings, setSettings] = useState(null);
@@ -98,10 +96,9 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, prodRes, dealRes, discountRes, settingsRes, campaignRes] = await Promise.all([
+        const [catRes, prodRes, discountRes, settingsRes, campaignRes] = await Promise.all([
           axios.get('/categories'),
           axios.get('/products?limit=4'),
-          axios.get('/products?showOnHomepage=true&limit=4'),
           axios.get('/products/discounted'),
           axios.get('/settings'),
           axios.get('/campaigns'),
@@ -109,7 +106,6 @@ export default function Home() {
 
         if (catRes.data.success) setCategories(catRes.data.data);
         if (prodRes.data.success) setFeaturedProducts(prodRes.data.data);
-        if (dealRes.data.success) setDealProducts(dealRes.data.data);
         if (discountRes.data.success) setDiscountProducts(discountRes.data.data);
         if (settingsRes.data.success) setSettings(settingsRes.data.data);
         if (campaignRes.data.success) setCampaigns(campaignRes.data.data);
@@ -320,16 +316,18 @@ export default function Home() {
           <section className="glass-card">
             <div className="flex items-end justify-between mb-6">
               <div>
-                <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold">EXCLUSIVE OFFERS</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                  <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold">LIMITED TIME DEALS</span>
+                </div>
                 <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Exclusive Offers</h2>
                 <p className="text-xs text-text-secondary mt-1">Limited-time deals on premium VAULT accessories.</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {discountProducts.map((prod, idx) => {
-                const isLarge = idx % 3 === 2;
                 return (
-                  <div key={prod._id} className={`flex flex-col ${isLarge ? 'col-span-2 sm:col-span-1' : 'col-span-1'}`}>
+                  <div key={prod._id} className="flex flex-col">
                     <DiscountCountdown
                       endDate={prod.discountEndDate}
                       showCountdown={prod.showCountdown}
@@ -342,6 +340,7 @@ export default function Home() {
                       wishlistIds={wishlistIds}
                       onToggleWishlist={handleToggleWishlist}
                       user={user}
+                      forceSmall={true}
                     />
                   </div>
                 );
@@ -384,34 +383,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* Today's Deals */}
-        {dealProducts.length > 0 && (
-          <section className="glass-card border border-red-500/10 shadow-[0_4px_24px_rgba(239,68,68,0.03)] bg-gradient-to-br from-white to-red-500/[0.005]">
-            <div className="flex items-end justify-between mb-6">
-              <div>
-                <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> Limited Time Deals
-                </span>
-                <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Today's Deals</h2>
-              </div>
-              <Link to="/shop" className="text-[10px] font-mono text-text-primary hover:underline flex items-center gap-0.5 tracking-wider">
-                VIEW ALL DEALS <ChevronRight size={12} />
-              </Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-              {dealProducts.map((prod, idx) => (
-                <ProductCard
-                  key={prod._id}
-                  product={prod}
-                  index={idx}
-                  wishlistIds={wishlistIds}
-                  onToggleWishlist={handleToggleWishlist}
-                  user={user}
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Trust Badges */}
         <section className="glass-card !p-6">

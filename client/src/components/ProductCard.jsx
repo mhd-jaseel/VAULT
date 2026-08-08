@@ -5,11 +5,11 @@ import { CartContext } from '../context/CartContext';
 import { toast } from 'sonner';
 import { resolveImage } from '../utils/imageHelper';
 
-export default function ProductCard({ product, index, wishlistIds, onToggleWishlist, user }) {
+export default function ProductCard({ product, index, wishlistIds, onToggleWishlist, user, forceSmall = false }) {
   const { addToCart } = useContext(CartContext);
   const [isMobileActive, setIsMobileActive] = useState(false);
 
-  const isLarge = index % 3 === 2;
+  const isLarge = !forceSmall && index % 3 === 2;
   const isWishlisted = wishlistIds?.includes(product._id);
 
   // Discount calculations
