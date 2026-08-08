@@ -15,17 +15,17 @@ export default function DiscountCountdown({ endDate, showCountdown, tickTime, on
       if (onExpire) {
         setTimeout(() => {
           onExpire();
-        }, 1500); // Wait 1.5 seconds displaying "Offer Expired" before removing
+        }, 1500);
       }
     }
     return (
       <div 
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#FFF1F2] border border-[#F87171] text-[#DC2626] rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-2.5 h-[38px] transition-all duration-300"
+        className="w-full flex items-center justify-center gap-1.5 px-[9px] py-[5px] md:px-[12px] md:py-[6px] bg-[#FFF1F1] border border-[#E8B5B5] text-[#A33A3A] rounded-full h-[28px] md:h-[32px] mb-[8px] transition-all duration-300"
       >
-        <span className="text-[11px] font-medium tracking-[1px] uppercase flex items-center gap-1 font-mono text-[#DC2626]/75">
-          <Clock size={12} /> Ends In
+        <Clock size={12} className="w-[10px] h-[10px] md:w-[12px] md:h-[12px] shrink-0 text-[#A33A3A]" />
+        <span className="font-mono uppercase tracking-wider text-[9px] md:text-[11px] font-bold">
+          OFFER EXPIRED
         </span>
-        <span className="text-[15px] font-bold font-mono">Offer Expired</span>
       </div>
     );
   }
@@ -38,42 +38,44 @@ export default function DiscountCountdown({ endDate, showCountdown, tickTime, on
   const formatNum = (num) => String(num).padStart(2, '0');
 
   // Determine styling based on warning states
-  let containerStyle = 'bg-[#111111] text-white border-none';
-  let labelStyle = 'text-white/75';
-  let countdownStyle = 'text-white';
-  let animateClass = '';
+  let bgClass = 'bg-[#F7F7F7]';
+  let borderClass = 'border-[#E6E6E6]';
+  let textClass = 'text-[#555555]';
+  let numClass = 'text-[#111111]';
 
   if (timeLeft < 1000 * 60 * 60) {
     // Less than 1 Hour
-    containerStyle = 'bg-[#FFF1F2] border border-[#F87171] text-[#DC2626]';
-    labelStyle = 'text-[#DC2626]/75';
-    countdownStyle = 'text-[#DC2626]';
-    animateClass = 'animate-pulse';
+    bgClass = 'bg-[#FFF1F1]';
+    borderClass = 'border-[#E8B5B5]';
+    textClass = 'text-[#A33A3A]';
+    numClass = 'text-[#7f1d1d]'; // slightly stronger/darker red
   } else if (timeLeft < 1000 * 60 * 60 * 24) {
     // Less than 24 Hours
-    containerStyle = 'bg-[#FFF8E7] border border-[#F5C451] text-[#B45309]';
-    labelStyle = 'text-[#B45309]/75';
-    countdownStyle = 'text-[#B45309]';
-    animateClass = 'animate-pulse';
+    bgClass = 'bg-[#FFF8E8]';
+    borderClass = 'border-[#EAD7A0]';
+    textClass = 'text-[#8A6500]';
+    numClass = 'text-[#78350f]'; // slightly stronger/darker gold
   }
+
+  const hoursStr = formatNum(hours);
+  const minutesStr = formatNum(minutes);
+  const secondsStr = formatNum(seconds);
 
   return (
     <div 
-      className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.08)] mb-2.5 h-[38px] transition-all duration-300 ${containerStyle}`}
+      className={`w-full flex items-center justify-center gap-1.5 px-[9px] py-[5px] md:px-[12px] md:py-[6px] border rounded-full h-[28px] md:h-[32px] mb-[8px] transition-all duration-300 ${bgClass} ${borderClass} ${textClass}`}
     >
-      {/* Left Side */}
-      <div className="flex items-center gap-1.5">
-        <Clock size={12} className={labelStyle} />
-        <span className={`text-[11px] font-medium tracking-[1px] uppercase ${labelStyle}`}>
-          Ends In
-        </span>
-      </div>
+      <Clock size={12} className={`w-[10px] h-[10px] md:w-[12px] md:h-[12px] shrink-0 ${textClass}`} />
+      
+      <span className="font-mono uppercase tracking-wider text-[9px] md:text-[10px] font-medium">
+        <span className={days > 0 ? "hidden md:inline" : "inline"}>ENDS IN </span>
+      </span>
 
-      {/* Right Side */}
-      <div className={`text-[15px] font-bold font-mono tracking-wide ${countdownStyle} ${animateClass}`}>
-        {days > 0 ? `${formatNum(days)}D ` : ''}
-        {formatNum(hours)}H : {formatNum(minutes)}M : {formatNum(seconds)}S
-      </div>
+      <span className={`font-mono font-semibold text-[10px] md:text-[11px] ${numClass}`}>
+        {days > 0 ? `${days}D ` : ''}
+        {hoursStr}H {minutesStr}M {secondsStr}S
+      </span>
     </div>
   );
 }
+

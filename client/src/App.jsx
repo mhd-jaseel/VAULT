@@ -37,7 +37,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminPayments from './pages/admin/AdminPayments';
 import AdminSettings from './pages/admin/AdminSettings';
-import AdminHeroBanners from './pages/admin/AdminHeroBanners';
+import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminBrands from './pages/admin/AdminBrands';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
@@ -170,10 +170,10 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/admin/hero-banners" 
+                  path="/admin/campaigns" 
                   element={
                     <AdminRoute>
-                      <AdminHeroBanners />
+                      <AdminCampaigns />
                     </AdminRoute>
                   } 
                 />

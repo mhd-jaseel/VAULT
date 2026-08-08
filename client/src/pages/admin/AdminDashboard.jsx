@@ -152,10 +152,10 @@ export default function AdminDashboard() {
             </Link>
 
             <Link 
-              to="/admin/hero-banners"
+              to="/admin/campaigns"
               className="flex items-center justify-between text-xs py-2.5 px-3 bg-neutral-50 rounded-xl text-text-secondary hover:text-text-primary border border-border-light transition-all"
             >
-              <span className="font-mono text-[10px] font-bold">MANAGE CAROUSEL BANNERS</span>
+              <span className="font-mono text-[10px] font-bold">MANAGE CAMPAIGNS</span>
               <ChevronRight size={12} className="text-text-secondary" />
             </Link>
 
