@@ -21,7 +21,6 @@ import ProductDetails from './pages/ProductDetails';
 import Wishlist from './pages/Wishlist';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
-import ManualPayment from './pages/ManualPayment';
 import OrderSuccess from './pages/OrderSuccess';
 import Profile from './pages/Profile';
 import OrderTracking from './pages/OrderTracking';
@@ -41,6 +40,13 @@ import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminBrands from './pages/admin/AdminBrands';
 import AdminCoupons from './pages/admin/AdminCoupons';
 import AdminDiscounts from './pages/admin/AdminDiscounts';
+import AdminAnnouncement from './pages/admin/AdminAnnouncement';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminUserDetail from './pages/admin/AdminUserDetail';
+import AdminReturns from './pages/admin/AdminReturns';
+import MyReturns from './pages/MyReturns';
+import ReturnDetails from './pages/ReturnDetails';
+import Blocked from './pages/Blocked';
 
 function App() {
   return (
@@ -81,14 +87,6 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/payment-upload/:orderId" 
-                  element={
-                    <ProtectedRoute>
-                      <ManualPayment />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
                   path="/order-success/:orderId" 
                   element={
                     <ProtectedRoute>
@@ -112,6 +110,22 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+                <Route 
+                  path="/my-returns" 
+                  element={
+                    <ProtectedRoute>
+                      <MyReturns />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/returns/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ReturnDetails />
+                    </ProtectedRoute>
+                  } 
+                />
 
                 <Route 
                   path="/admin" 
@@ -126,6 +140,14 @@ function App() {
                   element={
                     <AdminRoute>
                       <AdminDashboard />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/announcement" 
+                  element={
+                    <AdminRoute>
+                      <AdminAnnouncement />
                     </AdminRoute>
                   } 
                 />
@@ -201,6 +223,32 @@ function App() {
                     </AdminRoute>
                   } 
                 />
+                <Route 
+                  path="/admin/users" 
+                  element={
+                    <AdminRoute>
+                      <AdminUsers />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/users/:id" 
+                  element={
+                    <AdminRoute>
+                      <AdminUserDetail />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/returns" 
+                  element={
+                    <AdminRoute>
+                      <AdminReturns />
+                    </AdminRoute>
+                  } 
+                />
+                {/* Public blocked account page */}
+                <Route path="/blocked" element={<Blocked />} />
               </Routes>
             </Layout>
           </SocketProvider>

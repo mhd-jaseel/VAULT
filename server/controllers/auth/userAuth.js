@@ -1,6 +1,5 @@
-import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import { paginateAggregate } from '../utils/paginate.js';
+import User from '../../models/User.js';
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -52,6 +51,15 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.comparePassword(password))) {
+      // Block check at login time — do not issue token for blocked users
+      if (user.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          blocked: true,
+          message: 'Your account has been blocked. Please contact the administrator for assistance.',
+        });
+      }
+
       res.json({
         success: true,
         data: {
@@ -61,6 +69,7 @@ export const loginUser = async (req, res) => {
           role: user.role,
           phone: user.phone,
           address: user.address,
+          isBlocked: user.isBlocked,
           token: generateToken(user._id),
         },
       });
@@ -140,35 +149,6 @@ export const forgotPassword = async (req, res) => {
     await user.save();
 
     res.json({ success: true, message: 'Password reset successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Admin operation: View all customers
-export const getAllCustomers = async (req, res) => {
-  try {
-    const { page, limit = 10 } = req.query;
-    if (page) {
-      const result = await paginateAggregate(
-        User,
-        { role: 'customer' },
-        { createdAt: -1 },
-        page,
-        limit,
-        [{ $project: { password: 0 } }]
-      );
-      return res.json({
-        success: true,
-        data: result.data,
-        page: result.page,
-        pages: result.pages,
-        total: result.total,
-      });
-    }
-
-    const customers = await User.find({ role: 'customer' }).select('-password').sort({ createdAt: -1 });
-    res.json({ success: true, data: customers });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

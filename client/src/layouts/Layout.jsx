@@ -5,6 +5,9 @@ import Footer from '../components/Footer';
 import MobileNav from '../components/MobileNav';
 import SidebarMenu from '../components/SidebarMenu';
 
+// Routes that render with NO shared Navbar / Footer / MobileNav
+const BARE_ROUTES = ['/blocked', '/login', '/register', '/forgot-password'];
+
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname, search } = useLocation();
@@ -19,6 +22,11 @@ export default function Layout({ children }) {
       });
     }
   }, [pathname, search, navigationType]);
+
+  // Standalone bare layout — no header, footer, or mobile nav
+  if (BARE_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -36,7 +44,7 @@ export default function Layout({ children }) {
         onClose={() => setMenuOpen(false)} 
       />
 
-      {/* Footer (hidden or styled appropriately for mobile first) */}
+      {/* Footer */}
       <Footer />
 
       {/* Mobile Sticky bottom menu */}

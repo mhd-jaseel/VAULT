@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
       zip: String,
       country: { type: String, default: 'India' },
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

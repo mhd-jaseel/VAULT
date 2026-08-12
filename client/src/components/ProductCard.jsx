@@ -4,10 +4,15 @@ import { Heart, ShoppingCart } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { toast } from 'sonner';
 import { resolveImage } from '../utils/imageHelper';
+import LoginRequiredModal from './LoginRequiredModal';
 
 export default function ProductCard({ product, index, wishlistIds, onToggleWishlist, user, forceSmall = false }) {
   const { addToCart } = useContext(CartContext);
   const [isMobileActive, setIsMobileActive] = useState(false);
+
+  // Login-required modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
   const isLarge = !forceSmall && index % 3 === 2;
   const isWishlisted = wishlistIds?.includes(product._id);
@@ -32,8 +37,34 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
   const handleCartClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Guard: require login
+    if (!user) {
+      setModalMessage('Please login to add products to your cart.');
+      setModalOpen(true);
+      return;
+    }
+
+    if (product.stock === 0) {
+      toast.warning('This product is currently out of stock.');
+      return;
+    }
     addToCart(product, 1);
     toast.success(`${product.name} added to cart.`);
+  };
+
+  const handleWishlistClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Guard: require login
+    if (!user) {
+      setModalMessage('Please login to add products to your wishlist.');
+      setModalOpen(true);
+      return;
+    }
+
+    onToggleWishlist(e, product._id);
   };
 
   const handleImageClick = (e) => {
@@ -69,44 +100,60 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
     };
   }, [product._id]);
 
+  const isPriority = forceSmall ? false : (typeof index === 'number' && index < 4);
+  const loadingAttr = isPriority ? 'eager' : 'lazy';
+  const fetchPriorityAttr = isPriority ? 'high' : 'low';
+
   return (
     <>
+      <LoginRequiredModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        message={modalMessage}
+      />
+
       {/* ========================================================================= */}
       {/* DESKTOP & TABLET VIEW (screens >= 768px) - Keep existing layout + Cart icon */}
       {/* ========================================================================= */}
       <Link
         to={`/product/${product._id}`}
-        className="hidden md:flex group relative flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm"
+        className={`hidden md:flex group relative flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm ${
+          product.stock === 0 ? 'opacity-65' : ''
+        }`}
       >
-        <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light">
+        <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light flex-shrink-0">
           {product.images && product.images.length > 0 ? (
             <img
               src={resolveImage(product.images[0])}
               alt={product.name}
-              className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
+              loading={loadingAttr}
+              fetchPriority={fetchPriorityAttr}
+              decoding="async"
+              className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500 rounded-lg"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           ) : (
             <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
           )}
 
-          {product.stock === 0 && (
-            <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-20">
-              Sold Out
+          {/* Stock & Discount Badges */}
+          {product.stock === 0 ? (
+            <span className="absolute top-3 left-3 bg-neutral-100/90 backdrop-blur-sm text-neutral-600 text-[8px] uppercase tracking-wider font-mono font-bold py-1 px-2.5 rounded-full border border-neutral-200/80 z-20 shadow-xs">
+              OUT OF STOCK
             </span>
-          )}
-
-          {/* Discount Badge Overlay */}
-          {isDiscounted && (
+          ) : isDiscounted ? (
             <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-20 shadow-sm">
               {discountText}
             </span>
-          )}
+          ) : null}
 
-          {/* Action Buttons Overlay (Wishlist + Cart beside each other) */}
+          {/* Action Buttons Overlay (Wishlist + Cart stacked top-right) */}
           {(!user || user.role !== 'admin') && (
-            <div className="absolute top-3 right-3 flex gap-1.5 z-20">
+            <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20 items-center">
               <button
-                onClick={(e) => onToggleWishlist(e, product._id)}
+                onClick={handleWishlistClick}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer"
                 title="Save to Wishlist"
               >
@@ -114,9 +161,10 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
               </button>
               <button
                 onClick={handleCartClick}
-                disabled={product.stock === 0}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer disabled:opacity-50"
-                title="Add to Cart"
+                className={`p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer ${
+                  product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
               >
                 <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
               </button>
@@ -155,8 +203,9 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
       {/* MOBILE VIEW (screens < 768px) - New Premium Asymmetric Alternating Layout */}
       {/* ========================================================================= */}
       <div
-        className={`md:hidden flex flex-col bg-white rounded-[18px] overflow-hidden transition-all duration-[220ms] ease-out shadow-[0_4px_20px_rgba(0,0,0,0.015)] border border-neutral-100/30 p-[10px] product-card-${product._id} ${isLarge ? 'col-span-2' : 'col-span-1'
-          }`}
+        className={`md:hidden flex flex-col bg-white rounded-[18px] overflow-hidden transition-all duration-[220ms] ease-out shadow-[0_4px_20px_rgba(0,0,0,0.015)] border border-neutral-100/30 p-[10px] product-card-${product._id} ${
+          isLarge ? 'col-span-2' : 'col-span-1'
+        } ${product.stock === 0 ? 'opacity-65' : ''}`}
       >
         {/* Product Image Container (Click to reveal icons on mobile) */}
         <div
@@ -171,28 +220,37 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
             <img
               src={resolveImage(product.images[0])}
               alt={product.name}
-              loading="lazy"
+              loading={loadingAttr}
+              fetchPriority={fetchPriorityAttr}
+              decoding="async"
               className={`w-full h-full rounded-[16px] transition-transform duration-[220ms] ease-out ${isLarge ? 'object-cover' : 'object-contain'
                 }`}
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
             />
           ) : (
             <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
           )}
 
-          {product.stock === 0 && (
-            <span className="absolute top-3 left-3 bg-red-50 text-red-600 text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-200 z-10">
-              Sold Out
+          {/* Stock & Discount Badges */}
+          {product.stock === 0 ? (
+            <span className="absolute top-3 left-3 bg-neutral-100/90 backdrop-blur-sm text-neutral-600 text-[8px] uppercase tracking-wider font-mono font-bold py-1 px-2.5 rounded-full border border-neutral-200/80 z-10 shadow-xs">
+              OUT OF STOCK
             </span>
-          )}
+          ) : isDiscounted ? (
+            <span className="absolute top-3 left-3 bg-red-500 text-white text-[8px] uppercase tracking-wider font-bold py-1 px-2.5 rounded-full border border-red-600 z-10 shadow-sm">
+              {discountText}
+            </span>
+          ) : null}
 
-          {/* Action Buttons (Wishlist Top-Right, Cart Bottom-Right) */}
+          {/* Action Buttons (Wishlist + Cart stacked top-right of image) */}
           {(!user || user.role !== 'admin') && (
-            <>
+            <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-20 items-center">
               {/* Wishlist Button */}
               <button
-                onClick={(e) => onToggleWishlist(e, product._id)}
-                className={`absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md border border-neutral-200/40 text-neutral-800 transition-all duration-[200ms] shadow-sm flex items-center justify-center cursor-pointer z-20 ${isMobileActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
-                  }`}
+                onClick={handleWishlistClick}
+                className="w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
                 title="Save to Wishlist"
               >
                 <Heart size={13} className={isWishlisted ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500"} />
@@ -201,14 +259,14 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
               {/* Cart Button */}
               <button
                 onClick={handleCartClick}
-                disabled={product.stock === 0}
-                className={`absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-md border border-neutral-200/40 text-neutral-800 transition-all duration-[200ms] shadow-sm flex items-center justify-center cursor-pointer z-20 disabled:opacity-50 ${isMobileActive ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'
-                  }`}
-                title="Add to Cart"
+                className={`w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer ${
+                  product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
               >
                 <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
               </button>
-            </>
+            </div>
           )}
         </div>
 

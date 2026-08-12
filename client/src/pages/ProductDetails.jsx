@@ -7,6 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Share2 } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer';
 import { resolveImage } from '../utils/imageHelper';
+import LoginRequiredModal from '../components/LoginRequiredModal';
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -27,6 +28,10 @@ export default function ProductDetails() {
   const [comment, setComment] = useState('');
   const [reviewError, setReviewError] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState('');
+
+  // Login-required modal
+  const [loginModal, setLoginModal] = useState({ open: false, message: '' });
+  const showLoginModal = (message) => setLoginModal({ open: true, message });
 
   const fetchProductDetails = async () => {
     setLoading(true);
@@ -161,7 +166,7 @@ export default function ProductDetails() {
 
   const handleToggleWishlist = async () => {
     if (!user) {
-      toast.warning('Please login to save items to your wishlist.');
+      showLoginModal('Please login to add products to your wishlist.');
       return;
     }
 
@@ -183,6 +188,10 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
+    if (!user) {
+      showLoginModal('Please login to add products to your cart.');
+      return;
+    }
     if (product) {
       addToCart(product, quantity);
       toast.success(`${product.name} successfully added to cart!`);
@@ -236,6 +245,12 @@ export default function ProductDetails() {
   // Price calculations resolved from server active discount logic
 
   return (
+    <>
+      <LoginRequiredModal
+        isOpen={loginModal.open}
+        onClose={() => setLoginModal({ open: false, message: '' })}
+        message={loginModal.message}
+      />
     <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
       <Link to="/shop" className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors font-mono text-[10px] mb-6 tracking-wider">
         <ArrowLeft size={12} /> BACK TO CATALOG
@@ -255,6 +270,9 @@ export default function ProductDetails() {
               <img 
                 src={resolveImage(activeImage)} 
                 alt={product.name} 
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
@@ -557,5 +575,6 @@ export default function ProductDetails() {
         </section>
       )}
     </div>
+    </>
   );
 }

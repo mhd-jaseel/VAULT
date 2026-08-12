@@ -97,8 +97,8 @@ export default function AdminOrders() {
                 <th className="p-4">Client Name</th>
                 <th className="p-4">Items Qty</th>
                 <th className="p-4">Grand Total</th>
-                <th className="p-4">Payment Method</th>
                 <th className="p-4">Payment Status</th>
+                <th className="p-4">Razorpay Payment ID</th>
                 <th className="p-4">Shipping Status</th>
                 <th className="p-4 text-center">Edit Status</th>
               </tr>
@@ -119,19 +119,23 @@ export default function AdminOrders() {
                   <td className="p-4 text-white font-bold">
                     ₹{ord.grandTotal.toLocaleString('en-IN')}
                   </td>
-                  <td className="p-4 text-zinc-400 uppercase font-medium">
-                    {ord.paymentMethod}
-                  </td>
                   <td className="p-4">
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
-                      ord.paymentStatus === 'verified' 
-                        ? 'bg-green-950/20 border-green-500/30 text-green-400' 
-                        : ord.paymentStatus === 'rejected'
-                        ? 'bg-red-950/20 border-red-500/30 text-red-400' 
-                        : 'bg-zinc-800 border-zinc-700 text-gray-400'
+                      ord.paymentStatus === 'captured'
+                        ? 'bg-green-950/20 border-green-500/30 text-green-400'
+                        : ord.paymentStatus === 'failed'
+                        ? 'bg-red-950/20 border-red-500/30 text-red-400'
+                        : ord.paymentStatus === 'authorized'
+                        ? 'bg-blue-950/20 border-blue-500/30 text-blue-400'
+                        : ord.paymentStatus === 'refunded'
+                        ? 'bg-purple-950/20 border-purple-500/30 text-purple-400'
+                        : 'bg-gold/10 border-gold/30 text-gold animate-pulse'
                     }`}>
                       {ord.paymentStatus}
                     </span>
+                  </td>
+                  <td className="p-4 font-mono text-[10px] text-zinc-400 select-all">
+                    {ord.razorpayPaymentId || <span className="text-zinc-600 italic">—</span>}
                   </td>
                   <td className="p-4">
                     <span className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${

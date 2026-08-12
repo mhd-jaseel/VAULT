@@ -1,21 +1,25 @@
 import express from 'express';
 import {
-  submitPayment,
-  verifyPayment,
-  rejectPayment,
+  createRazorpayOrder,
+  verifyRazorpayPayment,
+  razorpayWebhook,
   getAllPayments,
-} from '../controllers/paymentController.js';
+} from '../controllers/payment/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
-import upload from '../middleware/upload.js';
 
 const router = express.Router();
 
-router
-  .route('/')
-  .post(protect, upload.single('screenshot'), submitPayment)
-  .get(protect, isAdmin, getAllPayments);
+// ── Customer: Create Razorpay order (POST /api/payments/razorpay/create-order)
+router.post('/razorpay/create-order', protect, createRazorpayOrder);
 
-router.put('/:paymentId/verify', protect, isAdmin, verifyPayment);
-router.put('/:paymentId/reject', protect, isAdmin, rejectPayment);
+// ── Customer: Verify payment signature after checkout (POST /api/payments/razorpay/verify)
+router.post('/razorpay/verify', protect, verifyRazorpayPayment);
+
+// ── Razorpay Webhook (POST /api/payments/razorpay/webhook)
+// Raw body is applied in app.js BEFORE express.json() for this specific path
+router.post('/razorpay/webhook', razorpayWebhook);
+
+// ── Admin: List all payment records (GET /api/payments)
+router.get('/', protect, isAdmin, getAllPayments);
 
 export default router;

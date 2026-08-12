@@ -65,26 +65,56 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
+    // ── Payment Method ──────────────────────────────────────────────
     paymentMethod: {
       type: String,
-      enum: ['cod', 'upi'],
+      enum: ['razorpay'],
       required: true,
+      default: 'razorpay',
     },
+
+    // ── Payment Status ──────────────────────────────────────────────
+    // pending    → order created, awaiting payment
+    // authorized → payment authorised by Razorpay (auto-capture configured)
+    // captured   → payment confirmed & captured
+    // failed     → payment failed or signature mismatch
+    // refunded   → refund issued
     paymentStatus: {
       type: String,
-      enum: ['pending', 'verified', 'rejected', 'failed', 'cod_pending'],
+      enum: ['pending', 'authorized', 'captured', 'failed', 'refunded'],
       default: 'pending',
     },
+
+    // ── Razorpay identifiers ────────────────────────────────────────
+    razorpayOrderId: {
+      type: String,
+      trim: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+      trim: true,
+    },
+    razorpaySignatureVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ── Idempotency guard — stock deducted exactly once ─────────────
+    stockDeducted: {
+      type: Boolean,
+      default: false,
+    },
+
+    // ── Order Status ────────────────────────────────────────────────
     status: {
       type: String,
       enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'],
       default: 'pending',
     },
     timeline: [timelineSchema],
-    whatsappSent: {
-      type: Boolean,
-      default: false,
-    },
+
+    // ── Coupon ──────────────────────────────────────────────────────
     coupon: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Coupon',
@@ -98,6 +128,14 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: 0,
+    },
+
+    whatsappSent: {
+      type: Boolean,
+      default: false,
+    },
+    deliveredAt: {
+      type: Date,
     },
   },
   { timestamps: true }

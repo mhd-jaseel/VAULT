@@ -14,6 +14,14 @@ export const protect = async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ success: false, message: 'User not found' });
       }
+      // Block check — enforced on every authenticated request
+      if (req.user.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          blocked: true,
+          message: 'Your account has been blocked. Please contact the administrator for assistance.',
+        });
+      }
       next();
     } catch (error) {
       console.error(error);

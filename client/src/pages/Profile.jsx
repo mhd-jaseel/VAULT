@@ -212,13 +212,13 @@ export default function Profile() {
                   </div>
 
                   <div className="flex gap-2">
-                    {/* If payment was rejected or remains pending with no payment submission, allow upload */}
-                    {ord.paymentMethod === 'upi' && (ord.paymentStatus === 'pending' || ord.paymentStatus === 'rejected') && (
-                      <Link 
-                        to={`/payment-upload/${ord._id}`}
+                    {/* If payment failed, allow the customer to go back to checkout */}
+                    {ord.paymentStatus === 'failed' && (
+                      <Link
+                        to="/checkout"
                         className="btn-gold !py-2 !px-4 text-[9px] uppercase tracking-wider text-center"
                       >
-                        Upload Payment
+                        Retry Payment
                       </Link>
                     )}
                     <Link

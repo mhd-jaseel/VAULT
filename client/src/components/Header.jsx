@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { Link, useNavigate, NavLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
+import AnnouncementBar from './AnnouncementBar';
 import { 
   ShoppingBag, 
   User, 
@@ -27,7 +28,8 @@ export default function Header({ onMenuClick }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-border-light py-4 px-6 md:px-12 flex items-center justify-between">
+    <header className="sticky top-0 z-40 w-full flex flex-col">
+      <div className="bg-white/95 backdrop-blur-md border-b border-border-light py-4 px-6 md:px-12 flex items-center justify-between">
       {/* Mobile-only view header items */}
       <div className="flex md:hidden w-full items-center justify-between">
         {/* Left: Hamburger menu */}
@@ -181,6 +183,8 @@ export default function Header({ onMenuClick }) {
           </Link>
         )}
       </div>
+      </div>
+      <AnnouncementBar />
     </header>
   );
 }

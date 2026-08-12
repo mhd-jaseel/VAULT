@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import ProductCard from '../components/ProductCard';
 import DiscountCountdown from '../components/DiscountCountdown';
 import { resolveImage } from '../utils/imageHelper';
+import LoginRequiredModal from '../components/LoginRequiredModal';
 
 const API_BASE = 'http://localhost:5000';
 
@@ -59,6 +60,7 @@ export default function Home() {
   // Wishlist
   const { user } = useContext(AuthContext);
   const [wishlistIds, setWishlistIds] = useState([]);
+  const [loginModal, setLoginModal] = useState({ open: false, message: '' });
 
   const fetchWishlist = async () => {
     if (!user) return;
@@ -73,7 +75,7 @@ export default function Home() {
   const handleToggleWishlist = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { toast.warning('Please login to save items to your wishlist.'); return; }
+    if (!user) { setLoginModal({ open: true, message: 'Please login to add products to your wishlist.' }); return; }
     const isWishlisted = wishlistIds.includes(productId);
     try {
       if (isWishlisted) {
@@ -126,7 +128,13 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col gap-0 w-full">
+    <>
+      <LoginRequiredModal
+        isOpen={loginModal.open}
+        onClose={() => setLoginModal({ open: false, message: '' })}
+        message={loginModal.message}
+      />
+      <div className="flex flex-col gap-0 w-full">
       {/* SEO JSON-LD */}
       <script type="application/ld+json">
         {JSON.stringify({
@@ -179,9 +187,13 @@ export default function Home() {
                         <img
                           src={resolveImage(cat.image)}
                           alt={cat.name}
-                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] opacity-0 bg-[#FFFFFF]"
-                          loading="lazy"
-                          onLoad={(e) => e.target.classList.remove('opacity-0')}
+                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] bg-white"
+                          loading="eager"
+                          fetchPriority="high"
+                          decoding="async"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
                         />
                       ) : (
                         <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
@@ -200,7 +212,7 @@ export default function Home() {
       {/* ── FASHION CAMPAIGNS — 50/50 editorial split ── */}
       <section className="px-4 md:px-12 pb-0 max-w-7xl mx-auto w-full">
         <div
-          className="bg-white border border-[#ECECEC] rounded-[2rem] shadow-[0_2px_20px_rgba(0,0,0,0.06)] overflow-hidden relative"
+          className="bg-white border border-[#ECECEC] rounded-[2rem] shadow-[0_2px_20px_rgba(0,0,0,0.06)] overflow-hidden relative h-[560px] xs:h-[540px] sm:h-[520px] md:h-[460px] lg:h-[500px] flex flex-col md:flex-row"
           onMouseEnter={() => setCampaignPaused(true)}
           onMouseLeave={() => setCampaignPaused(false)}
           onTouchStart={handleTouchStart}
@@ -210,7 +222,7 @@ export default function Home() {
         >
           {campaigns.length === 0 ? (
             /* Empty state — centered premium placeholder */
-            <div className="flex flex-col items-center justify-center text-center py-20 px-8 gap-5 min-h-[280px]">
+            <div className="flex flex-col items-center justify-center text-center py-12 px-8 gap-4 w-full h-full">
               <div className="flex flex-col items-center gap-2">
                 <span className="text-[9px] font-mono uppercase tracking-[0.35em] text-neutral-300">NEW CAMPAIGN</span>
                 <div className="w-8 h-px bg-neutral-200 mt-1" />
@@ -218,12 +230,12 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-extrabold uppercase text-[#111111] leading-tight tracking-tight">
                 Fashion Campaigns
               </h2>
-              <p className="text-sm text-neutral-400 max-w-xs leading-relaxed font-light">
+              <p className="text-xs md:text-sm text-neutral-400 max-w-xs leading-relaxed font-light">
                 Create your first luxury campaign from the Admin Panel.
               </p>
               <Link
                 to="/admin/campaigns"
-                className="inline-flex items-center gap-2 bg-[#111111] text-white text-[11px] font-mono tracking-[0.2em] uppercase px-7 py-3.5 hover:bg-neutral-800 transition-colors duration-300 rounded-full"
+                className="inline-flex items-center gap-2 bg-[#111111] text-white text-[11px] font-mono tracking-[0.2em] uppercase px-7 py-3.5 hover:bg-neutral-800 transition-colors duration-300 rounded-lg"
               >
                 Add Campaign <ChevronRight size={13} />
               </Link>
@@ -235,68 +247,77 @@ export default function Home() {
               return (
                 <div
                   key={campaign._id}
-                  className="flex flex-col md:flex-row w-full transition-opacity duration-500 opacity-100"
+                  className="flex flex-col md:flex-row w-full h-full transition-opacity duration-500 opacity-100"
                 >
-                  {/* Left — Text column: grows with content, never clips */}
-                  <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-20 py-12 bg-white gap-5 order-2 md:order-1 min-h-0">
-                    {/* Label with top rule */}
-                    <div className="flex flex-col gap-3">
-                      <div className="w-8 h-px bg-neutral-900" />
-                      <span className="text-[9px] font-mono uppercase tracking-[0.35em] text-neutral-400">
-                        {campaign.label}
-                      </span>
+                  {/* Left — Text column: centered on mobile, left-aligned on desktop */}
+                  <div className="flex-1 flex flex-col justify-between px-6 xs:px-8 md:px-12 lg:px-16 py-6 sm:py-8 md:py-12 bg-white order-2 md:order-1 min-h-0 h-full overflow-y-auto text-center md:text-left">
+                    {/* Content Top */}
+                    <div className="flex flex-col gap-3 items-center md:items-start">
+                      {/* Label with top rule */}
+                      <div className="flex flex-col gap-2 items-center md:items-start">
+                        <div className="w-8 h-px bg-neutral-900" />
+                        <span className="text-[9px] font-mono uppercase tracking-[0.35em] text-neutral-400 text-center md:text-left">
+                          {campaign.label}
+                        </span>
+                      </div>
+
+                      {/* Heading — wraps naturally, no overflow clip */}
+                      <h1 className="text-[28px] xs:text-[32px] sm:text-[36px] md:text-4xl lg:text-5xl lg:leading-[1.05] leading-[0.98] tracking-tight font-extrabold uppercase text-[#111111] break-words text-center md:text-left">
+                        {campaign.title}
+                      </h1>
+
+                      {/* Description */}
+                      <p className="text-xs md:text-sm text-neutral-500 max-w-xs sm:max-w-sm leading-relaxed font-light text-center md:text-left mx-auto md:mx-0">
+                        {campaign.description}
+                      </p>
                     </div>
 
-                    {/* Heading — wraps naturally, no overflow clip */}
-                    <h1 className="text-[36px] leading-[0.95] tracking-tight font-extrabold uppercase text-[#111111] md:text-5xl xl:text-6xl md:leading-[1.05] break-words">
-                      {campaign.title}
-                    </h1>
+                    {/* Content Bottom: CTA + Dots */}
+                    <div className="flex flex-col gap-4 mt-4 pt-2 items-center md:items-start">
+                      {/* CTA Button */}
+                      <Link
+                        to={campaign.ctaLink || '/shop'}
+                        className="self-center md:self-start inline-flex items-center gap-3 bg-[#111111] text-white text-[11px] font-mono tracking-[0.2em] uppercase px-7 py-3.5 hover:bg-neutral-800 transition-colors duration-300 group rounded-lg"
+                      >
+                        {campaign.ctaText}
+                        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      </Link>
 
-                    {/* Description */}
-                    <p className="text-sm text-neutral-500 max-w-xs leading-relaxed font-light">
-                      {campaign.description}
-                    </p>
-
-                    {/* CTA */}
-                    <Link
-                      to={campaign.ctaLink || '/shop'}
-                      className="self-start inline-flex items-center gap-3 bg-[#111111] text-white text-[11px] font-mono tracking-[0.2em] uppercase px-8 py-4 hover:bg-neutral-800 transition-colors duration-300 group"
-                    >
-                      {campaign.ctaText}
-                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-                    </Link>
-
-                    {/* Dot indicators */}
-                    {campaigns.length > 1 && (
-                      <div className="flex gap-2 mt-2">
-                        {campaigns.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setCampaignIndex(idx)}
-                            className={`h-px transition-all duration-300 cursor-pointer ${
-                              idx === campaignIndex
-                                ? 'w-8 bg-[#111111]'
-                                : 'w-4 bg-neutral-300 hover:bg-neutral-500'
-                            }`}
-                            title={`Go to campaign ${idx + 1}`}
-                          />
-                        ))}
-                      </div>
-                    )}
+                      {/* Dot indicators */}
+                      {campaigns.length > 1 && (
+                        <div className="flex gap-2 justify-center md:justify-start w-full md:w-auto" role="tablist">
+                          {campaigns.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setCampaignIndex(idx)}
+                              className={`h-px transition-all duration-300 cursor-pointer ${
+                                idx === campaignIndex
+                                  ? 'w-8 bg-[#111111]'
+                                  : 'w-4 bg-neutral-300 hover:bg-neutral-500'
+                              }`}
+                              title={`Go to campaign ${idx + 1}`}
+                              aria-label={`Go to campaign slide ${idx + 1}`}
+                              aria-selected={idx === campaignIndex}
+                              role="tab"
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Right — Image: natural aspect on mobile, absolute cover on desktop */}
-                  <div className="w-full md:flex-1 relative bg-neutral-100 order-1 md:order-2 overflow-hidden">
+                  {/* Right — Image area: stable reserved dimensions & properly framed model (top center focal point) */}
+                  <div className="w-full h-[220px] xs:h-[240px] sm:h-[260px] md:h-full md:w-1/2 lg:w-1/2 relative bg-neutral-100 order-1 md:order-2 overflow-hidden flex-shrink-0">
                     {imgSrc ? (
                       <img
                         src={imgSrc}
                         alt={campaign.imageAlt || campaign.title}
-                        loading="eager"
-                        fetchPriority="high"
-                        className="w-full h-auto block md:absolute md:inset-0 md:w-full md:h-full md:object-cover md:object-center"
+                        loading={campaignIndex === 0 ? "eager" : "lazy"}
+                        fetchPriority={campaignIndex === 0 ? "high" : "low"}
+                        className="w-full h-full object-cover object-[center_top] block"
                       />
                     ) : (
-                      <div className="w-full aspect-[4/3] md:aspect-auto md:absolute md:inset-0 bg-neutral-100 flex items-center justify-center">
+                      <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
                         <span className="text-[10px] font-mono text-neutral-300 tracking-widest uppercase">VAULT.CO</span>
                       </div>
                     )}
@@ -406,5 +427,6 @@ export default function Home() {
         </section>
       </div>
     </div>
+    </>
   );
 }

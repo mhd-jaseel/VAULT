@@ -1,15 +1,13 @@
 import mongoose from 'mongoose';
-import Order from '../models/Order.js';
-import Product from '../models/Product.js';
-import Setting from '../models/Setting.js';
-import { paginateAggregate } from '../utils/paginate.js';
-
-import Coupon from '../models/Coupon.js';
-import CouponUsage from '../models/CouponUsage.js';
+import Order from '../../models/Order.js';
+import Product from '../../models/Product.js';
+import Setting from '../../models/Setting.js';
+import Coupon from '../../models/Coupon.js';
+import CouponUsage from '../../models/CouponUsage.js';
 
 // Create order
 export const createOrder = async (req, res) => {
-  const { items, shippingAddress, paymentMethod, couponCode } = req.body;
+  const { items, shippingAddress, couponCode } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ success: false, message: 'No order items' });
@@ -46,9 +44,8 @@ export const createOrder = async (req, res) => {
         price: product.price,
       });
 
-      // Deduct stock
-      product.stock -= item.quantity;
-      await product.save();
+      // NOTE: Stock is NOT deducted here.
+      // Stock deduction happens only after payment is captured/verified.
     }
 
     // Coupon Validation & Discount Calculation
@@ -166,12 +163,6 @@ export const createOrder = async (req, res) => {
 
     const grandTotal = totalAmount - discountAmount + shippingCharges;
 
-    // Default payment status
-    let paymentStatus = 'pending';
-    if (paymentMethod === 'cod') {
-      paymentStatus = 'cod_pending';
-    }
-
     const order = new Order({
       user: req.user._id,
       items: orderItems,
@@ -179,8 +170,8 @@ export const createOrder = async (req, res) => {
       totalAmount,
       shippingCharges,
       grandTotal,
-      paymentMethod,
-      paymentStatus,
+      paymentMethod: 'razorpay',
+      paymentStatus: 'pending',
       status: 'pending',
       coupon: couponObj ? couponObj._id : undefined,
       couponCode: couponObj ? couponObj.couponCode : undefined,
@@ -210,127 +201,6 @@ export const createOrder = async (req, res) => {
     }
 
     res.status(201).json({ success: true, data: createdOrder });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Get logged in user orders
-export const getMyOrders = async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-    const matchQuery = { user: new mongoose.Types.ObjectId(req.user._id) };
-    const sortOptions = { createdAt: -1 };
-
-    const result = await paginateAggregate(Order, matchQuery, sortOptions, page, limit);
-
-    res.json({
-      success: true,
-      data: result.data,
-      page: result.page,
-      pages: result.pages,
-      total: result.total,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Get order by ID
-export const getOrderById = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id)
-      .populate('user', 'name email')
-      .populate('items.product', 'images');
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
-    }
-
-    // Check authorization: User must be creator or an admin
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized to view this order' });
-    }
-
-    res.json({ success: true, data: order });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Update order status (Admin only)
-export const updateOrderStatus = async (req, res) => {
-  const { status, note } = req.body;
-
-  try {
-    const order = await Order.findById(req.params.id);
-
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found' });
-    }
-
-    // If order is cancelled, return items back to stock
-    if (status === 'cancelled' && order.status !== 'cancelled') {
-      for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: item.quantity },
-        });
-      }
-    }
-
-    order.status = status;
-    order.timeline.push({ status, note: note || `Order status updated to ${status}` });
-
-    // Handle payment status adjustments based on delivery status for Cash on Delivery
-    if (order.paymentMethod === 'cod' && status === 'delivered') {
-      order.paymentStatus = 'verified';
-    }
-
-    const updatedOrder = await order.save();
-
-    res.json({ success: true, data: updatedOrder });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// Get all orders (Admin only)
-export const getAllOrders = async (req, res) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-    const matchQuery = {};
-    const sortOptions = { createdAt: -1 };
-    const lookupStages = [
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user',
-          foreignField: '_id',
-          as: 'user',
-        },
-      },
-      {
-        $unwind: {
-          path: '$user',
-          preserveNullAndEmptyArrays: true,
-        },
-      },
-      {
-        $project: {
-          'user.password': 0,
-        },
-      },
-    ];
-
-    const result = await paginateAggregate(Order, matchQuery, sortOptions, page, limit, lookupStages);
-
-    res.json({
-      success: true,
-      data: result.data,
-      page: result.page,
-      pages: result.pages,
-      total: result.total,
-    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

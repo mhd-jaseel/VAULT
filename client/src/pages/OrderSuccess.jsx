@@ -1,46 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { CheckCircle2, MessageSquare, ArrowRight, ClipboardCheck } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ClipboardCheck, Package } from 'lucide-react';
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
-  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchOrder = async () => {
       try {
-        const orderRes = await axios.get(`/orders/${orderId}`);
-        const settingsRes = await axios.get('/settings');
-
-        if (orderRes.data.success) setOrder(orderRes.data.data);
-        if (settingsRes.data.success) setSettings(settingsRes.data.data);
+        const res = await axios.get(`/orders/${orderId}`);
+        if (res.data.success) setOrder(res.data.data);
       } catch (error) {
         console.error(error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchOrder();
   }, [orderId]);
-
-  const generateWhatsAppLink = () => {
-    if (!order || !settings) return '#';
-
-    const itemsStr = order.items
-      .map((item) => `- ${item.name} (Qty: ${item.quantity}) - ₹${item.price}`)
-      .join('\n');
-
-    const address = order.shippingAddress;
-    const message = `Hello VAULT team,\n\nI have placed an order. Here are my details:\n\n*Order ID*: ${order._id}\n*Customer Name*: ${address.name}\n*Phone Number*: ${address.phone}\n*Address*: ${address.street}, ${address.city}, ${address.state} - ${address.zip}\n\n*Ordered Products*:\n${itemsStr}\n\n*Total Price*: ₹${order.grandTotal}\n*Payment Method*: ${order.paymentMethod.toUpperCase()}\n\nKindly confirm my order. Thank you!`;
-
-    const encodedMessage = encodeURIComponent(message);
-    const cleanedWhatsapp = settings.whatsappNumber.replace(/[^0-9]/g, '');
-
-    return `https://wa.me/${cleanedWhatsapp}?text=${encodedMessage}`;
-  };
 
   if (loading) {
     return (
@@ -58,68 +38,89 @@ export default function OrderSuccess() {
     );
   }
 
-  const isUpi = order.paymentMethod === 'upi';
+  const isPaid = order.paymentStatus === 'captured';
 
   return (
     <div className="py-12 px-4 md:px-12 max-w-xl mx-auto w-full min-h-screen text-center flex flex-col justify-center">
-      <div className="w-14 h-14 rounded-full bg-[#e6f7ee] border border-border-light flex items-center justify-center mx-auto mb-4 text-[#16a34a]">
-        <CheckCircle2 size={28} />
+
+      {/* ── Icon ── */}
+      <div className="w-16 h-16 rounded-full bg-[#e6f7ee] border border-border-light flex items-center justify-center mx-auto mb-5 text-[#16a34a]">
+        <CheckCircle2 size={32} />
       </div>
-      
+
+      {/* ── Heading ── */}
       <h1 className="text-2xl font-extrabold uppercase tracking-tight text-text-primary">
-        Order Placed!
+        Order Confirmed!
       </h1>
-      <p className="text-xs text-text-secondary mt-2">
-        Thank you for shopping with VAULT. Your order is registered under ID:
+      <p className="text-xs text-text-secondary mt-2 leading-relaxed">
+        Thank you for shopping with VAULT. Your payment has been received and your order is confirmed.
       </p>
-      <p className="text-xs font-bold text-text-primary font-mono mt-1 bg-neutral-100 py-1.5 px-3 rounded-lg border border-border-light inline-block mx-auto select-all">
+
+      {/* ── Order ID ── */}
+      <p className="text-[10px] font-mono text-text-secondary mt-4">Order ID</p>
+      <p className="text-xs font-bold text-text-primary font-mono mt-1 bg-neutral-100 py-1.5 px-4 rounded-lg border border-border-light inline-block mx-auto select-all">
         #{order._id}
       </p>
 
-      {/* UPI Info status */}
-      {isUpi ? (
-        <div className="glass-card mt-6 !p-4 border border-[#e6f7ee] bg-[#e6f7ee] text-left text-xs text-[#16a34a]">
-          <p className="font-bold uppercase tracking-wider text-[9px] mb-1 font-mono">Manual UPI Pending Verification</p>
-          <p className="font-normal leading-relaxed text-[#16a34a]/90">
-            You have submitted payment details for verification. Once checked by our audit team, the payment status will update to <span className="font-bold font-mono text-xs">Verified</span>.
-          </p>
+      {/* ── Payment Status ── */}
+      <div className={`glass-card mt-6 !p-4 text-left text-xs ${isPaid ? 'border-[#e6f7ee] bg-[#e6f7ee]' : 'border-amber-100 bg-amber-50'}`}>
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${isPaid ? 'text-[#16a34a]' : 'text-amber-700'}`}>
+            Payment Status
+          </span>
+          <span className={`text-[8px] font-mono font-bold uppercase px-2 py-0.5 rounded-full ${
+            isPaid ? 'bg-[#16a34a] text-white' : 'bg-amber-500 text-white'
+          }`}>
+            {isPaid ? 'PAID' : order.paymentStatus?.toUpperCase() || 'PENDING'}
+          </span>
         </div>
-      ) : (
-        <div className="glass-card mt-6 !p-4 text-left text-xs text-text-secondary bg-neutral-50">
-          <p className="font-bold uppercase tracking-wider text-[9px] text-text-primary mb-1 font-mono">Cash On Delivery</p>
-          <p className="font-normal leading-relaxed">
-            Please prepare cash payment for our logistics provider upon delivery of your accessories package.
+        {isPaid ? (
+          <p className="text-[10px] text-[#16a34a]/90 font-mono leading-relaxed">
+            Payment received via Razorpay. Your order is being prepared for dispatch.
           </p>
-        </div>
-      )}
-
-      {/* WhatsApp Integration Button */}
-      <div className="glass-card mt-6 flex flex-col gap-3 text-center">
-        <h4 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider">
-          Confirm Order via WhatsApp
-        </h4>
-        <p className="text-[10px] text-text-secondary max-w-xs mx-auto leading-relaxed">
-          Please click below to share order coordinates directly with our WhatsApp dispatch team for immediate confirmation.
-        </p>
-        <a
-          href={generateWhatsAppLink()}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#16a34a] text-white hover:bg-[#15803d] font-semibold font-mono text-xs tracking-wider py-3.5 px-6 rounded-full transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <MessageSquare size={14} /> SEND WHATSAPP INVOICE
-        </a>
+        ) : (
+          <p className="text-[10px] text-amber-700 font-mono leading-relaxed">
+            Your payment is being processed. If your payment was debited, it will reflect shortly.
+          </p>
+        )}
+        {order.razorpayPaymentId && (
+          <p className="text-[9px] font-mono text-text-secondary mt-1.5">
+            Payment ID: <span className="font-bold text-text-primary">{order.razorpayPaymentId}</span>
+          </p>
+        )}
       </div>
 
+      {/* ── Order Summary ── */}
+      <div className="glass-card mt-4 !p-4 text-left">
+        <h4 className="font-mono font-bold text-[10px] text-text-primary uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Package size={12} /> Order Summary
+        </h4>
+        <div className="space-y-2">
+          {order.items.map((item) => (
+            <div key={item._id} className="flex justify-between items-center text-[10px] font-mono">
+              <span className="text-text-secondary truncate max-w-[70%]">
+                {item.name} <span className="text-text-secondary">× {item.quantity}</span>
+              </span>
+              <span className="text-text-primary font-bold">₹{(item.price * item.quantity).toLocaleString('en-IN')}</span>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-border-light mt-3 pt-3 flex justify-between text-xs font-mono font-bold">
+          <span className="text-text-primary uppercase">Grand Total</span>
+          <span className="text-text-primary">₹{order.grandTotal?.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+
+      {/* ── Action buttons ── */}
       <div className="flex gap-3 justify-center mt-8">
-        <Link 
-          to="/profile" 
+        <Link
+          to="/profile"
           className="btn-dark text-[10px] py-2.5 px-6 uppercase tracking-widest flex items-center gap-1"
         >
           <ClipboardCheck size={14} /> TRACK ORDERS
         </Link>
-        <Link 
-          to="/shop" 
+        <Link
+          to="/shop"
           className="btn-gold text-[10px] py-2.5 px-6 uppercase tracking-widest flex items-center gap-1"
         >
           Continue Shopping <ArrowRight size={14} />

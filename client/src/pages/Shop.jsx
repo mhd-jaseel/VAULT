@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import Pagination from '../components/Pagination';
 import CountdownTimer from '../components/CountdownTimer';
 import ProductCard from '../components/ProductCard';
+import LoginRequiredModal from '../components/LoginRequiredModal';
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +17,7 @@ export default function Shop() {
 
   const { user } = useContext(AuthContext);
   const [wishlistIds, setWishlistIds] = useState([]);
+  const [loginModal, setLoginModal] = useState({ open: false, message: '' });
 
   const fetchWishlist = async () => {
     if (!user) return;
@@ -37,7 +39,7 @@ export default function Shop() {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      toast.warning('Please login to save items to your wishlist.');
+      setLoginModal({ open: true, message: 'Please login to add products to your wishlist.' });
       return;
     }
     const isCurrentlyWishlisted = wishlistIds.includes(productId);
@@ -79,6 +81,7 @@ export default function Shop() {
   const [tempInStockOnly, setTempInStockOnly] = useState(inStockOnly);
   const [tempSort, setTempSort] = useState(sort);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
+  const [desktopCategoriesOpen, setDesktopCategoriesOpen] = useState(false);
 
   const handleOpenMobileFilters = () => {
     setTempCategory(selectedCategory);
@@ -159,7 +162,7 @@ export default function Shop() {
       if (sort) params.append('sort', sort);
       if (inStockOnly) params.append('inStockOnly', 'true');
       params.append('page', page);
-      params.append('limit', 9);
+      params.append('limit', 21);
 
       const res = await axios.get(`/products?${params.toString()}`);
       if (res.data.success) {
@@ -194,7 +197,13 @@ export default function Shop() {
   };
 
   return (
-    <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
+    <>
+      <LoginRequiredModal
+        isOpen={loginModal.open}
+        onClose={() => setLoginModal({ open: false, message: '' })}
+        message={loginModal.message}
+      />
+      <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -231,32 +240,54 @@ export default function Shop() {
         <aside className="hidden md:block md:w-64 flex-shrink-0 space-y-4">
           {/* Categories */}
           <div className="glass-card !p-4">
-            <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Categories</h4>
-            <div className="flex flex-col gap-1.5">
-              <button
-                onClick={() => handleCategorySelect('')}
-                className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer ${
-                  !selectedCategory 
-                    ? 'bg-[#141414] text-white font-bold' 
-                    : 'text-text-secondary hover:bg-neutral-50 hover:text-text-primary border border-border-light bg-white'
-                }`}
-              >
-                ALL ACCESSORIES
-              </button>
-              {categories.map((cat) => (
+            <button
+              type="button"
+              onClick={() => setDesktopCategoriesOpen(!desktopCategoriesOpen)}
+              className="w-full flex items-center justify-between font-mono font-bold text-xs text-text-primary uppercase tracking-wider text-left focus:outline-none cursor-pointer"
+            >
+              <span>Categories</span>
+              <ChevronDown 
+                size={14} 
+                className={`text-text-secondary transition-transform duration-200 ${desktopCategoriesOpen ? 'rotate-180' : 'rotate-0'}`} 
+              />
+            </button>
+            {!desktopCategoriesOpen && (
+              <div className="mt-2 pt-2 border-t border-border-light/60 flex items-center justify-between">
+                <span className="text-[9px] font-mono text-text-secondary uppercase">Active:</span>
+                <span className="text-[10px] font-mono font-bold bg-[#141414] text-white px-2.5 py-1 rounded-full truncate max-w-[130px]">
+                  {selectedCategory 
+                    ? (categories.find(c => c._id === selectedCategory)?.name.toUpperCase() || 'CATEGORY') 
+                    : 'ALL ACCESSORIES'}
+                </span>
+              </div>
+            )}
+            {desktopCategoriesOpen && (
+              <div className="flex flex-col gap-1.5 mt-3 pt-3 border-t border-border-light">
                 <button
-                  key={cat._id}
-                  onClick={() => handleCategorySelect(cat._id)}
-                  className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer truncate ${
-                    selectedCategory === cat._id 
+                  onClick={() => handleCategorySelect('')}
+                  className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer ${
+                    !selectedCategory 
                       ? 'bg-[#141414] text-white font-bold' 
                       : 'text-text-secondary hover:bg-neutral-50 hover:text-text-primary border border-border-light bg-white'
                   }`}
                 >
-                  {cat.name.toUpperCase()}
+                  ALL ACCESSORIES
                 </button>
-              ))}
-            </div>
+                {categories.map((cat) => (
+                  <button
+                    key={cat._id}
+                    onClick={() => handleCategorySelect(cat._id)}
+                    className={`text-left text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer truncate ${
+                      selectedCategory === cat._id 
+                        ? 'bg-[#141414] text-white font-bold' 
+                        : 'text-text-secondary hover:bg-neutral-50 hover:text-text-primary border border-border-light bg-white'
+                    }`}
+                  >
+                    {cat.name.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Pricing Filters */}
@@ -534,5 +565,6 @@ export default function Shop() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { AuthContext } from '../context/AuthContext';
-import { UserPlus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function Register() {
   const { register: registerUser } = useContext(AuthContext);
@@ -15,6 +15,7 @@ export default function Register() {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // ── Logic unchanged ──────────────────────────────────────────────────────────
   const onSubmit = async (data) => {
     setErrorMsg('');
     setLoading(true);
@@ -29,87 +30,133 @@ export default function Register() {
       setErrorMsg(result.message);
     }
   };
+  // ─────────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="py-20 px-4 flex items-center justify-center min-h-[90vh]">
-      <div className="w-full max-w-md glass-card flex flex-col gap-6">
-        <div className="text-center">
-          <span className="font-display font-bold text-2xl tracking-widest text-white">
-            VAULT<span className="text-gold">.</span>
+    /* Page — full viewport, light gray bg matching the rest of the VAULT site */
+    <div className="min-h-screen w-full flex items-center justify-center px-5 py-10 bg-[#f5f5f6]">
+
+      {/* Sign Up Card */}
+      <div className="w-full max-w-[440px] bg-white border border-[#e5e5e5] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)] px-8 py-10 flex flex-col gap-7">
+
+        {/* ── Branding ── */}
+        <div className="flex flex-col items-center gap-1.5">
+          <span className="font-display font-black text-2xl tracking-[0.2em] text-neutral-900 uppercase leading-none">
+            VAULT<span className="text-neutral-400">.</span>
           </span>
-          <h2 className="text-lg font-bold uppercase tracking-wider text-zinc-300 mt-2 font-display">
+          <h1 className="text-[11px] font-mono font-bold uppercase tracking-[0.18em] text-neutral-800 mt-1">
             Create Account
-          </h2>
-          <p className="text-xs text-zinc-500 mt-1">Register to start managing your orders.</p>
+          </h1>
+          <p className="text-[11px] text-neutral-400 font-sans text-center leading-relaxed">
+            Register to start managing your orders.
+          </p>
         </div>
 
-        {errorMsg && <p className="text-xs text-red-400 font-medium text-center">{errorMsg}</p>}
+        {/* ── Error message ── */}
+        {errorMsg && (
+          <p className="text-[11px] text-red-500 font-medium text-center bg-red-50 border border-red-100 rounded-xl py-2 px-4">
+            {errorMsg}
+          </p>
+        )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {/* ── Form ── */}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
+
           {/* Full Name */}
-          <div>
-            <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Full Name</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
+              Full Name
+            </label>
             <input
               type="text"
               placeholder="Your name"
-              className={`form-input text-xs ${errors.name ? 'border-red-500/50' : ''}`}
+              className={`form-input text-sm ${errors.name ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
               {...register('name', { required: 'Name is required' })}
             />
-            {errors.name && <span className="text-[10px] text-red-400 mt-1 block">{errors.name.message}</span>}
+            {errors.name && (
+              <span className="text-[10px] text-red-500 font-sans">{errors.name.message}</span>
+            )}
           </div>
 
           {/* Email */}
-          <div>
-            <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Email Address</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
+              Email Address
+            </label>
             <input
               type="email"
               placeholder="name@example.com"
-              className={`form-input text-xs ${errors.email ? 'border-red-500/50' : ''}`}
+              className={`form-input text-sm ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
               {...register('email', { required: 'Email is required' })}
             />
-            {errors.email && <span className="text-[10px] text-red-400 mt-1 block">{errors.email.message}</span>}
+            {errors.email && (
+              <span className="text-[10px] text-red-500 font-sans">{errors.email.message}</span>
+            )}
           </div>
 
           {/* Phone */}
-          <div>
-            <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Phone Number</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
+              Phone Number
+            </label>
             <input
               type="text"
               placeholder="Mobile number"
-              className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
+              className={`form-input text-sm ${errors.phone ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
               {...register('phone', { required: 'Phone is required' })}
             />
-            {errors.phone && <span className="text-[10px] text-red-400 mt-1 block">{errors.phone.message}</span>}
+            {errors.phone && (
+              <span className="text-[10px] text-red-500 font-sans">{errors.phone.message}</span>
+            )}
           </div>
 
           {/* Password */}
-          <div>
-            <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Password</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
+              Password
+            </label>
             <input
               type="password"
               placeholder="Minimum 6 characters"
-              className={`form-input text-xs ${errors.password ? 'border-red-500/50' : ''}`}
-              {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be 6 characters' } })}
+              className={`form-input text-sm ${errors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
+              {...register('password', {
+                required: 'Password is required',
+                minLength: { value: 6, message: 'Password must be at least 6 characters' },
+              })}
             />
-            {errors.password && <span className="text-[10px] text-red-400 mt-1 block">{errors.password.message}</span>}
+            {errors.password && (
+              <span className="text-[10px] text-red-500 font-sans">{errors.password.message}</span>
+            )}
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full btn-gold text-xs uppercase tracking-widest py-3.5 flex items-center justify-center gap-1.5"
+            className="w-full btn-gold text-[11px] uppercase tracking-[0.15em] py-3.5 mt-1 flex items-center justify-center gap-2"
           >
             {loading ? (
-              <div className="w-4.5 h-4.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+              <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
             ) : (
-              <>Register <UserPlus size={14} /></>
+              <>Create Account <ArrowRight size={13} /></>
             )}
           </button>
         </form>
 
-        <p className="text-xs text-center text-zinc-500 mt-2">
+        {/* ── Divider ── */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-neutral-100" />
+          <span className="text-[9px] font-mono text-neutral-300 uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-neutral-100" />
+        </div>
+
+        {/* ── Sign in link ── */}
+        <p className="text-[11px] text-center text-neutral-400 font-sans -mt-3">
           Already have an account?{' '}
-          <Link to={`/login${redirect ? `?redirect=${redirect}` : ''}`} className="text-gold hover:underline font-medium">
+          <Link
+            to={`/login${redirect ? `?redirect=${redirect}` : ''}`}
+            className="text-neutral-900 font-semibold hover:underline underline-offset-2"
+          >
             Sign In
           </Link>
         </p>

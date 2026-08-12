@@ -7,7 +7,11 @@ import {
   updateUserProfile,
   forgotPassword,
   getAllCustomers,
-} from '../controllers/authController.js';
+  getUserById,
+  getUserOrders,
+  blockUser,
+  unblockUser,
+} from '../controllers/auth/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 
@@ -53,6 +57,17 @@ router
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
+// Admin: list all customers (with search/filter/pagination)
 router.get('/customers', protect, isAdmin, getAllCustomers);
+
+// Admin: single user detail + stats
+router.get('/customers/:id', protect, isAdmin, getUserById);
+
+// Admin: user's order history
+router.get('/customers/:id/orders', protect, isAdmin, getUserOrders);
+
+// Admin: block / unblock
+router.patch('/customers/:id/block', protect, isAdmin, blockUser);
+router.patch('/customers/:id/unblock', protect, isAdmin, unblockUser);
 
 export default router;

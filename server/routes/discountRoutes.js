@@ -5,8 +5,8 @@ import {
   getDiscountById,
   updateDiscount,
   toggleDiscountStatus,
-  deleteDiscount
-} from '../controllers/discountController.js';
+  deleteDiscount,
+} from '../controllers/discount/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();

@@ -7,7 +7,7 @@ import {
   toggleCouponStatus,
   deleteCoupon,
   applyCoupon
-} from '../controllers/couponController.js';
+} from '../controllers/coupon/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();

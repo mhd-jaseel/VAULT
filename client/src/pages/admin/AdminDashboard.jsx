@@ -8,7 +8,8 @@ import {
   AlertTriangle, 
   Settings, 
   FileSpreadsheet,
-  ChevronRight
+  ChevronRight,
+  Megaphone
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -108,6 +109,14 @@ export default function AdminDashboard() {
             </h3>
             
             <Link 
+              to="/admin/returns"
+              className="flex items-center justify-between text-xs py-2.5 px-3 bg-neutral-50 rounded-xl text-text-secondary hover:text-text-primary border border-border-light transition-all"
+            >
+              <span className="font-mono text-[10px] font-bold">RETURNS & REFUNDS</span>
+              <ChevronRight size={12} />
+            </Link>
+
+            <Link 
               to="/admin/products"
               className="flex items-center justify-between text-xs py-2.5 px-3 bg-neutral-50 rounded-xl text-text-secondary hover:text-text-primary border border-border-light transition-all"
             >
@@ -181,6 +190,14 @@ export default function AdminDashboard() {
             >
               <span className="font-mono text-[10px] font-bold">MANAGE DISCOUNTS</span>
               <ChevronRight size={12} className="text-text-secondary" />
+            </Link>
+
+            <Link 
+              to="/admin/users"
+              className="flex items-center justify-between text-xs py-2.5 px-3 bg-neutral-900 rounded-xl text-white hover:bg-neutral-800 border border-neutral-800 transition-all"
+            >
+              <span className="font-mono text-[10px] font-bold flex items-center gap-1.5"><Users size={11} /> MANAGE USERS</span>
+              <ChevronRight size={12} className="text-white/60" />
             </Link>
 
             <Link 

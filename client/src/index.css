@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
@@ -24,9 +24,9 @@
   --color-tag-success-text: #16a34a;
   --color-star-amber: #f5a623;
 
-  --font-sans: "Inter", "system-ui", sans-serif;
-  --font-mono: "JetBrains Mono", "ui-monospace", "Space Mono", monospace;
-  --font-display: "Inter", "system-ui", sans-serif;
+  --font-sans: "Poppins", sans-serif;
+  --font-mono: "Poppins", sans-serif;
+  --font-display: "Poppins", sans-serif;
 }
 
 @layer base {
@@ -96,6 +96,34 @@
   animation: shimmer 1.5s infinite linear;
 }
 
+/* Infinite Marquee Announcement Bar */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+  }
+}
+
+
 /* Custom styles for checkout inputs */
 input[type="radio"]:checked + label {
   @apply border-brand-primary bg-neutral-50 text-text-primary font-bold;
@@ -108,7 +136,7 @@ input[type="radio"]:checked + label {
   background-color: rgba(255, 255, 255, 0.9);
   padding: 3px 8px;
   border-radius: 9999px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: "Poppins", sans-serif;
   font-size: 9px;
   font-weight: 700;
   color: #555555;
@@ -264,7 +292,7 @@ input[type="radio"]:checked + label {
   text-transform: none !important;
   letter-spacing: normal !important;
   border: 1px solid #111111 !important;
-  font-family: "Inter", sans-serif !important;
+  font-family: "Poppins", sans-serif !important;
 }
 
 .admin-panel-theme .btn-gold:hover,
@@ -286,7 +314,7 @@ input[type="radio"]:checked + label {
   transition: all 0.2s ease-in-out !important;
   text-transform: none !important;
   letter-spacing: normal !important;
-  font-family: "Inter", sans-serif !important;
+  font-family: "Poppins", sans-serif !important;
 }
 
 .admin-panel-theme .btn-dark:hover,

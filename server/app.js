@@ -17,6 +17,8 @@ import campaignRoutes from './routes/campaignRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import discountRoutes from './routes/discountRoutes.js';
+import announcementRoutes from './routes/announcementRoutes.js';
+import returnRoutes from './routes/returnRoutes.js';
 
 // Models for sitemap
 import Product from './models/Product.js';
@@ -35,6 +37,10 @@ app.use(
     credentials: true,
   })
 );
+// IMPORTANT: Raw body parser for Razorpay webhook — must be BEFORE express.json()
+// Razorpay webhook signature verification requires the raw request body buffer.
+app.use('/api/payments/razorpay/webhook', express.raw({ type: '*/*' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -55,6 +61,9 @@ app.use('/api', campaignRoutes);
 app.use('/api', brandRoutes);
 app.use('/api', couponRoutes);
 app.use('/api', discountRoutes);
+app.use('/api/announcement', announcementRoutes);
+app.use('/api/announcements', announcementRoutes);
+app.use('/api/returns', returnRoutes);
 
 // Sitemap and Robots.txt
 app.get('/sitemap.xml', async (req, res) => {

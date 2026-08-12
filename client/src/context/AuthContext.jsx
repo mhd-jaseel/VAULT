@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext();
@@ -10,6 +10,7 @@ axios.defaults.baseURL = API_URL;
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const logoutRef = useRef(null);
 
   // Initialize Auth state from localStorage
   useEffect(() => {
@@ -23,6 +24,33 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
+  // Axios response interceptor — auto-logout blocked users
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        // If backend returns 403 with blocked: true, force logout
+        if (
+          error.response?.status === 403 &&
+          error.response?.data?.blocked === true &&
+          window.location.pathname !== '/blocked'
+        ) {
+          // Clear auth state
+          setUser(null);
+          localStorage.removeItem('vault_user');
+          delete axios.defaults.headers.common['Authorization'];
+          // Redirect to blocked page
+          window.location.href = '/blocked';
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
   const login = async (email, password) => {
     try {
       const res = await axios.post('/auth/login', { email, password });
@@ -34,6 +62,14 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: userData };
       }
     } catch (error) {
+      // Pass blocked flag up so login page can redirect
+      if (error.response?.data?.blocked) {
+        return {
+          success: false,
+          blocked: true,
+          message: error.response.data.message,
+        };
+      }
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed. Please check your credentials.',

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { Settings, Save, Upload } from 'lucide-react';
+import { Settings, Save, Upload, Megaphone } from 'lucide-react';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -103,7 +104,6 @@ export default function AdminSettings() {
       formData.append('upiId', upiId);
       formData.append('shippingCharges', shippingCharges);
       formData.append('freeShippingMinAmount', freeShippingMinAmount);
-
       formData.append('heroTitle', heroTitle);
       formData.append('heroSubtitle', heroSubtitle);
       formData.append('heroDescription', heroDescription);
@@ -145,12 +145,21 @@ export default function AdminSettings() {
 
   return (
     <div className="py-6 px-4 md:px-12 max-w-4xl mx-auto w-full min-h-screen">
-      {/* Title */}
-      <div className="mb-8">
-        <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-text-primary">
-          Store Configuration
-        </h1>
-        <p className="text-xs text-text-secondary mt-1">Configure banner options, shipping fees, contact cards, and UPI QR codes.</p>
+      {/* Title & Shortcut */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-text-primary">
+            Store Configuration
+          </h1>
+          <p className="text-xs text-text-secondary mt-1">Configure banner options, shipping fees, contact cards, and UPI QR codes.</p>
+        </div>
+
+        <Link
+          to="/admin/announcement"
+          className="inline-flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl font-mono text-xs font-bold hover:bg-neutral-800 transition-colors shadow-sm"
+        >
+          <Megaphone size={14} /> MANAGE ANNOUNCEMENT BANNER
+        </Link>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -220,53 +229,22 @@ export default function AdminSettings() {
             </div>
           </div>
 
-          {/* UPI Payments & Uploads */}
-          <div className="glass-card flex flex-col gap-4">
+          {/* Payment Provider Info */}
+          <div className="glass-card flex flex-col gap-3">
             <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3 mb-1">
-              UPI & Payment Config
+              Payment Provider
             </h3>
-
-            <div>
-              <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">Store UPI ID</label>
-              <input
-                type="text"
-                placeholder="merchant@upi"
-                className="form-input text-xs font-mono"
-                value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
-                required
-              />
-            </div>
-
-            {/* UPI QR upload */}
-            <div>
-              <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1.5">UPI QR Code Image</label>
-              {qrPreview ? (
-                <div className="relative aspect-video rounded-xl overflow-hidden border border-border-light bg-neutral-50 flex items-center justify-center p-2">
-                  <img src={qrPreview} alt="QR Code" className="max-h-full max-w-full object-contain" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setQrFile(null);
-                      setQrPreview('');
-                    }}
-                    className="absolute top-2 right-2 bg-red-50 border border-red-200 text-red-600 text-[9px] font-mono font-bold py-1 px-2.5 rounded-full cursor-pointer shadow-sm"
-                  >
-                    CHANGE
-                  </button>
-                </div>
-              ) : (
-                <label className="flex flex-col items-center justify-center aspect-video rounded-xl border border-dashed border-border-light bg-neutral-50 hover:border-text-primary cursor-pointer p-4 transition-colors">
-                  <Upload className="text-text-secondary mb-1" size={18} />
-                  <span className="text-[9px] font-bold text-text-primary uppercase tracking-wide">Choose QR Code</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleQrChange}
-                  />
-                </label>
-              )}
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 border border-border-light">
+              <div className="flex flex-col gap-1">
+                <p className="font-bold font-sans text-xs text-text-primary tracking-wide uppercase">Razorpay — Online Payments</p>
+                <p className="text-[9px] font-mono text-text-secondary leading-relaxed">
+                  Razorpay credentials are configured via server environment variables (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET).
+                  No manual admin configuration is required here.
+                </p>
+                <p className="text-[9px] font-mono text-text-secondary">
+                  Payment verification is automatic — Razorpay signature is verified server-side on every transaction.
+                </p>
+              </div>
             </div>
           </div>
         </div>

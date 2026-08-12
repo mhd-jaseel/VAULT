@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle, RotateCcw } from 'lucide-react';
+import ReturnModal from '../components/ReturnModal';
 
 export default function OrderTracking() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Return Modal states
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
 
   useEffect(() => {
     axios.get(`/orders/${orderId}`)
@@ -84,6 +89,43 @@ export default function OrderTracking() {
         </div>
       </div>
 
+      {/* Items & Return Action Section */}
+      <div className="glass-card mb-6 space-y-3">
+        <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3 mb-2">
+          Order Items
+        </h3>
+        {order.items.map((item) => {
+          const isDelivered = order.status === 'delivered';
+          const deliveredTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.updatedAt).getTime();
+          const isWithin3Days = isDelivered && Date.now() - deliveredTime <= 3 * 24 * 60 * 60 * 1000;
+
+          return (
+            <div key={item._id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 border border-border-light text-xs font-mono">
+              <div>
+                <p className="font-bold text-text-primary uppercase font-sans text-xs">{item.name}</p>
+                <p className="text-[10px] text-text-secondary">Qty: {item.quantity} × ₹{item.price.toLocaleString('en-IN')}</p>
+              </div>
+
+              <div>
+                {isWithin3Days ? (
+                  <button
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setReturnModalOpen(true);
+                    }}
+                    className="btn-gold !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw size={10} /> Return / Replace
+                  </button>
+                ) : isDelivered ? (
+                  <span className="text-[9px] text-text-secondary italic">Return window closed</span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Timeline Section */}
       <div className="glass-card">
         <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3 mb-6">
@@ -146,6 +188,19 @@ export default function OrderTracking() {
           </div>
         )}
       </div>
+
+      {/* Return Modal */}
+      <ReturnModal
+        isOpen={returnModalOpen}
+        onClose={() => setReturnModalOpen(false)}
+        order={order}
+        item={selectedItem}
+        onSuccess={() => {
+          axios.get(`/orders/${orderId}`).then((res) => {
+            if (res.data.success) setOrder(res.data.data);
+          });
+        }}
+      />
     </div>
   );
 }

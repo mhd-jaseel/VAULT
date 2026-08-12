@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+// Stores Razorpay payment events / webhook records for idempotency and audit
 const paymentSchema = new mongoose.Schema(
   {
     order: {
@@ -12,27 +13,74 @@ const paymentSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    transactionId: {
+
+    // ── Razorpay identifiers ──────────────────────────────────────
+    razorpayOrderId: {
       type: String,
-      required: [true, 'UPI Transaction ID is required'],
+      required: true,
       trim: true,
     },
-    screenshot: {
+    razorpayPaymentId: {
       type: String,
-      required: [true, 'Payment screenshot is required'],
+      trim: true,
     },
+    razorpaySignature: {
+      type: String,
+      trim: true,
+    },
+
+    // ── Payment state ─────────────────────────────────────────────
+    // pending   → Razorpay order created, awaiting payment
+    // captured  → payment verified and captured
+    // failed    → payment failed or signature invalid
+    // refunded  → refund issued via Razorpay
     status: {
       type: String,
-      enum: ['pending', 'verified', 'rejected'],
+      enum: ['pending', 'captured', 'failed', 'refunded'],
       default: 'pending',
     },
-    adminNotes: {
+
+    // Amount in paise (integer), e.g. ₹9999 → 999900
+    amountPaise: {
+      type: Number,
+    },
+    currency: {
+      type: String,
+      default: 'INR',
+    },
+
+    // ── Webhook idempotency ───────────────────────────────────────
+    // Stores the Razorpay webhook event ID to prevent duplicate processing
+    webhookEventId: {
       type: String,
       trim: true,
+    },
+    webhookEvent: {
+      type: String, // e.g. 'payment.captured', 'payment.failed'
+      trim: true,
+    },
+
+    // ── Refund fields (for future use) ────────────────────────────
+    razorpayRefundId: {
+      type: String,
+      trim: true,
+    },
+    refundAmount: {
+      type: Number,
+    },
+    refundStatus: {
+      type: String,
+      enum: ['none', 'partial', 'full'],
+      default: 'none',
     },
   },
   { timestamps: true }
 );
+
+// Index for fast lookup by Razorpay IDs
+paymentSchema.index({ razorpayOrderId: 1 });
+paymentSchema.index({ razorpayPaymentId: 1 });
+paymentSchema.index({ webhookEventId: 1 }, { sparse: true });
 
 const Payment = mongoose.model('Payment', paymentSchema);
 export default Payment;

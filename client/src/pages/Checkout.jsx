@@ -5,8 +5,18 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { PremiumSwal } from '../utils/swalHelper';
-import { ShoppingBag, ArrowRight } from 'lucide-react';
+import { ArrowRight, MapPin, Edit2, Plus, ShieldCheck, Lock } from 'lucide-react';
+
+// ── Load Razorpay checkout.js from CDN ──────────────────────────────────────
+const loadRazorpay = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 
 export default function Checkout() {
   const { cartItems, cartTotal, clearCart } = useContext(CartContext);
@@ -16,6 +26,11 @@ export default function Checkout() {
   const [shippingCharges, setShippingCharges] = useState(100);
   const [freeShippingMin, setFreeShippingMin] = useState(1500);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
+  // Address mode: 'saved' shows the card, 'edit'/'new' shows the form
+  const hasSavedAddress = !!(user && user.address && user.address.street);
+  const [addressMode, setAddressMode] = useState(hasSavedAddress ? 'saved' : 'edit');
 
   // Coupon states
   const [couponCodeInput, setCouponCodeInput] = useState('');
@@ -33,18 +48,18 @@ export default function Checkout() {
     try {
       const res = await axios.post('/coupon/apply', {
         couponCode: couponCodeInput.toUpperCase().trim(),
-        items: cartItems.map(item => ({
+        items: cartItems.map((item) => ({
           product: item.product,
           price: item.price,
-          quantity: item.quantity
-        }))
+          quantity: item.quantity,
+        })),
       });
       if (res.data.success) {
         const cp = res.data.data;
         setAppliedCoupon(cp);
         setCouponDiscount(cp.discountAmount);
         setFreeShippingCoupon(cp.freeShipping);
-        toast.success(res.data.message || 'Coupon Applied Successfully!');
+        toast.success(res.data.message || 'Coupon Applied!');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid Coupon');
@@ -67,13 +82,10 @@ export default function Checkout() {
   const { register, handleSubmit, formState: { errors }, setValue } = useForm();
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login?redirect=checkout');
-    }
+    if (!user) navigate('/login?redirect=checkout');
   }, [user]);
 
   useEffect(() => {
-    // Prefill form if user has saved profile addresses
     if (user) {
       setValue('name', user.name);
       setValue('phone', user.phone || '');
@@ -87,7 +99,8 @@ export default function Checkout() {
   }, [user, setValue]);
 
   useEffect(() => {
-    axios.get('/settings')
+    axios
+      .get('/settings')
       .then((res) => {
         if (res.data.success) {
           setShippingCharges(res.data.data.shippingCharges);
@@ -108,60 +121,121 @@ export default function Checkout() {
     );
   }
 
-  const shippingCost = (cartTotal >= freeShippingMin || freeShippingCoupon) ? 0 : shippingCharges;
+  const shippingCost = cartTotal >= freeShippingMin || freeShippingCoupon ? 0 : shippingCharges;
   const grandTotal = cartTotal - couponDiscount + shippingCost;
 
+  // ── Main form submit: build address, then launch Razorpay ──────────────────
   const onSubmit = async (data) => {
-    const result = await PremiumSwal.fire({
-      title: 'Place Order?',
-      text: `Confirm your shipping details and total cost of ₹${grandTotal.toLocaleString('en-IN')} before finalizing.`,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, place order',
-      cancelButtonText: 'Review details'
-    });
+    setPaymentError('');
 
-    if (!result.isConfirmed) return;
+    const addressData =
+      addressMode === 'saved' && hasSavedAddress
+        ? {
+            name: user.name,
+            phone: user.phone || '',
+            street: user.address.street,
+            city: user.address.city,
+            state: user.address.state,
+            zip: user.address.zip,
+          }
+        : {
+            name: data.name,
+            phone: data.phone,
+            street: data.street,
+            city: data.city,
+            state: data.state,
+            zip: data.zip,
+          };
 
     setSubmitting(true);
+
     try {
-      const orderPayload = {
+      // ── Step 1: Load Razorpay SDK ──────────────────────────────────────────
+      const sdkLoaded = await loadRazorpay();
+      if (!sdkLoaded) {
+        toast.error('Unable to load payment gateway. Check your internet connection.');
+        setSubmitting(false);
+        return;
+      }
+
+      // ── Step 2: Create order on backend (validates stock, calculates total) ─
+      const orderRes = await axios.post('/payments/razorpay/create-order', {
         items: cartItems.map((item) => ({
           product: item.product,
           name: item.name,
           quantity: item.quantity,
-          price: item.price,
         })),
-        shippingAddress: {
-          name: data.name,
-          phone: data.phone,
-          street: data.street,
-          city: data.city,
-          state: data.state,
-          zip: data.zip,
-        },
-        paymentMethod: data.paymentMethod,
+        shippingAddress: addressData,
         couponCode: appliedCoupon ? appliedCoupon.couponCode : undefined,
+      });
+
+      if (!orderRes.data.success) {
+        toast.error(orderRes.data.message || 'Could not initiate payment.');
+        setSubmitting(false);
+        return;
+      }
+
+      const { razorpayOrderId, amount, currency, keyId, internalOrderId } = orderRes.data.data;
+
+      // ── Step 3: Open Razorpay Standard Checkout ────────────────────────────
+      const options = {
+        key: keyId,
+        amount,
+        currency,
+        name: 'VAULT.',
+        description: `Order #${internalOrderId}`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: addressData.name,
+          email: user.email || '',
+          contact: addressData.phone,
+        },
+        theme: {
+          color: '#111111',
+        },
+        modal: {
+          ondismiss: () => {
+            // User closed the modal — do NOT clear cart, do NOT confirm order
+            setPaymentError('Payment was not completed. Your cart is safe. You can try again.');
+            setSubmitting(false);
+          },
+        },
+        handler: async (paymentResponse) => {
+          // ── Step 4: Verify payment server-side ──────────────────────────────
+          try {
+            const verifyRes = await axios.post('/payments/razorpay/verify', {
+              internalOrderId,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+            });
+
+            if (verifyRes.data.success) {
+              clearCart(); // Clear cart ONLY after verified payment
+              navigate(`/order-success/${internalOrderId}`);
+            } else {
+              setPaymentError('Payment verification failed. Please contact support.');
+              setSubmitting(false);
+            }
+          } catch (verifyErr) {
+            setPaymentError(
+              verifyErr.response?.data?.message || 'Payment verification failed. Please contact support.'
+            );
+            setSubmitting(false);
+          }
+        },
       };
 
-      const res = await axios.post('/orders', orderPayload);
-      if (res.data.success) {
-        const orderId = res.data.data._id;
-        
-        // Clear client side cart state
-        clearCart();
-
-        if (data.paymentMethod === 'upi') {
-          // Send to Manual payment verification page
-          navigate(`/payment-upload/${orderId}`);
-        } else {
-          // COD goes straight to Order Success page
-          navigate(`/order-success/${orderId}`);
-        }
-      }
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        setPaymentError(`Payment failed: ${response.error?.description || 'Unknown error'}. Please try again.`);
+        setSubmitting(false);
+      });
+      rzp.open();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Error processing your order. Please try again.');
-    } finally {
+      const msg = error.response?.data?.message || 'Error processing your order. Please try again.';
+      toast.error(msg);
+      setPaymentError(msg);
       setSubmitting(false);
     }
   };
@@ -173,142 +247,200 @@ export default function Checkout() {
       </h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Shipping Address Inputs */}
+        {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* ── Shipping Address ── */}
           <div className="glass-card flex flex-col gap-4">
             <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3">
-              Shipping Address & Contact
+              Shipping Address &amp; Contact
             </h3>
 
-            {/* Name */}
-            <div>
-              <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Full Name</label>
-              <input
-                type="text"
-                placeholder="Receiver name"
-                className={`form-input text-xs ${errors.name ? 'border-red-500/50' : ''}`}
-                {...register('name', { required: 'Name is required' })}
-              />
-              {errors.name && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.name.message}</span>}
-            </div>
+            {/* SAVED ADDRESS CARD VIEW */}
+            {addressMode === 'saved' && hasSavedAddress && (
+              <div className="flex flex-col gap-3">
+                <div className="relative p-4 rounded-xl border-2 border-neutral-900 bg-neutral-50">
+                  <span className="absolute top-3 right-3 text-[8px] font-mono font-bold uppercase tracking-widest bg-neutral-900 text-white px-2 py-0.5 rounded-full">
+                    Selected
+                  </span>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <MapPin size={13} className="text-white" />
+                    </div>
+                    <div className="flex flex-col gap-0.5 pr-20 min-w-0">
+                      <p className="font-bold text-text-primary text-xs uppercase tracking-wide">{user.name}</p>
+                      <p className="font-mono text-[10px] text-text-secondary">{user.phone || 'No phone saved'}</p>
+                      <p className="font-mono text-[10px] text-text-secondary mt-0.5 leading-relaxed">
+                        {user.address.street}
+                        {user.address.city ? `, ${user.address.city}` : ''}
+                        {user.address.state ? `, ${user.address.state}` : ''}
+                        {user.address.zip ? ` – ${user.address.zip}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAddressMode('edit')}
+                    className="mt-3 self-end flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-text-primary border border-border-light bg-white hover:bg-neutral-100 hover:border-text-primary transition-all py-1.5 px-3 rounded-lg cursor-pointer ml-auto w-fit"
+                  >
+                    <Edit2 size={10} /> CHANGE
+                  </button>
+                </div>
 
-            {/* Phone */}
-            <div>
-              <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Phone Number</label>
-              <input
-                type="text"
-                placeholder="Active mobile number"
-                className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
-                {...register('phone', { required: 'Phone number is required' })}
-              />
-              {errors.phone && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.phone.message}</span>}
-            </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setValue('name', '');
+                    setValue('phone', '');
+                    setValue('street', '');
+                    setValue('city', '');
+                    setValue('state', '');
+                    setValue('zip', '');
+                    setAddressMode('new');
+                  }}
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-dashed border-border-light text-text-secondary hover:border-text-primary hover:text-text-primary text-[10px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  <Plus size={12} /> ADD NEW ADDRESS
+                </button>
+              </div>
+            )}
 
-            {/* Street */}
-            <div>
-              <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Street Address</label>
-              <input
-                type="text"
-                placeholder="House, Flat No, Apartment, Landmark"
-                className={`form-input text-xs ${errors.street ? 'border-red-500/50' : ''}`}
-                {...register('street', { required: 'Street address is required' })}
-              />
-              {errors.street && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.street.message}</span>}
-            </div>
+            {/* EDIT / NEW ADDRESS FORM */}
+            {(addressMode === 'edit' || addressMode === 'new') && (
+              <div className="flex flex-col gap-4">
+                {hasSavedAddress && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setValue('name', user.name);
+                      setValue('phone', user.phone || '');
+                      setValue('street', user.address.street || '');
+                      setValue('city', user.address.city || '');
+                      setValue('state', user.address.state || '');
+                      setValue('zip', user.address.zip || '');
+                      setAddressMode('saved');
+                    }}
+                    className="self-start flex items-center gap-1.5 text-[9px] font-mono font-bold uppercase tracking-widest text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                  >
+                    ← USE SAVED ADDRESS
+                  </button>
+                )}
 
-            {/* Grid for City, State, Zip */}
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">City</label>
-                <input
-                  type="text"
-                  placeholder="City"
-                  className={`form-input text-xs ${errors.city ? 'border-red-500/50' : ''}`}
-                  {...register('city', { required: 'Required' })}
-                />
+                <div>
+                  <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    placeholder="Receiver name"
+                    className={`form-input text-xs ${errors.name ? 'border-red-500/50' : ''}`}
+                    {...register('name', { required: 'Name is required' })}
+                  />
+                  {errors.name && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.name.message}</span>}
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    placeholder="Active mobile number"
+                    className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
+                    {...register('phone', { required: 'Phone number is required' })}
+                  />
+                  {errors.phone && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.phone.message}</span>}
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Street Address</label>
+                  <input
+                    type="text"
+                    placeholder="House, Flat No, Apartment, Landmark"
+                    className={`form-input text-xs ${errors.street ? 'border-red-500/50' : ''}`}
+                    {...register('street', { required: 'Street address is required' })}
+                  />
+                  {errors.street && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.street.message}</span>}
+                </div>
+
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">City</label>
+                    <input
+                      type="text"
+                      placeholder="City"
+                      className={`form-input text-xs ${errors.city ? 'border-red-500/50' : ''}`}
+                      {...register('city', { required: 'Required' })}
+                    />
+                    {errors.city && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.city.message}</span>}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">State</label>
+                    <input
+                      type="text"
+                      placeholder="State"
+                      className={`form-input text-xs ${errors.state ? 'border-red-500/50' : ''}`}
+                      {...register('state', { required: 'Required' })}
+                    />
+                    {errors.state && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.state.message}</span>}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Zip Code</label>
+                    <input
+                      type="text"
+                      placeholder="ZIP"
+                      className={`form-input text-xs ${errors.zip ? 'border-red-500/50' : ''}`}
+                      {...register('zip', { required: 'Required' })}
+                    />
+                    {errors.zip && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.zip.message}</span>}
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">State</label>
-                <input
-                  type="text"
-                  placeholder="State"
-                  className={`form-input text-xs ${errors.state ? 'border-red-500/50' : ''}`}
-                  {...register('state', { required: 'Required' })}
-                />
-              </div>
-              <div>
-                <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Zip Code</label>
-                <input
-                  type="text"
-                  placeholder="ZIP"
-                  className={`form-input text-xs ${errors.zip ? 'border-red-500/50' : ''}`}
-                  {...register('zip', { required: 'Required' })}
-                />
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Payment Methods */}
-          <div className="glass-card flex flex-col gap-4">
+          {/* ── Payment Section ── */}
+          <div className="glass-card flex flex-col gap-3">
             <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3">
-              Payment Method
+              Payment
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Manual UPI option */}
-              <div className="relative">
-                <input
-                  type="radio"
-                  id="pay_upi"
-                  value="upi"
-                  name="paymentMethod"
-                  className="peer hidden"
-                  defaultChecked
-                  {...register('paymentMethod')}
-                />
-                <label
-                  htmlFor="pay_upi"
-                  className="flex flex-col p-4 rounded-xl border border-border-light bg-white hover:border-text-primary cursor-pointer transition-all peer-checked:border-brand-primary peer-checked:bg-neutral-50 text-text-secondary peer-checked:text-text-primary"
-                >
-                  <span className="font-bold font-sans text-xs tracking-wide uppercase">Manual UPI Payment</span>
-                  <span className="text-[9px] font-mono text-text-secondary mt-1">
-                    Pay using QR Code, submit Transaction ID and screenshot receipt.
-                  </span>
-                </label>
+            <div className="flex flex-col gap-3 p-4 rounded-xl bg-neutral-50 border border-border-light">
+              {/* Razorpay badge */}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0">
+                  <Lock size={13} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-bold font-sans text-xs tracking-wide uppercase text-text-primary">
+                    Secure Online Payment
+                  </p>
+                  <p className="text-[9px] font-mono text-text-secondary">
+                    Powered by Razorpay · UPI, Cards, Net Banking &amp; Wallets accepted
+                  </p>
+                </div>
               </div>
 
-              {/* Cash On Delivery option */}
-              <div className="relative">
-                <input
-                  type="radio"
-                  id="pay_cod"
-                  value="cod"
-                  name="paymentMethod"
-                  className="peer hidden"
-                  {...register('paymentMethod')}
-                />
-                <label
-                  htmlFor="pay_cod"
-                  className="flex flex-col p-4 rounded-xl border border-border-light bg-white hover:border-text-primary cursor-pointer transition-all peer-checked:border-brand-primary peer-checked:bg-neutral-50 text-text-secondary peer-checked:text-text-primary"
-                >
-                  <span className="font-bold font-sans text-xs tracking-wide uppercase">Cash On Delivery</span>
-                  <span className="text-[9px] font-mono text-text-secondary mt-1">
-                    Pay by cash upon receipt of shipping package at your doorstep.
-                  </span>
-                </label>
+              <div className="flex items-center gap-1.5 text-[9px] font-mono text-text-secondary">
+                <ShieldCheck size={11} className="text-[#16a34a]" />
+                <span>256-bit SSL encrypted · PCI DSS compliant</span>
               </div>
             </div>
+
+            {/* Payment error display */}
+            {paymentError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-100 flex items-start gap-2">
+                <span className="text-red-500 text-sm leading-none mt-0.5">⚠</span>
+                <p className="text-[10px] text-red-600 font-mono leading-relaxed">{paymentError}</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Order Items Review Summary */}
+        {/* ── Order Summary Sidebar ── */}
         <div>
           <div className="glass-card flex flex-col gap-4 sticky top-28">
             <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary border-b border-border-light pb-3">
               Order Review
             </h3>
 
-            {/* Compact items list */}
+            {/* Cart items */}
             <div className="max-h-[220px] overflow-y-auto pr-1 space-y-3 border-b border-border-light pb-4">
               {cartItems.map((item) => (
                 <div key={item.product} className="flex gap-3 justify-between items-center text-xs">
@@ -325,14 +457,18 @@ export default function Checkout() {
               ))}
             </div>
 
-            {/* Coupon Input Box */}
+            {/* Coupon */}
             <div className="border-b border-border-light pb-4">
-              <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1.5">Have a Promo Coupon?</label>
+              <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1.5">
+                Have a Promo Coupon?
+              </label>
               {appliedCoupon ? (
                 <div className="flex items-center justify-between bg-neutral-100 border border-[#16a34a]/30 p-2.5 rounded-xl">
                   <div className="min-w-0">
                     <span className="font-mono text-xs font-bold text-[#16a34a] block">{appliedCoupon.couponCode}</span>
-                    <span className="text-[9px] text-[#16a34a] font-mono block">Saved ₹{couponDiscount.toLocaleString('en-IN')}</span>
+                    <span className="text-[9px] text-[#16a34a] font-mono block">
+                      Saved ₹{couponDiscount.toLocaleString('en-IN')}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -363,7 +499,7 @@ export default function Checkout() {
               )}
             </div>
 
-            {/* Calculations */}
+            {/* Totals */}
             <div className="space-y-2 border-b border-border-light pb-4 text-xs font-mono">
               <div className="flex justify-between text-text-secondary">
                 <span>Items Subtotal</span>
@@ -377,7 +513,9 @@ export default function Checkout() {
               )}
               <div className="flex justify-between text-text-secondary">
                 <span>Shipping Cost</span>
-                <span className="text-text-primary font-bold">{shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}</span>
+                <span className="text-text-primary font-bold">
+                  {shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}
+                </span>
               </div>
             </div>
 
@@ -389,14 +527,21 @@ export default function Checkout() {
             <button
               type="submit"
               disabled={submitting}
-              className="btn-gold text-[10px] mt-2 py-3.5"
+              className="btn-gold text-[10px] mt-2 py-3.5 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
               ) : (
-                <>PLACE ORDER <ArrowRight size={14} /></>
+                <>
+                  <Lock size={12} /> PAY SECURELY ₹{grandTotal.toLocaleString('en-IN')}
+                  <ArrowRight size={13} />
+                </>
               )}
             </button>
+
+            <p className="text-[8px] text-text-secondary font-mono text-center">
+              You will be redirected to Razorpay's secure checkout
+            </p>
           </div>
         </div>
       </form>

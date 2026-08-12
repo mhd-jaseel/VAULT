@@ -7,7 +7,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
-} from '../controllers/productController.js';
+} from '../controllers/product/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 
