@@ -2,14 +2,36 @@ import mongoose from 'mongoose';
 import Product from '../../models/Product.js';
 import Discount from '../../models/Discount.js';
 import Setting from '../../models/Setting.js';
+import Return from '../../models/Return.js';
 import { paginateAggregate } from '../../utils/paginate.js';
 import { calculateProductDiscounts } from '../../services/discountService.js';
 
 // Get all products with filters, sorting & search
 export const getProducts = async (req, res) => {
   try {
-    const { category, search, minPrice, maxPrice, sort, page = 1, limit = 12, inStockOnly, showOnHomepage } = req.query;
+    const { category, search, minPrice, maxPrice, sort, page = 1, limit = 12, inStockOnly, showOnHomepage, returnId } = req.query;
     const query = {};
+
+    let replacementContext = null;
+
+    // ── Replacement Mode Context Verification ─────────────────────────────────
+    if (returnId && mongoose.Types.ObjectId.isValid(returnId)) {
+      const returnRecord = await Return.findById(returnId).populate('order');
+      if (returnRecord && returnRecord.status !== 'REJECTED' && returnRecord.status !== 'CANCELLED' && returnRecord.status !== 'COMPLETED') {
+        const unitOriginalPaid = returnRecord.orderItem?.price || 0;
+        const totalOriginalPaid = returnRecord.orderItem?.totalOriginalPaid || 0;
+
+        replacementContext = {
+          returnId: returnRecord._id,
+          returnCode: returnRecord.returnId,
+          orderItemName: returnRecord.orderItem?.name,
+          quantity: returnRecord.orderItem?.quantity || 1,
+          unitOriginalPaid,
+          totalOriginalPaid,
+          walletCreditStatus: returnRecord.walletCreditStatus,
+        };
+      }
+    }
 
     // Category Filter
     if (category && mongoose.Types.ObjectId.isValid(category)) {
@@ -39,7 +61,6 @@ export const getProducts = async (req, res) => {
         }
       });
 
-      // Match products that are either in productIds OR belong to categoryIds
       const matchCriteria = [];
       if (productIds.length > 0) {
         matchCriteria.push({ _id: { $in: productIds } });
@@ -51,7 +72,6 @@ export const getProducts = async (req, res) => {
       if (matchCriteria.length > 0) {
         query.$or = matchCriteria;
       } else {
-        // Force no results if no homepage discounts are active
         query._id = new mongoose.Types.ObjectId();
       }
     }
@@ -66,8 +86,11 @@ export const getProducts = async (req, res) => {
 
     // Price Range Filter
     if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
+      if (!query.price) query.price = {};
+      if (minPrice) {
+        const userMin = Number(minPrice);
+        query.price.$gte = query.price.$gte ? Math.max(query.price.$gte, userMin) : userMin;
+      }
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
@@ -129,7 +152,7 @@ export const getProducts = async (req, res) => {
       lookupStages
     );
 
-    const productsWithDiscounts = await calculateProductDiscounts(result.data);
+    let productsWithDiscounts = await calculateProductDiscounts(result.data);
 
     res.json({
       success: true,
@@ -137,6 +160,7 @@ export const getProducts = async (req, res) => {
       page: result.page,
       pages: result.pages,
       total: result.total,
+      replacementContext,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

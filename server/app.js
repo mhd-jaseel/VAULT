@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,6 +20,10 @@ import couponRoutes from './routes/couponRoutes.js';
 import discountRoutes from './routes/discountRoutes.js';
 import announcementRoutes from './routes/announcementRoutes.js';
 import returnRoutes from './routes/returnRoutes.js';
+import walletRoutes from './routes/walletRoutes.js';
+import salesRoutes from './routes/salesRoutes.js';
+import adminManagementRoutes from './routes/adminManagementRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Models for sitemap
 import Product from './models/Product.js';
@@ -43,6 +48,7 @@ app.use('/api/payments/razorpay/webhook', express.raw({ type: '*/*' }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Serve Static Uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -64,6 +70,10 @@ app.use('/api', discountRoutes);
 app.use('/api/announcement', announcementRoutes);
 app.use('/api/announcements', announcementRoutes);
 app.use('/api/returns', returnRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/sales', salesRoutes);
+app.use('/api/admin-management', adminManagementRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Sitemap and Robots.txt
 app.get('/sitemap.xml', async (req, res) => {

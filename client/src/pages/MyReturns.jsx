@@ -35,12 +35,8 @@ export default function MyReturns() {
       REQUESTED: { label: 'REQUESTED', cls: 'bg-neutral-100 text-neutral-800 border-neutral-300' },
       APPROVED: { label: 'APPROVED', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
       REJECTED: { label: 'REJECTED', cls: 'bg-red-50 text-red-600 border-red-200' },
-      RECEIVED: { label: 'RECEIVED', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-      INSPECTING: { label: 'INSPECTING', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
-      REFUND_PROCESSING: { label: 'REFUND PROCESSING', cls: 'bg-amber-50 text-amber-800 border-amber-300' },
-      REFUNDED: { label: 'REFUNDED', cls: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold' },
-      REPLACEMENT_PROCESSING: { label: 'REPLACEMENT PROCESSING', cls: 'bg-blue-50 text-blue-800 border-blue-300' },
-      REPLACEMENT_SHIPPED: { label: 'REPLACEMENT SHIPPED', cls: 'bg-indigo-50 text-indigo-800 border-indigo-300' },
+      REPLACEMENT_APPROVED: { label: 'REPLACEMENT APPROVED', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+      REPLACEMENT_SHIPPED: { label: 'REPLACEMENT SHIPPED', cls: 'bg-blue-50 text-blue-700 border-blue-300' },
       COMPLETED: { label: 'COMPLETED', cls: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold' },
       CANCELLED: { label: 'CANCELLED', cls: 'bg-neutral-100 text-neutral-500 border-neutral-200' },
     };
@@ -108,11 +104,21 @@ export default function MyReturns() {
                   <p className="text-[10px] text-text-secondary font-mono">
                     Original Amount: <span className="font-bold text-text-primary">₹{ret.orderItem.totalOriginalPaid.toLocaleString('en-IN')}</span> · Requested on {new Date(ret.createdAt).toLocaleDateString()}
                   </p>
-                  {ret.returnType === 'replacement' && ret.replacementProductName && (
-                    <p className="text-[9px] text-text-secondary font-mono">
-                      Replacement: <span className="font-bold text-text-primary">{ret.replacementProductName}</span>
-                      {ret.additionalAmount > 0 && ` (+ ₹${ret.additionalAmount.toLocaleString('en-IN')})`}
-                    </p>
+                  {ret.returnType === 'RETURN' && (
+                    <div className="text-[10px] text-text-secondary bg-neutral-50 p-2.5 rounded-xl border border-border-light mt-2 space-y-1 block">
+                      <div className="flex items-center justify-between">
+                        <span>Wallet Settlement: <strong className="text-text-primary">₹{ret.orderItem?.totalOriginalPaid?.toLocaleString('en-IN')}</strong></span>
+                        {ret.walletCreditStatus === 'CREDITED' || ret.status === 'WALLET_CREDITED' ? (
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            + ₹{ret.orderItem?.totalOriginalPaid?.toLocaleString('en-IN')} Added to Wallet
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                            Pending Admin Approval
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

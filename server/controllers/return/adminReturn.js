@@ -1,6 +1,8 @@
 import Product from '../../models/Product.js';
 import Return from '../../models/Return.js';
+import User from '../../models/User.js';
 import { paginateAggregate } from '../../utils/paginate.js';
+import { creditReturnToWallet } from '../../services/walletService.js';
 
 // GET /api/returns/admin/all
 export const getAllReturnsAdmin = async (req, res) => {
@@ -49,96 +51,96 @@ export const updateReturnStatusAdmin = async (req, res) => {
 
   try {
     const returnRecord = await Return.findById(req.params.id);
-    if (!returnRecord) return res.status(404).json({ success: false, message: 'Return record not found.' });
+    if (!returnRecord) {
+      return res.status(404).json({
+        success: false,
+        message: 'Return record not found.',
+        code: 'RETURN_NOT_FOUND',
+      });
+    }
+
+    const currentStatus = returnRecord.status;
+
+    // Protection: Once COMPLETED or REJECTED, status cannot be mutated arbitrarily
+    if (['COMPLETED', 'REJECTED'].includes(currentStatus)) {
+      return res.status(409).json({
+        success: false,
+        message: `This return is already ${currentStatus} and cannot be modified further.`,
+        code: 'INVALID_RETURN_STATUS',
+      });
+    }
 
     // Validate status transition safety
     const allowedStatuses = [
       'REQUESTED',
       'APPROVED',
-      'REJECTED',
-      'RECEIVED',
-      'INSPECTING',
-      'REFUND_PROCESSING',
-      'REFUNDED',
-      'REPLACEMENT_PROCESSING',
+      'REPLACEMENT_APPROVED',
       'REPLACEMENT_SHIPPED',
+      'REJECTED',
+      'WALLET_CREDITED',
       'COMPLETED',
       'CANCELLED',
     ];
 
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'Invalid return status.' });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid return status value.',
+        code: 'INVALID_STATUS_VALUE',
+      });
     }
 
     if (status === 'REJECTED' && rejectionReason) {
-      returnRecord.rejectionReason = rejectionReason;
+      returnRecord.rejectionReason = String(rejectionReason).slice(0, 500);
+    }
+
+    // Atomic Stock Validation and Deduction for Replacement
+    if (status === 'REPLACEMENT_APPROVED' && currentStatus !== 'REPLACEMENT_APPROVED') {
+      const repProduct = await Product.findById(returnRecord.orderItem.product);
+      if (!repProduct || repProduct.stock < returnRecord.orderItem.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Replacement cannot be confirmed because the product is currently out of stock.',
+          code: 'OUT_OF_STOCK',
+        });
+      }
+      // Deduct stock
+      repProduct.stock -= returnRecord.orderItem.quantity;
+      await repProduct.save();
+      returnRecord.stockReserved = true;
     }
 
     returnRecord.status = status;
     returnRecord.timeline.push({
       status,
-      note: note || `Return status updated to ${status} by admin.`,
+      note: note ? String(note).slice(0, 500) : `Return status updated to ${status} by admin.`,
     });
 
     await returnRecord.save();
 
-    res.json({ success: true, message: `Return status updated to ${status}.`, data: returnRecord });
+    // Trigger wallet credit if settlementMethod === 'WALLET' and approved/credited
+    if (returnRecord.settlementMethod === 'WALLET' && ['APPROVED', 'WALLET_CREDITED'].includes(status)) {
+      if (returnRecord.walletCreditStatus !== 'CREDITED') {
+        await creditReturnToWallet(returnRecord._id, req.user._id);
+      }
+    }
+
+    const updatedRecord = await Return.findById(req.params.id).populate('walletTransaction');
+    console.log(`Return status updated: #${updatedRecord.returnId || updatedRecord._id}`);
+    console.log(`Previous status: ${currentStatus}`);
+    console.log(`New status: ${status}`);
+
+    res.json({ success: true, statusUpdated: true, message: `Return status updated to ${status}.`, data: updatedRecord });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[VAULT] updateReturnStatusAdmin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      code: 'INTERNAL_SERVER_ERROR',
+    });
   }
 };
 
-// PATCH /api/returns/admin/:id/refund
-export const processManualRefundAdmin = async (req, res) => {
-  const { amount, method, transactionId, refundDate, adminNotes } = req.body;
-
-  if (!amount || !method || !transactionId) {
-    return res.status(400).json({ success: false, message: 'Amount, Method, and Transaction ID are required for manual refund.' });
-  }
-
-  try {
-    const returnRecord = await Return.findById(req.params.id);
-    if (!returnRecord) return res.status(404).json({ success: false, message: 'Return record not found.' });
-
-    if (returnRecord.returnType !== 'refund') {
-      return res.status(400).json({ success: false, message: 'This return is not for a refund.' });
-    }
-
-    if (returnRecord.status === 'REFUNDED') {
-      return res.status(400).json({ success: false, message: 'Refund has already been completed for this return.' });
-    }
-
-    let proofImage = undefined;
-    if (req.file) {
-      proofImage = `/uploads/${req.file.filename}`;
-    }
-
-    returnRecord.refundDetails = {
-      amount: Number(amount),
-      method,
-      transactionId,
-      refundDate: refundDate ? new Date(refundDate) : new Date(),
-      adminNotes,
-      proofImage,
-    };
-
-    returnRecord.status = 'REFUNDED';
-    returnRecord.timeline.push({
-      status: 'REFUNDED',
-      note: `Manual refund of ₹${amount} issued via ${method}. TXN: ${transactionId}`,
-    });
-
-    await returnRecord.save();
-
-    res.json({
-      success: true,
-      message: 'Manual refund audit details recorded and return completed.',
-      data: returnRecord,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
 
 // PATCH /api/returns/admin/:id/replacement-ship
 export const processReplacementShipAdmin = async (req, res) => {
@@ -148,28 +150,11 @@ export const processReplacementShipAdmin = async (req, res) => {
     const returnRecord = await Return.findById(req.params.id);
     if (!returnRecord) return res.status(404).json({ success: false, message: 'Return record not found.' });
 
-    if (returnRecord.returnType !== 'replacement') {
+    if (returnRecord.returnType !== 'REPLACEMENT') {
       return res.status(400).json({ success: false, message: 'This request is not a replacement.' });
     }
 
-    // Check payment if additional amount was required
-    if (returnRecord.additionalAmount > 0 && returnRecord.replacementPaymentStatus !== 'PAID') {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot ship replacement. Customer additional payment is pending.',
-      });
-    }
-
-    // Deduct stock for replacement product if not already reserved
-    if (!returnRecord.stockReserved && returnRecord.replacementProduct) {
-      const repProduct = await Product.findById(returnRecord.replacementProduct);
-      if (repProduct) {
-        repProduct.stock = Math.max(0, repProduct.stock - returnRecord.orderItem.quantity);
-        await repProduct.save();
-      }
-      returnRecord.stockReserved = true;
-    }
-
+    const currentStatus = returnRecord.status;
     returnRecord.status = 'REPLACEMENT_SHIPPED';
     returnRecord.timeline.push({
       status: 'REPLACEMENT_SHIPPED',
@@ -177,8 +162,11 @@ export const processReplacementShipAdmin = async (req, res) => {
     });
 
     await returnRecord.save();
+    console.log(`Return status updated: #${returnRecord.returnId || returnRecord._id}`);
+    console.log(`Previous status: ${currentStatus}`);
+    console.log(`New status: REPLACEMENT_SHIPPED`);
 
-    res.json({ success: true, message: 'Replacement shipped successfully.', data: returnRecord });
+    res.json({ success: true, statusUpdated: true, message: 'Replacement shipped successfully.', data: returnRecord });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

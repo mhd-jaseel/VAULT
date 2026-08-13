@@ -6,7 +6,8 @@ import { paginateAggregate } from '../../utils/paginate.js';
 export const getMyReturns = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const matchQuery = { user: new mongoose.Types.ObjectId(req.user._id) };
+    const userIdObj = typeof req.user._id === 'string' ? new mongoose.Types.ObjectId(req.user._id) : req.user._id;
+    const matchQuery = { user: userIdObj };
     const sortOptions = { createdAt: -1 };
 
     const result = await paginateAggregate(Return, matchQuery, sortOptions, page, limit);
@@ -29,7 +30,7 @@ export const getReturnById = async (req, res) => {
     const returnRecord = await Return.findById(req.params.id)
       .populate('user', 'name email phone')
       .populate('order')
-      .populate('replacementProduct');
+      .populate('orderItem.product');
 
     if (!returnRecord) {
       return res.status(404).json({ success: false, message: 'Return record not found.' });

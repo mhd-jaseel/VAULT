@@ -4,6 +4,7 @@ import Product from '../../models/Product.js';
 import Setting from '../../models/Setting.js';
 import Coupon from '../../models/Coupon.js';
 import CouponUsage from '../../models/CouponUsage.js';
+import { createNotificationHelper } from '../../services/notificationHelper.js';
 
 // Create order
 export const createOrder = async (req, res) => {
@@ -42,10 +43,12 @@ export const createOrder = async (req, res) => {
         name: product.name,
         quantity: item.quantity,
         price: product.price,
+        itemDiscount: 0,
+        allocatedCouponDiscount: 0,
+        unitPaidAmount: product.price,
+        linePaidAmount: itemTotal,
+        status: 'ACTIVE',
       });
-
-      // NOTE: Stock is NOT deducted here.
-      // Stock deduction happens only after payment is captured/verified.
     }
 
     // Coupon Validation & Discount Calculation
@@ -100,7 +103,6 @@ export const createOrder = async (req, res) => {
       const cartProductDetails = await Product.find({ _id: { $in: productIdsInCart } });
 
       let eligibleSubtotal = 0;
-      let hasEligibleItem = false;
 
       for (const item of orderItems) {
         const prodIdStr = String(item.product);
@@ -124,11 +126,11 @@ export const createOrder = async (req, res) => {
 
         if (isEligible) {
           eligibleSubtotal += Number(item.price) * Number(item.quantity);
-          hasEligibleItem = true;
+          item.isCouponEligible = true;
         }
       }
 
-      if (!hasEligibleItem) {
+      if (eligibleSubtotal === 0) {
         return res.status(400).json({ success: false, message: 'Coupon Not Applicable' });
       }
 
@@ -152,9 +154,32 @@ export const createOrder = async (req, res) => {
         discountAmount = totalAmount;
       }
 
+      // Allocate coupon discount proportionally across eligible items
+      let allocatedTotal = 0;
+      const eligibleItems = orderItems.filter(i => i.isCouponEligible);
+      
+      eligibleItems.forEach((item, idx) => {
+        const itemGross = item.price * item.quantity;
+        if (idx === eligibleItems.length - 1) {
+          item.allocatedCouponDiscount = Math.round((discountAmount - allocatedTotal) * 100) / 100;
+        } else {
+          const share = Math.round(((itemGross / eligibleSubtotal) * discountAmount) * 100) / 100;
+          item.allocatedCouponDiscount = share;
+          allocatedTotal += share;
+        }
+      });
+
       couponObj = coupon;
       freeShippingCoupon = coupon.freeShipping;
     }
+
+    // Finalize item snapshots (unitPaidAmount & linePaidAmount)
+    orderItems.forEach(item => {
+      delete item.isCouponEligible;
+      const lineGross = item.price * item.quantity;
+      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.itemDiscount || 0) - (item.allocatedCouponDiscount || 0)) * 100) / 100);
+      item.unitPaidAmount = Math.round((item.linePaidAmount / item.quantity) * 100) / 100;
+    });
 
     let shippingCharges = totalAmount >= setting.freeShippingMinAmount ? 0 : setting.shippingCharges;
     if (freeShippingCoupon) {
@@ -170,8 +195,8 @@ export const createOrder = async (req, res) => {
       totalAmount,
       shippingCharges,
       grandTotal,
-      paymentMethod: 'razorpay',
-      paymentStatus: 'pending',
+      paymentMethod: 'RAZORPAY',
+      paymentStatus: 'PENDING',
       status: 'pending',
       coupon: couponObj ? couponObj._id : undefined,
       couponCode: couponObj ? couponObj.couponCode : undefined,
@@ -185,6 +210,20 @@ export const createOrder = async (req, res) => {
     });
 
     const createdOrder = await order.save();
+
+    // Trigger Admin Notification
+    try {
+      await createNotificationHelper({
+        type: 'NEW_ORDER',
+        title: 'New Checkout Order',
+        message: `New order #${createdOrder._id.toString().slice(-6).toUpperCase()} placed by ${req.user.name || 'Customer'} (₹${createdOrder.grandTotal})`,
+        relatedId: createdOrder._id,
+        relatedType: 'Order',
+        action: 'REVIEW_ORDER',
+      });
+    } catch (notifErr) {
+      console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+    }
 
     // Log Coupon Usage
     if (couponObj) {

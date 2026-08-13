@@ -68,8 +68,27 @@ export const razorpayWebhook = async (req, res) => {
         order.razorpaySignatureVerified = true;
 
         if (order.status === 'pending') {
-          order.status = 'confirmed';
-          order.timeline.push({ status: 'confirmed', note: 'Payment captured via Razorpay webhook.' });
+          if (!order.timeline.some(t => t.note.includes('Razorpay webhook'))) {
+            order.timeline.push({ status: 'confirmed', note: 'Payment captured via Razorpay webhook.' });
+          }
+
+          // Trigger Admin Notification
+          try {
+            const { createNotificationHelper } = await import('../../services/notificationHelper.js');
+            const User = (await import('../../models/User.js')).default;
+            const user = await User.findById(order.user);
+            
+            await createNotificationHelper({
+              type: 'NEW_ORDER',
+              title: 'New Checkout Order',
+              message: `New order #${order._id.toString().slice(-6).toUpperCase()} placed by ${user?.name || 'Customer'} (₹${order.grandTotal})`,
+              relatedId: order._id,
+              relatedType: 'Order',
+              action: 'REVIEW_ORDER',
+            });
+          } catch (notifErr) {
+            console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+          }
         }
 
         await deductStockForOrder(order); // idempotent

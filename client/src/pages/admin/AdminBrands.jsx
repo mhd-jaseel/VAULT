@@ -150,23 +150,25 @@ export default function AdminBrands() {
             ) : (
               <div className="space-y-2">
                 {brands.map((b) => (
-                  <div 
+                  <div
                     key={b._id}
                     className="flex items-center justify-between border border-border-light bg-neutral-50 p-3.5 rounded-2xl gap-4 hover:border-text-primary transition-all duration-300"
                   >
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-xs uppercase tracking-wide text-text-primary">{b.name}</h4>
-                      <p className="text-[9px] font-mono text-text-secondary mt-0.5 uppercase">SLUG: {b.slug}</p>
+                    <div 
+                      onClick={() => handleEditClick(b)}
+                      className="min-w-0 cursor-pointer hover:bg-neutral-100 -mx-1.5 px-1.5 py-1 rounded transition-colors group"
+                    >
+                      <h4 className="font-bold text-xs uppercase tracking-wide text-text-primary group-hover:text-gold group-hover:underline transition-colors">{b.name}</h4>
+                      <p className="text-[9px] font-mono text-text-secondary mt-0.5 uppercase group-hover:text-text-primary transition-colors">SLUG: {b.slug}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleActive(b)}
-                        className={`text-[9px] font-mono font-bold py-1 px-3.5 rounded-full border transition-all cursor-pointer ${
-                          b.isActive 
-                            ? 'bg-neutral-900 border-neutral-900 text-white' 
+                        className={`text-[9px] font-mono font-bold py-1 px-3.5 rounded-full border transition-all cursor-pointer ${b.isActive
+                            ? 'bg-neutral-900 border-neutral-900 text-white'
                             : 'bg-white border-border-light text-neutral-400 hover:text-text-primary'
-                        }`}
+                          }`}
                       >
                         {b.isActive ? 'ACTIVE' : 'INACTIVE'}
                       </button>

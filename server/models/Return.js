@@ -45,19 +45,16 @@ const returnSchema = new mongoose.Schema(
     },
     returnType: {
       type: String,
-      enum: ['refund', 'replacement'],
-      required: true,
+      enum: ['RETURN', 'CANCELLATION', 'REPLACEMENT'],
+      default: 'RETURN',
+    },
+    settlementMethod: {
+      type: String,
+      enum: ['WALLET'],
+      default: 'WALLET',
     },
     reason: {
       type: String,
-      enum: [
-        'Damaged product',
-        'Wrong product received',
-        'Defective product',
-        'Product doesn\'t match description',
-        'Quality issue',
-        'Other',
-      ],
       required: true,
     },
     customerNotes: {
@@ -70,70 +67,31 @@ const returnSchema = new mongoose.Schema(
       },
     ],
 
-    // ── Replacement Specific Fields ────────────────────────────────────────
-    replacementProduct: {
+    // ── Wallet Credit Tracking ──────────────────────────────────────────────
+    walletCreditStatus: {
+      type: String,
+      enum: ['NOT_APPLICABLE', 'PENDING', 'CREDITED'],
+      default: 'NOT_APPLICABLE',
+    },
+    walletTransaction: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-    },
-    replacementProductName: {
-      type: String,
-    },
-    replacementProductImage: {
-      type: String,
-    },
-    replacementPrice: {
-      type: Number,
-    },
-    additionalAmount: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    replacementPaymentStatus: {
-      type: String,
-      enum: ['NOT_REQUIRED', 'PENDING', 'PAID', 'FAILED'],
-      default: 'NOT_REQUIRED',
-    },
-    razorpayOrderId: {
-      type: String,
-      trim: true,
-    },
-    razorpayPaymentId: {
-      type: String,
-      trim: true,
-    },
-    stockReserved: {
-      type: Boolean,
-      default: false,
+      ref: 'WalletTransaction',
     },
 
-    // ── Primary Return Status ──────────────────────────────────────────────
+    // ── Primary Return / Cancellation Status ──────────────────────────────────────────────
     status: {
       type: String,
       enum: [
         'REQUESTED',
         'APPROVED',
-        'REJECTED',
-        'RECEIVED',
-        'INSPECTING',
-        'REFUND_PROCESSING',
-        'REFUNDED',
-        'REPLACEMENT_PROCESSING',
+        'REPLACEMENT_APPROVED',
         'REPLACEMENT_SHIPPED',
+        'REJECTED',
+        'WALLET_CREDITED',
         'COMPLETED',
         'CANCELLED',
       ],
       default: 'REQUESTED',
-    },
-
-    // ── Manual Refund Audit Details ────────────────────────────────────────
-    refundDetails: {
-      amount: { type: Number },
-      method: { type: String, enum: ['UPI', 'Bank Transfer', 'Other'] },
-      transactionId: { type: String, trim: true },
-      refundDate: { type: Date },
-      adminNotes: { type: String, trim: true },
-      proofImage: { type: String },
     },
 
     rejectionReason: {

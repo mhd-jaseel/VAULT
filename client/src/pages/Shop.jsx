@@ -150,6 +150,12 @@ export default function Shop() {
       .catch((err) => console.error(err));
   }, []);
 
+  // Replacement Mode State
+  const mode = searchParams.get('mode');
+  const returnIdParam = searchParams.get('returnId');
+  const isReplacementMode = mode === 'replacement' && Boolean(returnIdParam);
+  const [replacementContext, setReplacementContext] = useState(null);
+
   // Fetch products when filters change
   const fetchProducts = async () => {
     setLoading(true);
@@ -161,6 +167,7 @@ export default function Shop() {
       if (maxPrice) params.append('maxPrice', maxPrice);
       if (sort) params.append('sort', sort);
       if (inStockOnly) params.append('inStockOnly', 'true');
+      if (isReplacementMode) params.append('returnId', returnIdParam);
       params.append('page', page);
       params.append('limit', 21);
 
@@ -168,6 +175,11 @@ export default function Shop() {
       if (res.data.success) {
         setProducts(res.data.data);
         setPages(res.data.pages || 1);
+        if (res.data.replacementContext) {
+          setReplacementContext(res.data.replacementContext);
+        } else if (isReplacementMode) {
+          setReplacementContext(null);
+        }
       }
     } catch (error) {
       console.error('Error loading products:', error);
@@ -178,7 +190,7 @@ export default function Shop() {
 
   useEffect(() => {
     fetchProducts();
-  }, [search, selectedCategory, sort, minPrice, maxPrice, inStockOnly, page]);
+  }, [search, selectedCategory, sort, minPrice, maxPrice, inStockOnly, page, mode, returnIdParam]);
 
   const handleClearFilters = () => {
     setSearch('');
@@ -203,14 +215,61 @@ export default function Shop() {
         onClose={() => setLoginModal({ open: false, message: '' })}
         message={loginModal.message}
       />
+      {/* ── ADMIN PREVIEW MODE BANNER ── */}
+      {user && user.role === 'admin' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 py-3 px-6 md:px-12 flex items-center justify-between font-mono text-xs shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-mono">
+              PREVIEW MODE
+            </span>
+            <span>You are previewing the customer Shop page. Shopping actions (cart, wishlist, checkout) are disabled.</span>
+          </div>
+          <Link to="/admin/dashboard" className="text-[10px] font-bold uppercase underline hover:text-black">
+            Back to Dashboard
+          </Link>
+        </div>
+      )}
       <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
+      {isReplacementMode && replacementContext && (
+        <div className="mb-6 bg-[#111111] text-white p-4 rounded-2xl border border-neutral-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 font-mono">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/30">
+                REPLACEMENT MODE ACTIVE
+              </span>
+              <span className="text-[10px] text-neutral-400">Return #{replacementContext.returnCode}</span>
+            </div>
+            <h2 className="text-sm font-bold font-sans uppercase text-white">
+              Choose Replacement for {replacementContext.orderItemName}
+            </h2>
+            <p className="text-xs text-neutral-300">
+              Vault Store Credit: <strong className="text-white">₹{replacementContext.unitOriginalPaid?.toLocaleString('en-IN')}</strong> · Choose any eligible Vault product.
+              {replacementContext.walletCreditStatus === 'CREDITED' ? (
+                <span className="text-emerald-400 font-bold ml-1.5">(CREDIT AVAILABLE)</span>
+              ) : (
+                <span className="text-amber-400 font-bold ml-1.5">(STORE CREDIT PENDING APPROVAL)</span>
+              )}
+            </p>
+          </div>
+
+          <Link
+            to="/my-returns"
+            className="text-[10px] font-bold uppercase tracking-wider px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 transition-all flex-shrink-0"
+          >
+            Cancel Replacement
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-2xl font-extrabold uppercase tracking-tight text-text-primary">
-            The Accessories Catalog
+            {isReplacementMode ? 'Eligible Replacement Catalog' : 'The Accessories Catalog'}
           </h1>
-          <p className="text-xs text-text-secondary mt-1">Browse premium belts, watches, chains, wallets & more.</p>
+          <p className="text-xs text-text-secondary mt-1">
+            {isReplacementMode ? 'Select any item below to replace your original product.' : 'Browse premium belts, watches, chains, wallets & more.'}
+          </p>
         </div>
 
         {/* Global Catalog Search */}
@@ -550,6 +609,8 @@ export default function Shop() {
                   wishlistIds={wishlistIds}
                   onToggleWishlist={handleToggleWishlist}
                   user={user}
+                  isReplacementMode={isReplacementMode}
+                  replacementContext={replacementContext}
                 />
               ))}
             </div>

@@ -73,6 +73,24 @@ export const verifyRazorpayPayment = async (req, res) => {
     order.status = 'confirmed';
     order.timeline.push({ status: 'confirmed', note: 'Payment captured and verified by Razorpay.' });
 
+    // Trigger Admin Notification
+    try {
+      const { createNotificationHelper } = await import('../../services/notificationHelper.js');
+      const User = (await import('../../models/User.js')).default;
+      const user = await User.findById(order.user);
+      
+      await createNotificationHelper({
+        type: 'NEW_ORDER',
+        title: 'New Checkout Order',
+        message: `New order #${order._id.toString().slice(-6).toUpperCase()} placed by ${user?.name || 'Customer'} (₹${order.grandTotal})`,
+        relatedId: order._id,
+        relatedType: 'Order',
+        action: 'REVIEW_ORDER',
+      });
+    } catch (notifErr) {
+      console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+    }
+
     // ── 7. Deduct stock (idempotent via stockDeducted flag) ──────────────────
     await deductStockForOrder(order); // also calls order.save()
 

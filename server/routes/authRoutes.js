@@ -1,56 +1,33 @@
 import express from 'express';
 import { body } from 'express-validator';
 import {
-  registerUser,
-  loginUser,
+  googleLogin,
   getUserProfile,
   updateUserProfile,
-  forgotPassword,
   getAllCustomers,
   getUserById,
   getUserOrders,
   blockUser,
   unblockUser,
+  adminLogin,
+  logoutUser,
 } from '../controllers/auth/index.js';
-import { protect, isAdmin } from '../middleware/auth.js';
+import { protect, isAdmin, authLimiter } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 
 const router = express.Router();
 
-router.post(
-  '/register',
-  [
-    body('name').notEmpty().withMessage('Name is required'),
-    body('email').isEmail().withMessage('Please enter a valid email address'),
-    body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters long'),
-    validateRequest,
-  ],
-  registerUser
-);
+// Apply authLimiter to authentication endpoints
+router.use('/admin/login', authLimiter);
+router.use('/google-login', authLimiter);
 
-router.post(
-  '/login',
-  [
-    body('email').isEmail().withMessage('Please enter a valid email address'),
-    body('password').notEmpty().withMessage('Password is required'),
-    validateRequest,
-  ],
-  loginUser
-);
+router.post('/google-login', googleLogin);
 
-router.post(
-  '/forgot-password',
-  [
-    body('email').isEmail().withMessage('Please enter a valid email address'),
-    body('newPassword')
-      .isLength({ min: 6 })
-      .withMessage('New password must be at least 6 characters long'),
-    validateRequest,
-  ],
-  forgotPassword
-);
+// Admin Auth
+router.post('/admin/login', adminLogin);
+
+// Logout
+router.post('/logout', logoutUser);
 
 router
   .route('/profile')

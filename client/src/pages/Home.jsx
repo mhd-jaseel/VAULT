@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { ChevronRight, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -65,7 +65,7 @@ export default function Home() {
   const fetchWishlist = async () => {
     if (!user) return;
     try {
-      const res = await axios.get('/wishlist');
+      const res = await api.get('/wishlist');
       if (res.data.success) setWishlistIds(res.data.data.products.map((p) => p._id));
     } catch (e) { console.error(e); }
   };
@@ -79,13 +79,13 @@ export default function Home() {
     const isWishlisted = wishlistIds.includes(productId);
     try {
       if (isWishlisted) {
-        const res = await axios.delete(`/wishlist/${productId}`);
+        const res = await api.delete(`/wishlist/${productId}`);
         if (res.data.success) {
           setWishlistIds((prev) => prev.filter((id) => id !== productId));
           toast.success('Removed from wishlist');
         }
       } else {
-        const res = await axios.post('/wishlist', { productId });
+        const res = await api.post('/wishlist', { productId });
         if (res.data.success) {
           setWishlistIds((prev) => [...prev, productId]);
           toast.success('Added to wishlist');
@@ -99,11 +99,11 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const [catRes, prodRes, discountRes, settingsRes, campaignRes] = await Promise.all([
-          axios.get('/categories'),
-          axios.get('/products?limit=4'),
-          axios.get('/products/discounted'),
-          axios.get('/settings'),
-          axios.get('/campaigns'),
+          api.get('/categories'),
+          api.get('/products?limit=4'),
+          api.get('/products/discounted'),
+          api.get('/settings'),
+          api.get('/campaigns'),
         ]);
 
         if (catRes.data.success) setCategories(catRes.data.data);
@@ -134,6 +134,19 @@ export default function Home() {
         onClose={() => setLoginModal({ open: false, message: '' })}
         message={loginModal.message}
       />
+      {user && user.role === 'admin' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 py-3 px-6 md:px-12 flex items-center justify-between font-mono text-xs shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-mono">
+              PREVIEW MODE
+            </span>
+            <span>You are previewing the customer Home page. Shopping actions (cart, wishlist, checkout) are disabled.</span>
+          </div>
+          <Link to="/admin/dashboard" className="text-[10px] font-bold uppercase underline hover:text-black">
+            Back to Dashboard
+          </Link>
+        </div>
+      )}
       <div className="flex flex-col gap-0 w-full">
       {/* SEO JSON-LD */}
       <script type="application/ld+json">

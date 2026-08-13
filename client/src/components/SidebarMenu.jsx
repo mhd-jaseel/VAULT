@@ -240,12 +240,23 @@ export default function SidebarMenu({ isOpen, onClose }) {
         {/* Bottom Area (Authentication controls tailored to VAULT.CO) */}
         <div className="p-5 border-t border-neutral-100 bg-neutral-50/50 select-none">
           {user ? (
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-1.5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-sans font-bold tracking-widest uppercase transition-all duration-200 active:scale-[0.98] cursor-pointer"
-            >
-              <LogOut size={12} /> LOGOUT
-            </button>
+            <div className="space-y-2 font-sans">
+              {user.role === 'admin' && (
+                <Link
+                  to="/admin/dashboard"
+                  onClick={onClose}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-bold tracking-wider uppercase transition-all duration-200"
+                >
+                  Back to Admin Dashboard
+                </Link>
+              )}
+              <button 
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-1.5 py-3 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-[10px] font-sans font-bold tracking-widest uppercase transition-all duration-200 active:scale-[0.98] cursor-pointer"
+              >
+                <LogOut size={12} /> LOGOUT
+              </button>
+            </div>
           ) : (
             <div className="flex gap-3">
               <Link 

@@ -1,144 +1,92 @@
 import React, { useContext, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AuthContext } from '../context/AuthContext';
-import { ArrowRight } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function Login() {
-  const { login } = useContext(AuthContext);
+  const { googleLogin } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = searchParams.get('redirect') || '';
 
-  const { register, handleSubmit, formState: { errors } } = useForm();
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // ── Logic unchanged ──────────────────────────────────────────────────────────
-  const onSubmit = async (data) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     setErrorMsg('');
     setLoading(true);
-    const result = await login(data.email, data.password);
+    const result = await googleLogin(credentialResponse.credential);
     setLoading(false);
 
     if (result.success) {
-      toast.success('Logged in successfully!');
-      if (result.user && result.user.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate(redirect ? `/${redirect}` : '/');
-      }
+      toast.success('Logged in with Google successfully!');
+      navigate(redirect ? `/${redirect}` : '/');
     } else if (result.blocked) {
       navigate('/blocked');
     } else {
-      toast.error(result.message || 'Login failed.');
+      toast.error(result.message || 'Google Login failed.');
       setErrorMsg(result.message);
     }
   };
-  // ─────────────────────────────────────────────────────────────────────────────
+
+  const handleGoogleError = () => {
+    toast.error('Google Login failed.');
+  };
 
   return (
-    /* Page — full viewport, light gray bg matching the rest of the VAULT site */
-    <div className="min-h-screen w-full flex items-center justify-center px-5 py-10 bg-[#f5f5f6]">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-neutral-50">
+      {/* Premium Background Effects */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-neutral-50 to-neutral-100 opacity-60" />
+        <div className="absolute -left-[10%] -top-[10%] w-[40%] h-[40%] rounded-full bg-gold/5 blur-[120px]" />
+        <div className="absolute right-[0%] bottom-[0%] w-[30%] h-[30%] rounded-full bg-neutral-200/50 blur-[100px]" />
+      </div>
 
-      {/* Login Card */}
-      <div className="w-full max-w-[440px] bg-white border border-[#e5e5e5] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.06)] px-8 py-10 flex flex-col gap-7">
-
-        {/* ── Branding ── */}
-        <div className="flex flex-col items-center gap-1.5">
-          <span className="font-display font-black text-2xl tracking-[0.2em] text-neutral-900 uppercase leading-none">
-            VAULT<span className="text-neutral-400">.</span>
-          </span>
-          <h1 className="text-[11px] font-mono font-bold uppercase tracking-[0.18em] text-neutral-800 mt-1">
-            Member Sign In
-          </h1>
-          <p className="text-[11px] text-neutral-400 font-sans text-center leading-relaxed">
-            Access your saved collections and invoices.
-          </p>
-        </div>
-
-        {/* ── Error message ── */}
-        {errorMsg && (
-          <p className="text-[11px] text-red-500 font-medium text-center bg-red-50 border border-red-100 rounded-xl py-2 px-4">
-            {errorMsg}
-          </p>
-        )}
-
-        {/* ── Form ── */}
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-
-          {/* Email */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="name@example.com"
-              className={`form-input text-sm ${errors.email ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
-              {...register('email', { required: 'Email is required' })}
-            />
-            {errors.email && (
-              <span className="text-[10px] text-red-500 font-sans">{errors.email.message}</span>
-            )}
+      <div className="w-full max-w-[420px] relative z-10 px-5">
+        <div className="bg-white border border-neutral-200 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 flex flex-col items-center gap-8 text-center transition-all">
+          
+          <div className="flex flex-col items-center gap-3">
+            <span className="font-display font-black text-4xl tracking-[0.25em] text-[#111111] uppercase leading-none ml-2">
+              VAULT<span className="text-gold">.</span>
+            </span>
+            <div className="h-px w-12 bg-gold/50 my-2"></div>
+            <h1 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-500">
+              Exclusive Member Access
+            </h1>
+            <p className="text-xs text-neutral-600 font-sans mt-2 leading-relaxed px-4">
+              Sign in to manage your luxury collections, track orders, and access your vault wallet.
+            </p>
           </div>
 
-          {/* Password */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-[10px] text-neutral-500 uppercase tracking-[0.15em] font-mono font-semibold">
-                Password
-              </label>
-              <Link
-                to="/forgot-password"
-                className="text-[10px] text-neutral-400 hover:text-neutral-700 transition-colors font-sans"
-              >
-                Forgot password?
-              </Link>
+          {errorMsg && (
+            <div className="w-full bg-red-50 border border-red-100 rounded-xl py-3 px-4">
+              <p className="text-xs text-red-500 font-medium font-sans">
+                {errorMsg}
+              </p>
             </div>
-            <input
-              type="password"
-              placeholder="••••••••"
-              className={`form-input text-sm ${errors.password ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
-              {...register('password', { required: 'Password is required' })}
-            />
-            {errors.password && (
-              <span className="text-[10px] text-red-500 font-sans">{errors.password.message}</span>
-            )}
+          )}
+
+          <div className="flex flex-col items-center w-full gap-6">
+            <div className={`transition-opacity duration-300 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                shape="pill"
+                text="continue_with"
+                size="large"
+                theme="outline"
+                width="280"
+              />
+            </div>
+            
+            <p className="text-[10px] text-neutral-400 font-sans px-4 leading-relaxed max-w-[280px]">
+              By continuing, you agree to Vault's <br/>
+              <span className="text-neutral-500 hover:text-[#111111] transition-colors cursor-pointer underline underline-offset-2">Terms of Service</span> and <span className="text-neutral-500 hover:text-[#111111] transition-colors cursor-pointer underline underline-offset-2">Privacy Policy</span>.
+            </p>
           </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full btn-gold text-[11px] uppercase tracking-[0.15em] py-3.5 mt-1 flex items-center justify-center gap-2"
-          >
-            {loading ? (
-              <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-            ) : (
-              <>Sign In <ArrowRight size={13} /></>
-            )}
-          </button>
-        </form>
-
-        {/* ── Divider ── */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-neutral-100" />
-          <span className="text-[9px] font-mono text-neutral-300 uppercase tracking-wider">or</span>
-          <div className="flex-1 h-px bg-neutral-100" />
         </div>
-
-        {/* ── Create account ── */}
-        <p className="text-[11px] text-center text-neutral-400 font-sans -mt-3">
-          New to VAULT?{' '}
-          <Link
-            to={`/register${redirect ? `?redirect=${redirect}` : ''}`}
-            className="text-neutral-900 font-semibold hover:underline underline-offset-2"
-          >
-            Create an account
-          </Link>
-        </p>
       </div>
     </div>
   );

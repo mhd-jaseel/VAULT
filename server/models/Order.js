@@ -19,12 +19,33 @@ const orderItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  itemDiscount: {
+    type: Number,
+    default: 0,
+  },
+  allocatedCouponDiscount: {
+    type: Number,
+    default: 0,
+  },
+  unitPaidAmount: {
+    type: Number,
+    required: true,
+  },
+  linePaidAmount: {
+    type: Number,
+    required: true,
+  },
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'CANCEL_REQUESTED', 'CANCELLED', 'RETURN_REQUESTED', 'RETURNED'],
+    default: 'ACTIVE',
+  },
 });
 
 const timelineSchema = new mongoose.Schema({
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'],
+    enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'partially_cancelled', 'cancelled'],
     required: true,
   },
   timestamp: {
@@ -69,21 +90,27 @@ const orderSchema = new mongoose.Schema(
     // ── Payment Method ──────────────────────────────────────────────
     paymentMethod: {
       type: String,
-      enum: ['razorpay'],
+      enum: ['RAZORPAY', 'VAULT_WALLET', 'WALLET_RAZORPAY', 'razorpay', 'vault_wallet'],
       required: true,
-      default: 'razorpay',
+      default: 'RAZORPAY',
+    },
+
+    // ── Split Payment Details ───────────────────────────────────────
+    walletAmountPaid: {
+      type: Number,
+      default: 0,
+    },
+    razorpayAmountPaid: {
+      type: Number,
+      default: 0,
     },
 
     // ── Payment Status ──────────────────────────────────────────────
-    // pending    → order created, awaiting payment
-    // authorized → payment authorised by Razorpay (auto-capture configured)
-    // captured   → payment confirmed & captured
-    // failed     → payment failed or signature mismatch
-    // refunded   → refund issued
+    // PENDING, SUCCESS, FAILED (also backward compatible with captured/authorized)
     paymentStatus: {
       type: String,
-      enum: ['pending', 'authorized', 'captured', 'failed', 'refunded'],
-      default: 'pending',
+      enum: ['PENDING', 'SUCCESS', 'FAILED', 'pending', 'authorized', 'captured', 'failed', 'refunded'],
+      default: 'PENDING',
     },
 
     // ── Razorpay identifiers ────────────────────────────────────────
@@ -100,6 +127,17 @@ const orderSchema = new mongoose.Schema(
       default: false,
     },
 
+    // ── Payment Attempts Log ─────────────────────────────────────────
+    paymentAttempts: [
+      {
+        attemptId: { type: String },
+        razorpayOrderId: { type: String },
+        amount: { type: Number },
+        status: { type: String, enum: ['PENDING', 'SUCCESS', 'FAILED'] },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+
     // ── Idempotency guard — stock deducted exactly once ─────────────
     stockDeducted: {
       type: Boolean,
@@ -109,7 +147,7 @@ const orderSchema = new mongoose.Schema(
     // ── Order Status ────────────────────────────────────────────────
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'],
+      enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'partially_cancelled', 'cancelled'],
       default: 'pending',
     },
     timeline: [timelineSchema],

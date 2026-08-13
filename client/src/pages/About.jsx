@@ -1,10 +1,27 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { Link } from 'react-router-dom';
 import { Award, Compass, Heart, ShieldCheck } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 import ownerPhoto from '../assets/owner_portrait.png';
 
 export default function About() {
+  const { user } = useContext(AuthContext);
+
   return (
     <div className="bg-white text-neutral-900 min-h-screen">
+      {user && user.role === 'admin' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 py-3 px-6 md:px-12 flex items-center justify-between font-mono text-xs shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-mono">
+              PREVIEW MODE
+            </span>
+            <span>You are previewing the customer About page. Shopping actions are disabled.</span>
+          </div>
+          <Link to="/admin/dashboard" className="text-[10px] font-bold uppercase underline hover:text-black">
+            Back to Dashboard
+          </Link>
+        </div>
+      )}
       {/* Hero Section */}
       <section className="relative py-24 md:py-32 bg-neutral-950 text-white flex items-center justify-center overflow-hidden">
         {/* Subtle decorative glow */}

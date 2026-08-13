@@ -15,21 +15,13 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 
-const loadRazorpay = () =>
-  new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+
 
 export default function ReturnDetails() {
   const { id } = useParams();
   const [ret, setRet] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [payingDiff, setPayingDiff] = useState(false);
+
 
   const fetchReturn = async () => {
     try {
@@ -48,60 +40,7 @@ export default function ReturnDetails() {
     fetchReturn();
   }, [id]);
 
-  const handlePayAdditionalDifference = async () => {
-    setPayingDiff(true);
-    try {
-      const sdkLoaded = await loadRazorpay();
-      if (!sdkLoaded) {
-        toast.error('Razorpay SDK failed to load.');
-        setPayingDiff(false);
-        return;
-      }
 
-      const orderRes = await axios.post(`/returns/${ret._id}/pay-difference`);
-      if (!orderRes.data.success) {
-        toast.error(orderRes.data.message || 'Unable to initiate payment.');
-        setPayingDiff(false);
-        return;
-      }
-
-      const { razorpayOrderId, amount, currency, keyId } = orderRes.data.data;
-
-      const options = {
-        key: keyId,
-        amount,
-        currency,
-        name: 'VAULT.',
-        description: `Replacement Difference #${ret.returnId}`,
-        order_id: razorpayOrderId,
-        theme: { color: '#111111' },
-        handler: async (response) => {
-          try {
-            const verifyRes = await axios.post(`/returns/${ret._id}/verify-difference`, {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-
-            if (verifyRes.data.success) {
-              toast.success('Payment verified! Replacement request updated.');
-              fetchReturn();
-            }
-          } catch (err) {
-            toast.error(err.response?.data?.message || 'Payment verification failed.');
-          } finally {
-            setPayingDiff(false);
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error processing payment.');
-      setPayingDiff(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -121,9 +60,18 @@ export default function ReturnDetails() {
   }
 
   // Define visual timelines based on returnType
-  const refundSteps = ['REQUESTED', 'APPROVED', 'RECEIVED', 'INSPECTING', 'REFUND_PROCESSING', 'REFUNDED'];
-  const replacementSteps = ['REQUESTED', 'APPROVED', 'RECEIVED', 'INSPECTING', 'REPLACEMENT_PROCESSING', 'REPLACEMENT_SHIPPED', 'COMPLETED'];
-  const steps = ret.returnType === 'refund' ? refundSteps : replacementSteps;
+  let steps = walletSteps;
+  if (ret.returnType === 'REPLACEMENT') {
+    if (ret.status === 'WALLET_CREDITED') {
+      steps = ['REQUESTED', 'WALLET_CREDITED', 'COMPLETED'];
+    } else if (ret.status === 'REJECTED') {
+      steps = ['REQUESTED', 'REJECTED'];
+    } else {
+      steps = replacementSteps;
+    }
+  } else if (ret.status === 'REJECTED') {
+    steps = ['REQUESTED', 'REJECTED'];
+  }
 
   const currentStepIndex = steps.indexOf(ret.status);
 
@@ -164,64 +112,25 @@ export default function ReturnDetails() {
           </div>
         </div>
 
-        {/* Replacement Info & Pending Payment Alert */}
-        {ret.returnType === 'replacement' && (
-          <div className="mt-4 pt-4 border-t border-border-light text-xs font-mono space-y-2">
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Selected Replacement:</span>
-              <span className="font-bold text-text-primary">{ret.replacementProductName || 'N/A'}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-secondary">Replacement Total Price:</span>
-              <span className="font-bold text-text-primary">₹{ret.replacementPrice?.toLocaleString('en-IN') || '—'}</span>
-            </div>
-            <div className="flex justify-between font-bold text-sm">
-              <span className="text-text-primary">Additional Amount Due:</span>
-              <span className={ret.additionalAmount > 0 ? 'text-amber-600' : 'text-emerald-600'}>
-                ₹{ret.additionalAmount.toLocaleString('en-IN')}
-              </span>
-            </div>
-
-            {ret.additionalAmount > 0 && ret.replacementPaymentStatus !== 'PAID' && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between mt-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-amber-600 flex-shrink-0" />
-                  <span className="text-[10px] text-amber-800 font-bold uppercase">Additional Payment Pending</span>
-                </div>
-                <button
-                  onClick={handlePayAdditionalDifference}
-                  disabled={payingDiff}
-                  className="btn-gold !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1"
-                >
-                  <Lock size={10} /> Pay ₹{ret.additionalAmount}
-                </button>
-              </div>
+        {/* Replacement Info */}
+        {ret.returnType === 'REPLACEMENT' && (
+          <div className="mt-4 pt-4 border-t border-border-light text-xs font-mono space-y-2 text-text-secondary">
+            {ret.status === 'WALLET_CREDITED' ? (
+              <p className="text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <AlertTriangle size={14} className="inline-block mr-1.5 -mt-0.5" />
+                <strong>Replacement Unavailable.</strong> The same product is out of stock. A fallback Vault Wallet credit of ₹{ret.orderItem.totalOriginalPaid.toLocaleString('en-IN')} has been issued instead.
+              </p>
+            ) : ret.status === 'REJECTED' ? (
+              <p className="text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
+                <AlertTriangle size={14} className="inline-block mr-1.5 -mt-0.5" />
+                <strong>Replacement Rejected.</strong> Your original product is being returned to you.
+              </p>
+            ) : (
+              <>
+                <p>Your request is for a <strong>same-product replacement</strong>.</p>
+                <p>No Vault Wallet credit will be generated.</p>
+              </>
             )}
-          </div>
-        )}
-
-        {/* Manual Refund Receipt (If Refunded) */}
-        {ret.returnType === 'refund' && ret.status === 'REFUNDED' && ret.refundDetails && (
-          <div className="mt-4 pt-4 border-t border-emerald-200 bg-emerald-50/50 p-4 rounded-xl text-xs font-mono space-y-1.5 text-emerald-800">
-            <p className="font-bold uppercase text-[10px] tracking-wider text-emerald-900 mb-2 flex items-center gap-1.5">
-              <CheckCircle2 size={14} className="text-emerald-600" /> Manual Refund Completed
-            </p>
-            <div className="flex justify-between">
-              <span>Refund Amount:</span>
-              <span className="font-bold">₹{ret.refundDetails.amount?.toLocaleString('en-IN')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Refund Method:</span>
-              <span className="font-bold">{ret.refundDetails.method}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Reference ID:</span>
-              <span className="font-bold select-all">{ret.refundDetails.transactionId}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Date Processed:</span>
-              <span className="font-bold">{new Date(ret.refundDetails.refundDate).toLocaleDateString()}</span>
-            </div>
           </div>
         )}
       </div>

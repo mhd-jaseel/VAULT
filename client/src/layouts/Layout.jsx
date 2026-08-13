@@ -24,7 +24,7 @@ export default function Layout({ children }) {
   }, [pathname, search, navigationType]);
 
   // Standalone bare layout — no header, footer, or mobile nav
-  if (BARE_ROUTES.includes(pathname)) {
+  if (BARE_ROUTES.includes(pathname) || pathname.startsWith('/admin')) {
     return <>{children}</>;
   }
 

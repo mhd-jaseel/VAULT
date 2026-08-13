@@ -5,7 +5,7 @@ import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
-import { ArrowRight, MapPin, Edit2, Plus, ShieldCheck, Lock } from 'lucide-react';
+import { ArrowRight, MapPin, Edit2, Plus, ShieldCheck, Lock, Wallet } from 'lucide-react';
 
 // ── Load Razorpay checkout.js from CDN ──────────────────────────────────────
 const loadRazorpay = () =>
@@ -20,7 +20,7 @@ const loadRazorpay = () =>
 
 export default function Checkout() {
   const { cartItems, cartTotal, clearCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
+  const { user, updateProfile } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [shippingCharges, setShippingCharges] = useState(100);
@@ -28,9 +28,14 @@ export default function Checkout() {
   const [submitting, setSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
+  // Wallet state
+  const [userWallet, setUserWallet] = useState(null);
+  const [useWallet, setUseWallet] = useState(true);
+
   // Address mode: 'saved' shows the card, 'edit'/'new' shows the form
   const hasSavedAddress = !!(user && user.address && user.address.street);
   const [addressMode, setAddressMode] = useState(hasSavedAddress ? 'saved' : 'edit');
+  const [saveAddressForFuture, setSaveAddressForFuture] = useState(false);
 
   // Coupon states
   const [couponCodeInput, setCouponCodeInput] = useState('');
@@ -38,6 +43,16 @@ export default function Checkout() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [applying, setApplying] = useState(false);
   const [freeShippingCoupon, setFreeShippingCoupon] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      axios.get('/wallet').then((res) => {
+        if (res.data.success) {
+          setUserWallet(res.data.data);
+        }
+      }).catch(() => {});
+    }
+  }, [user]);
 
   const handleApplyCoupon = async () => {
     if (!couponCodeInput.trim()) {
@@ -150,6 +165,23 @@ export default function Checkout() {
     setSubmitting(true);
 
     try {
+      // ── Step 0: Save address if requested ──────────────────────────────────
+      if (
+        saveAddressForFuture &&
+        (addressMode === 'edit' || addressMode === 'new')
+      ) {
+        await updateProfile({
+          name: addressData.name,
+          phone: addressData.phone,
+          address: {
+            street: addressData.street,
+            city: addressData.city,
+            state: addressData.state,
+            zip: addressData.zip,
+          },
+        });
+      }
+
       // ── Step 1: Load Razorpay SDK ──────────────────────────────────────────
       const sdkLoaded = await loadRazorpay();
       if (!sdkLoaded) {
@@ -167,11 +199,20 @@ export default function Checkout() {
         })),
         shippingAddress: addressData,
         couponCode: appliedCoupon ? appliedCoupon.couponCode : undefined,
+        useWallet,
       });
 
       if (!orderRes.data.success) {
         toast.error(orderRes.data.message || 'Could not initiate payment.');
         setSubmitting(false);
+        return;
+      }
+
+      // Handle 100% Wallet Paid Orders
+      if (orderRes.data.fullWalletPayment) {
+        toast.success('Order placed successfully using Vault Wallet!');
+        clearCart();
+        navigate(`/order-success/${orderRes.data.data.internalOrderId}`);
         return;
       }
 
@@ -391,6 +432,21 @@ export default function Checkout() {
                     {errors.zip && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.zip.message}</span>}
                   </div>
                 </div>
+
+                {/* Save Address Checkbox */}
+                <div className="mt-1">
+                  <label className="flex items-center gap-2 cursor-pointer w-fit group">
+                    <input
+                      type="checkbox"
+                      checked={saveAddressForFuture}
+                      onChange={(e) => setSaveAddressForFuture(e.target.checked)}
+                      className="w-4 h-4 rounded border-border-light text-text-primary focus:ring-text-primary cursor-pointer transition-colors"
+                    />
+                    <span className="text-[10px] font-mono text-text-primary group-hover:text-text-primary/80 transition-colors">
+                      Save this address for future orders
+                    </span>
+                  </label>
+                </div>
               </div>
             )}
           </div>
@@ -401,25 +457,65 @@ export default function Checkout() {
               Payment
             </h3>
 
-            <div className="flex flex-col gap-3 p-4 rounded-xl bg-neutral-50 border border-border-light">
-              {/* Razorpay badge */}
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0">
-                  <Lock size={13} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold font-sans text-xs tracking-wide uppercase text-text-primary">
-                    Secure Online Payment
-                  </p>
-                  <p className="text-[9px] font-mono text-text-secondary">
-                    Powered by Razorpay · UPI, Cards, Net Banking &amp; Wallets accepted
-                  </p>
+            {userWallet && userWallet.balance > 0 && (
+              <div
+                onClick={() => setUseWallet(!useWallet)}
+                className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all ${
+                  useWallet ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light hover:border-neutral-300'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-4 h-4 mt-0.5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${useWallet ? 'border-text-primary' : 'border-neutral-300'}`}>
+                    {useWallet && <div className="w-2.5 h-2.5 rounded-full bg-text-primary" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-sans font-bold text-xs uppercase tracking-wide text-text-primary flex items-center gap-2">
+                        <Wallet size={14} className="text-text-primary" />
+                        VAULT Wallet
+                      </h4>
+                      <span className="text-[10px] font-mono font-bold text-text-primary">
+                        ₹{userWallet.balance.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-mono text-text-secondary mt-1">
+                      Use your wallet balance
+                    </p>
+                    {useWallet && (
+                      <div className="mt-3 pt-3 border-t border-border-light flex justify-between items-center text-[10px] font-mono">
+                        <span className="text-text-secondary">Wallet Contribution</span>
+                        <span className="font-bold text-[#16a34a]">-₹{Math.min(userWallet.balance, grandTotal).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="flex items-center gap-1.5 text-[9px] font-mono text-text-secondary">
-                <ShieldCheck size={11} className="text-[#16a34a]" />
-                <span>256-bit SSL encrypted · PCI DSS compliant</span>
+            <div
+              className={`p-4 rounded-xl border flex flex-col gap-2 transition-all ${
+                (!useWallet || (userWallet && userWallet.balance < grandTotal)) ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light opacity-70'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-4 h-4 mt-0.5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${(!useWallet || (userWallet && userWallet.balance < grandTotal)) ? 'border-text-primary' : 'border-neutral-300'}`}>
+                   {(!useWallet || (userWallet && userWallet.balance < grandTotal)) && <div className="w-2.5 h-2.5 rounded-full bg-text-primary" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-sans font-bold text-xs uppercase tracking-wide text-text-primary flex items-center gap-2">
+                    <Lock size={14} className="text-text-primary" />
+                    Razorpay
+                  </h4>
+                  <p className="text-[10px] font-mono text-text-secondary mt-1">
+                    UPI, Cards, Net Banking & more
+                  </p>
+                  {(!useWallet || (userWallet && userWallet.balance < grandTotal)) && (
+                    <div className="mt-3 pt-3 border-t border-border-light flex items-center gap-1.5 text-[9px] font-mono text-text-secondary">
+                      <ShieldCheck size={11} className="text-[#16a34a]" />
+                      <span>Secure payment powered by Razorpay</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

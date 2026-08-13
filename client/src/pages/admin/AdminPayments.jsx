@@ -3,6 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { CreditCard, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import AdminDetailsDrawer from '../../components/admin/AdminDetailsDrawer';
+import PaymentDetailsView from '../../components/admin/drawers/PaymentDetailsView';
+import OrderDetailsView from '../../components/admin/drawers/OrderDetailsView';
+import CustomerDetailsView from '../../components/admin/drawers/CustomerDetailsView';
 
 export default function AdminPayments() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -10,6 +14,17 @@ export default function AdminPayments() {
   const [pages, setPages] = useState(1);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Quick View Drawer state
+  const [drawer, setDrawer] = useState({ isOpen: false, type: null, entityId: null, data: null, title: '' });
+
+  const openDrawer = (type, entityId, title, data = null) => {
+    setDrawer({ isOpen: true, type, entityId, title, data });
+  };
+
+  const closeDrawer = () => {
+    setDrawer({ isOpen: false, type: null, entityId: null, data: null, title: '' });
+  };
 
   const fetchPayments = async () => {
     setLoading(true);
@@ -79,23 +94,62 @@ export default function AdminPayments() {
             </thead>
             <tbody>
               {payments.map((pay) => (
-                <tr key={pay._id} className="border-b border-dark-border/40 hover:bg-zinc-900/10">
+                <tr key={pay._id} className="border-b border-dark-border/40 hover:bg-zinc-900/10 transition-colors">
                   <td className="p-4">
-                    <p className="font-semibold text-white">{pay.user?.name || '—'}</p>
-                    <p className="text-[10px] text-zinc-500">{pay.user?.email || '—'}</p>
+                    {pay.user ? (
+                      <button 
+                        onClick={() => openDrawer('CUSTOMER', pay.user._id, 'Customer Details')}
+                        className="text-left cursor-pointer hover:underline focus:outline-none group"
+                      >
+                        <p className="font-semibold text-white group-hover:text-gold transition-colors">{pay.user.name}</p>
+                        <p className="text-[10px] text-zinc-500">{pay.user.email}</p>
+                      </button>
+                    ) : (
+                      <span className="text-zinc-500 italic">—</span>
+                    )}
                   </td>
                   <td className="p-4 text-white font-bold font-mono">
-                    ₹{pay.order?.grandTotal?.toLocaleString('en-IN') || '—'}
+                    {pay.order ? (
+                      <span
+                        onClick={() => openDrawer('ORDER', pay.order._id, 'Order Details')}
+                        className="cursor-pointer hover:text-gold hover:underline transition-colors"
+                      >
+                        ₹{pay.order.grandTotal?.toLocaleString('en-IN') || '—'}
+                      </span>
+                    ) : (
+                      <span>—</span>
+                    )}
                   </td>
-                  <td className="p-4 font-mono text-zinc-300 text-[10px] select-all">
-                    {pay.razorpayOrderId || '—'}
+                  <td className="p-4 font-mono text-zinc-300 text-[10px]">
+                    {pay.razorpayOrderId ? (
+                      <button
+                        onClick={() => openDrawer('PAYMENT', pay._id, 'Payment Details', pay)}
+                        className="cursor-pointer hover:text-gold hover:underline transition-colors"
+                      >
+                        {pay.razorpayOrderId}
+                      </button>
+                    ) : '—'}
                   </td>
-                  <td className="p-4 font-mono text-zinc-300 text-[10px] select-all">
-                    {pay.razorpayPaymentId || (
+                  <td className="p-4 font-mono text-zinc-300 text-[10px]">
+                    {pay.razorpayPaymentId ? (
+                      <button
+                        onClick={() => openDrawer('PAYMENT', pay._id, 'Payment Details', pay)}
+                        className="cursor-pointer hover:text-gold hover:underline transition-colors"
+                      >
+                        {pay.razorpayPaymentId}
+                      </button>
+                    ) : (
                       <span className="text-zinc-600 italic">not yet</span>
                     )}
                   </td>
-                  <td className="p-4">{statusBadge(pay.status)}</td>
+                  <td className="p-4">
+                    <div 
+                      onClick={() => openDrawer('PAYMENT', pay._id, 'Payment Details', pay)}
+                      className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+                    >
+                      {statusBadge(pay.status)}
+                    </div>
+                  </td>
                   <td className="p-4 text-zinc-400 text-[10px]">
                     {pay.createdAt ? new Date(pay.createdAt).toLocaleDateString('en-IN') : '—'}
                   </td>
@@ -113,6 +167,18 @@ export default function AdminPayments() {
         onPageChange={(newPage) => setSearchParams({ page: newPage })}
         loading={loading}
       />
+
+      {/* REUSABLE DETAILS DRAWER */}
+      <AdminDetailsDrawer
+        isOpen={drawer.isOpen}
+        onClose={closeDrawer}
+        title={drawer.title}
+        subtitle="Quick View"
+      >
+        {drawer.isOpen && drawer.type === 'PAYMENT' && <PaymentDetailsView payment={drawer.data} />}
+        {drawer.isOpen && drawer.type === 'ORDER' && <OrderDetailsView orderId={drawer.entityId} />}
+        {drawer.isOpen && drawer.type === 'CUSTOMER' && <CustomerDetailsView customerId={drawer.entityId} />}
+      </AdminDetailsDrawer>
     </div>
   );
 }

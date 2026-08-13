@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../services/api';
+import { Users, Search, ShieldOff, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { Users, Search, ChevronRight, ShieldOff, ShieldCheck } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import AdminDetailsDrawer from '../../components/admin/AdminDetailsDrawer';
+import CustomerDetailsView from '../../components/admin/drawers/CustomerDetailsView';
 
 export default function AdminUsers() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +21,17 @@ export default function AdminUsers() {
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
 
+  // Quick View Drawer state
+  const [drawer, setDrawer] = useState({ isOpen: false, entityId: null });
+
+  const openDrawer = (entityId) => {
+    setDrawer({ isOpen: true, entityId });
+  };
+
+  const closeDrawer = () => {
+    setDrawer({ isOpen: false, entityId: null });
+  };
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -26,7 +39,7 @@ export default function AdminUsers() {
       if (searchInput.trim()) params.set('search', searchInput.trim());
       if (statusFilter) params.set('status', statusFilter);
 
-      const res = await axios.get(`/auth/customers?${params.toString()}`);
+      const res = await api.get(`/auth/customers?${params.toString()}`);
       if (res.data.success) {
         setUsers(res.data.data);
         setPages(res.data.pages || 1);
@@ -135,18 +148,19 @@ export default function AdminUsers() {
                 <th className="p-4">Status</th>
                 <th className="p-4">Orders</th>
                 <th className="p-4">Spent</th>
-                <th className="p-4 text-center">View</th>
               </tr>
             </thead>
             <tbody>
               {users.map((u) => (
                 <tr
                   key={u._id}
-                  className="border-b border-border-light/60 hover:bg-neutral-50 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/admin/users/${u._id}`)}
+                  className="border-b border-border-light/60 transition-colors group"
                 >
                   <td className="p-4">
-                    <div className="flex items-center gap-3">
+                    <div 
+                      onClick={() => openDrawer(u._id)}
+                      className="flex items-center gap-3 cursor-pointer hover:bg-neutral-50 px-1.5 py-1 -ml-1.5 rounded transition-colors inline-flex"
+                    >
                       {/* Avatar */}
                       <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white font-bold text-xs uppercase flex-shrink-0">
                         {u.name?.charAt(0)}
@@ -158,30 +172,38 @@ export default function AdminUsers() {
                     </div>
                   </td>
                   <td className="p-4 font-mono text-text-secondary text-[10px]">
-                    {u.phone || '—'}
+                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-text-primary hover:underline decoration-dashed transition-colors">
+                      {u.phone || '—'}
+                    </span>
                   </td>
                   <td className="p-4 font-mono text-text-secondary text-[9px]">
                     {new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="p-4">
-                    {u.isBlocked ? (
-                      <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full w-fit">
-                        <ShieldOff size={9} /> Blocked
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#16a34a] bg-[#e6f7ee] border border-[#e6f7ee] px-2 py-0.5 rounded-full w-fit">
-                        <ShieldCheck size={9} /> Active
-                      </span>
-                    )}
+                    <span 
+                      onClick={() => openDrawer(u._id)}
+                      className="cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+                    >
+                      {u.isBlocked ? (
+                        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full w-fit">
+                          <ShieldOff size={9} /> Blocked
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#16a34a] bg-[#e6f7ee] border border-[#e6f7ee] px-2 py-0.5 rounded-full w-fit">
+                          <ShieldCheck size={9} /> Active
+                        </span>
+                      )}
+                    </span>
                   </td>
                   <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
-                    {u.totalOrders ?? '—'}
+                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
+                      {u.totalOrders ?? '—'}
+                    </span>
                   </td>
                   <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
-                    {u.totalSpent != null ? `₹${u.totalSpent.toLocaleString('en-IN')}` : '—'}
-                  </td>
-                  <td className="p-4 text-center">
-                    <ChevronRight size={14} className="text-text-secondary mx-auto" />
+                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
+                      {u.totalSpent != null ? `₹${u.totalSpent.toLocaleString('en-IN')}` : '—'}
+                    </span>
                   </td>
                 </tr>
               ))}
@@ -196,6 +218,16 @@ export default function AdminUsers() {
         onPageChange={(newPage) => setSearchParams({ page: newPage, search: searchInput, status: statusFilter })}
         loading={loading}
       />
+
+      {/* REUSABLE DETAILS DRAWER */}
+      <AdminDetailsDrawer
+        isOpen={drawer.isOpen}
+        onClose={closeDrawer}
+        title="Customer Details"
+        subtitle="Quick View"
+      >
+        {drawer.isOpen && <CustomerDetailsView customerId={drawer.entityId} />}
+      </AdminDetailsDrawer>
     </div>
   );
 }

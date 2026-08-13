@@ -1,116 +1,92 @@
-import React, { createContext, useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useEffect } from 'react';
+import api from '../services/api';
 
 export const AuthContext = createContext();
-
-// Configure default base URL for API
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-axios.defaults.baseURL = API_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const logoutRef = useRef(null);
 
-  // Initialize Auth state from localStorage
+  // Initialize Auth state by checking with the backend
   useEffect(() => {
-    const storedUser = localStorage.getItem('vault_user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      // Set default axios authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${parsedUser.token}`;
-    }
-    setLoading(false);
+    const checkAuthStatus = async () => {
+      try {
+        const res = await api.get('/auth/profile');
+        if (res.data.success) {
+          setUser(res.data.data);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        // Not authenticated
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkAuthStatus();
   }, []);
 
   // Axios response interceptor — auto-logout blocked users
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
+    const interceptor = api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         // If backend returns 403 with blocked: true, force logout
         if (
           error.response?.status === 403 &&
           error.response?.data?.blocked === true &&
           window.location.pathname !== '/blocked'
         ) {
-          // Clear auth state
           setUser(null);
-          localStorage.removeItem('vault_user');
-          delete axios.defaults.headers.common['Authorization'];
-          // Redirect to blocked page
+          await api.post('/auth/logout').catch(() => {});
           window.location.href = '/blocked';
         }
+        
+        // If 401 Not Authorized, clear local user state just in case
+        if (error.response?.status === 401 && user) {
+          setUser(null);
+        }
+        
         return Promise.reject(error);
       }
     );
 
     return () => {
-      axios.interceptors.response.eject(interceptor);
+      api.interceptors.response.eject(interceptor);
     };
-  }, []);
+  }, [user]);
 
-  const login = async (email, password) => {
+  const googleLogin = async (credential) => {
     try {
-      const res = await axios.post('/auth/login', { email, password });
+      const res = await api.post('/auth/google-login', { credential });
       if (res.data.success) {
         const userData = res.data.data;
         setUser(userData);
-        localStorage.setItem('vault_user', JSON.stringify(userData));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
         return { success: true, user: userData };
       }
     } catch (error) {
-      // Pass blocked flag up so login page can redirect
-      if (error.response?.data?.blocked) {
-        return {
-          success: false,
-          blocked: true,
-          message: error.response.data.message,
-        };
-      }
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Login failed. Please check your credentials.',
-      };
+      return { success: false, message: error.response?.data?.message || 'Google Login failed.' };
     }
   };
 
-  const register = async (name, email, password, phone) => {
+  const logout = async () => {
     try {
-      const res = await axios.post('/auth/register', { name, email, password, phone });
-      if (res.data.success) {
-        const userData = res.data.data;
-        setUser(userData);
-        localStorage.setItem('vault_user', JSON.stringify(userData));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${userData.token}`;
-        return { success: true };
-      }
+      await api.post('/auth/logout');
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Registration failed.',
-      };
+      console.error('Logout error:', error);
+    } finally {
+      setUser(null);
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('vault_user');
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   const updateProfile = async (profileData) => {
     try {
-      const res = await axios.put('/auth/profile', profileData);
+      const res = await api.put('/auth/profile', profileData);
       if (res.data.success) {
         const userData = res.data.data;
-        // Keep token from existing state if not returned
-        const updatedUser = { ...user, ...userData };
-        setUser(updatedUser);
-        localStorage.setItem('vault_user', JSON.stringify(updatedUser));
-        axios.defaults.headers.common['Authorization'] = `Bearer ${updatedUser.token}`;
+        setUser({ ...user, ...userData });
         return { success: true };
       }
     } catch (error) {
@@ -121,17 +97,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const forgotPassword = async (email, newPassword) => {
+  const adminLogin = async (email, password) => {
     try {
-      const res = await axios.post('/auth/forgot-password', { email, newPassword });
+      const res = await api.post('/auth/admin/login', { email, password });
       if (res.data.success) {
-        return { success: true, message: res.data.message };
+        const userData = res.data.data;
+        setUser(userData);
+        return { success: true, user: userData };
       }
     } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || 'Reset password failed.',
-      };
+      return { success: false, message: error.response?.data?.message || 'Admin login failed.' };
     }
   };
 
@@ -140,11 +115,10 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         loading,
-        login,
-        register,
+        googleLogin,
         logout,
         updateProfile,
-        forgotPassword,
+        adminLogin,
       }}
     >
       {children}

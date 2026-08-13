@@ -49,6 +49,11 @@ export const createRazorpayOrder = async (req, res) => {
         name: product.name,
         quantity: item.quantity,
         price: product.price,
+        itemDiscount: 0,
+        allocatedCouponDiscount: 0,
+        unitPaidAmount: product.price,
+        linePaidAmount: itemTotal,
+        status: 'ACTIVE',
       });
     }
 
@@ -108,6 +113,7 @@ export const createRazorpayOrder = async (req, res) => {
         if (isEligible) {
           eligibleSubtotal += Number(item.price) * Number(item.quantity);
           hasEligibleItem = true;
+          item.isCouponEligible = true;
         }
       }
 
@@ -125,15 +131,130 @@ export const createRazorpayOrder = async (req, res) => {
 
       couponObj = coupon;
       freeShippingCoupon = coupon.freeShipping;
+
+      // Allocate coupon discount proportionally across eligible items
+      let allocatedTotal = 0;
+      const eligibleItems = orderItems.filter(i => i.isCouponEligible);
+      
+      eligibleItems.forEach((item, idx) => {
+        const itemGross = item.price * item.quantity;
+        if (idx === eligibleItems.length - 1) {
+          item.allocatedCouponDiscount = Math.round((discountAmount - allocatedTotal) * 100) / 100;
+        } else {
+          const share = Math.round(((itemGross / eligibleSubtotal) * discountAmount) * 100) / 100;
+          item.allocatedCouponDiscount = share;
+          allocatedTotal += share;
+        }
+      });
     }
+
+    // Finalize item snapshots (unitPaidAmount & linePaidAmount)
+    orderItems.forEach(item => {
+      delete item.isCouponEligible;
+      const lineGross = item.price * item.quantity;
+      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.itemDiscount || 0) - (item.allocatedCouponDiscount || 0)) * 100) / 100);
+      item.unitPaidAmount = Math.round((item.linePaidAmount / item.quantity) * 100) / 100;
+    });
 
     // ── 3. Calculate shipping & grand total ──────────────────────────────────
     let shippingCharges = totalAmount >= setting.freeShippingMinAmount ? 0 : setting.shippingCharges;
     if (freeShippingCoupon) shippingCharges = 0;
     const grandTotal = totalAmount - discountAmount + shippingCharges;
-    const grandTotalPaise = Math.round(grandTotal * 100); // Razorpay uses paise
 
-    // ── 4. Create internal pending Order (NO stock deduction yet) ────────────
+    // ── 3b. Wallet Balance Calculation & Partial/Full Wallet Application ────
+    const Wallet = (await import('../../models/Wallet.js')).default;
+    const WalletTransaction = (await import('../../models/WalletTransaction.js')).default;
+
+    let walletUsed = 0;
+    const useWallet = req.body.useWallet === true;
+
+    if (useWallet) {
+      const userWallet = await Wallet.findOne({ user: req.user._id });
+      const availableWallet = userWallet ? userWallet.balance : 0;
+      walletUsed = Math.min(availableWallet, grandTotal);
+    }
+
+    const remainingRazorpayTotal = Math.max(0, grandTotal - walletUsed);
+    const grandTotalPaise = Math.round(remainingRazorpayTotal * 100); // Remaining via Razorpay
+
+    // If wallet covers 100% of the order total
+    if (useWallet && walletUsed >= grandTotal && remainingRazorpayTotal === 0) {
+      // Perform atomic debit from user wallet
+      const userWallet = await Wallet.findOne({ user: req.user._id });
+      if (!userWallet || userWallet.balance < walletUsed) {
+        return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
+      }
+
+      const balanceBefore = userWallet.balance;
+      userWallet.balance -= walletUsed;
+      await userWallet.save();
+
+      const order = new Order({
+        user: req.user._id,
+        items: orderItems,
+        shippingAddress,
+        totalAmount,
+        shippingCharges,
+        grandTotal,
+        walletAmountPaid: walletUsed,
+        razorpayAmountPaid: 0,
+        paymentMethod: 'VAULT_WALLET',
+        paymentStatus: 'captured',
+        status: 'confirmed',
+        coupon: couponObj ? couponObj._id : undefined,
+        couponCode: couponObj ? couponObj.couponCode : undefined,
+        discountAmount,
+        timeline: [{ status: 'confirmed', note: `Paid 100% via Vault Wallet (₹${walletUsed}).` }],
+      });
+      const savedOrder = await order.save();
+
+      // Create Wallet Transaction ledger entry
+      const randTxn = Math.floor(10000 + Math.random() * 90000);
+      await WalletTransaction.create({
+        transactionId: `WLT-TXN-${randTxn}`,
+        user: req.user._id,
+        wallet: userWallet._id,
+        type: 'ORDER_WALLET_PAYMENT',
+        amount: walletUsed,
+        balanceBefore,
+        balanceAfter: userWallet.balance,
+        referenceType: 'ORDER',
+        referenceId: String(savedOrder._id),
+        description: `Order #${savedOrder._id.toString().slice(-6).toUpperCase()} Paid via Vault Wallet`,
+        createdBy: 'SYSTEM',
+      });
+
+      // Deduct stock for 100% wallet paid order
+      const { deductStockForOrder } = await import('./paymentHelper.js');
+      await deductStockForOrder(savedOrder);
+
+      // Trigger Admin Notification
+      try {
+        const { createNotificationHelper } = await import('../../services/notificationHelper.js');
+        await createNotificationHelper({
+          type: 'NEW_ORDER',
+          title: 'New Checkout Order',
+          message: `New order #${savedOrder._id.toString().slice(-6).toUpperCase()} placed by ${req.user.name || 'Customer'} (₹${savedOrder.grandTotal})`,
+          relatedId: savedOrder._id,
+          relatedType: 'Order',
+          action: 'REVIEW_ORDER',
+        });
+      } catch (notifErr) {
+        console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+      }
+
+      return res.status(201).json({
+        success: true,
+        fullWalletPayment: true,
+        message: 'Order placed successfully using Vault Wallet!',
+        data: {
+          internalOrderId: String(savedOrder._id),
+          grandTotal,
+        },
+      });
+    }
+
+    // ── 4. Create internal pending Order (Hybrid Wallet + Razorpay or Pure Razorpay) ─
     const order = new Order({
       user: req.user._id,
       items: orderItems,
@@ -141,13 +262,15 @@ export const createRazorpayOrder = async (req, res) => {
       totalAmount,
       shippingCharges,
       grandTotal,
-      paymentMethod: 'razorpay',
+      walletAmountPaid: walletUsed,
+      razorpayAmountPaid: remainingRazorpayTotal,
+      paymentMethod: walletUsed > 0 ? 'WALLET_RAZORPAY' : 'RAZORPAY',
       paymentStatus: 'pending',
       status: 'pending',
       coupon: couponObj ? couponObj._id : undefined,
       couponCode: couponObj ? couponObj.couponCode : undefined,
       discountAmount,
-      timeline: [{ status: 'pending', note: 'Order created — awaiting payment.' }],
+      timeline: [{ status: 'pending', note: `Order created — awaiting ${walletUsed > 0 ? `₹${remainingRazorpayTotal} Razorpay difference payment (₹${walletUsed} from Wallet)` : 'payment'}.` }],
     });
     const savedOrder = await order.save();
 

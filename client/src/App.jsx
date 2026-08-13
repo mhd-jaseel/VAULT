@@ -25,8 +25,6 @@ import OrderSuccess from './pages/OrderSuccess';
 import Profile from './pages/Profile';
 import OrderTracking from './pages/OrderTracking';
 import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
 import About from './pages/About';
 
 // Admin Pages
@@ -44,8 +42,13 @@ import AdminAnnouncement from './pages/admin/AdminAnnouncement';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminReturns from './pages/admin/AdminReturns';
+import AdminSalesReport from './pages/admin/AdminSalesReport';
+import AdminManagement from './pages/admin/AdminManagement';
+import AdminTransactions from './pages/admin/AdminTransactions';
+import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
 import MyReturns from './pages/MyReturns';
 import ReturnDetails from './pages/ReturnDetails';
+import MyWallet from './pages/MyWallet';
 import Blocked from './pages/Blocked';
 
 function App() {
@@ -66,8 +69,6 @@ function App() {
                 
                 {/* Authentication Routes */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
 
                 {/* Protected Customer Routes */}
                 <Route 
@@ -119,6 +120,14 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/returns-cancellations" 
+                  element={
+                    <ProtectedRoute>
+                      <MyReturns />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
                   path="/returns/:id" 
                   element={
                     <ProtectedRoute>
@@ -126,6 +135,23 @@ function App() {
                     </ProtectedRoute>
                   } 
                 />
+                <Route 
+                  path="/wallet" 
+                  element={
+                    <ProtectedRoute>
+                      <MyWallet />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/my-wallet" 
+                  element={
+                    <ProtectedRoute>
+                      <MyWallet />
+                    </ProtectedRoute>
+                  } 
+                />
+
 
                 <Route 
                   path="/admin" 
@@ -244,6 +270,38 @@ function App() {
                   element={
                     <AdminRoute>
                       <AdminReturns />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/sales-report" 
+                  element={
+                    <AdminRoute>
+                      <AdminSalesReport />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/admin-management" 
+                  element={
+                    <AdminRoute>
+                      <AdminManagement />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/transactions" 
+                  element={
+                    <AdminRoute>
+                      <AdminTransactions />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/notifications" 
+                  element={
+                    <AdminRoute>
+                      <AdminNotificationsPage />
                     </AdminRoute>
                   } 
                 />

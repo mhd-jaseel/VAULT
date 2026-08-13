@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle, RotateCcw, ChevronRight, X } from 'lucide-react';
+import { toast } from 'sonner';
 import ReturnModal from '../components/ReturnModal';
 
 export default function OrderTracking() {
@@ -12,6 +13,36 @@ export default function OrderTracking() {
   // Return Modal states
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Cancel Modal states
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [itemToCancel, setItemToCancel] = useState(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancelClick = (item) => {
+    setItemToCancel(item);
+    setCancelModalOpen(true);
+  };
+
+  const confirmCancellation = async () => {
+    if (!itemToCancel) return;
+    setIsCancelling(true);
+    try {
+      const res = await axios.post(`/orders/${order._id}/cancel-item`, { itemId: itemToCancel._id });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setCancelModalOpen(false);
+        setItemToCancel(null);
+        // Refresh order data
+        const updatedOrder = await axios.get(`/orders/${orderId}`);
+        if (updatedOrder.data.success) setOrder(updatedOrder.data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unable to cancel this item.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   useEffect(() => {
     axios.get(`/orders/${orderId}`)
@@ -96,31 +127,101 @@ export default function OrderTracking() {
         </h3>
         {order.items.map((item) => {
           const isDelivered = order.status === 'delivered';
+          const isPrePacked = ['pending', 'confirmed', 'processing'].includes(order.status) && !['packed', 'shipped', 'delivered', 'cancelled'].includes(order.status);
           const deliveredTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.updatedAt).getTime();
           const isWithin3Days = isDelivered && Date.now() - deliveredTime <= 3 * 24 * 60 * 60 * 1000;
+          const ret = item.returnRecord;
+          const itemStatus = item.status || 'ACTIVE';
 
           return (
-            <div key={item._id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 border border-border-light text-xs font-mono">
-              <div>
-                <p className="font-bold text-text-primary uppercase font-sans text-xs">{item.name}</p>
-                <p className="text-[10px] text-text-secondary">Qty: {item.quantity} × ₹{item.price.toLocaleString('en-IN')}</p>
+            <div key={item._id} className="p-4 rounded-xl bg-neutral-50 border border-border-light text-xs font-mono space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-text-primary uppercase font-sans text-xs">{item.name}</p>
+                    <span className={`text-[8px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      itemStatus === 'CANCELLED' 
+                        ? 'bg-red-50 text-red-600 border-red-200' 
+                        : itemStatus === 'CANCEL_REQUESTED'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                      {itemStatus}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-text-secondary">
+                    Qty: {item.quantity} × ₹{item.price.toLocaleString('en-IN')} 
+                    {item.linePaidAmount !== undefined && (
+                      <span className="ml-1 text-text-primary font-bold">(Paid: ₹{item.linePaidAmount.toLocaleString('en-IN')})</span>
+                    )}
+                  </p>
+                </div>
+
+                {/* Item Actions */}
+                <div className="flex items-center gap-2">
+                  {itemStatus === 'ACTIVE' && isPrePacked && (
+                    <button
+                      onClick={() => handleCancelClick(item)}
+                      disabled={isCancelling && itemToCancel?._id === item._id}
+                      className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-mono text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCancelling && itemToCancel?._id === item._id ? 'CANCELLING...' : 'CANCEL ITEM'}
+                    </button>
+                  )}
+
+                  {!ret ? (
+                    isWithin3Days && itemStatus === 'ACTIVE' ? (
+                      <button
+                        onClick={() => {
+                          setSelectedItem(item);
+                          setReturnModalOpen(true);
+                        }}
+                        className="btn-gold !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw size={10} /> Return
+                      </button>
+                    ) : isDelivered ? (
+                      <span className="text-[9px] text-text-secondary italic">Return window closed</span>
+                    ) : null
+                  ) : (
+                    <Link
+                      to={`/returns/${ret._id}`}
+                      className="btn-dark !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      View Status <ChevronRight size={10} />
+                    </Link>
+                  )}
+                </div>
               </div>
 
-              <div>
-                {isWithin3Days ? (
-                  <button
-                    onClick={() => {
-                      setSelectedItem(item);
-                      setReturnModalOpen(true);
-                    }}
-                    className="btn-gold !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw size={10} /> Return / Replace
-                  </button>
-                ) : isDelivered ? (
-                  <span className="text-[9px] text-text-secondary italic">Return window closed</span>
-                ) : null}
-              </div>
+              {/* Active Return Status Banner per Item */}
+              {ret && (
+                <div className="bg-white p-3 rounded-lg border border-neutral-200/80 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold uppercase text-neutral-900">
+                        {ret.returnType} {ret.status.replace('_', ' ')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-neutral-600 font-sans">
+                    {ret.status === 'REQUESTED' && 'Request submitted. Awaiting admin review.'}
+                    {ret.status === 'APPROVED' && 'Request approved.'}
+                    {ret.status === 'REPLACEMENT_APPROVED' && 'Replacement approved. Preparing for dispatch.'}
+                    {ret.status === 'REPLACEMENT_SHIPPED' && 'Replacement shipped.'}
+                    {ret.status === 'WALLET_CREDITED' && (ret.returnType === 'REPLACEMENT' 
+                      ? `Replacement is unavailable. ₹${ret.orderItem?.totalOriginalPaid} has been credited to your Vault Wallet.`
+                      : `Amount ₹${ret.orderItem?.totalOriginalPaid} credited to Vault Wallet.`
+                    )}
+                    {ret.status === 'COMPLETED' && 'Request completed successfully.'}
+                    {ret.status === 'REJECTED' && (ret.returnType === 'REPLACEMENT'
+                      ? 'Replacement rejected. Original product returning.'
+                      : `Request rejected: ${ret.rejectionReason || 'Does not meet criteria.'}`
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
@@ -201,6 +302,56 @@ export default function OrderTracking() {
           });
         }}
       />
+      {/* Cancel Confirmation Modal */}
+      {cancelModalOpen && itemToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-neutral-200 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-neutral-100">
+              <h3 className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-900">Cancel this item?</h3>
+              <button 
+                onClick={() => !isCancelling && setCancelModalOpen(false)} 
+                className="text-neutral-400 hover:text-neutral-900 transition-colors"
+                disabled={isCancelling}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <p className="text-xs text-neutral-600">Are you sure you want to cancel this item?</p>
+              
+              <div className="bg-neutral-50 p-3 rounded-xl border border-neutral-100 space-y-1">
+                <p className="font-bold text-xs uppercase tracking-wide text-neutral-900 line-clamp-1">{itemToCancel.name}</p>
+                <p className="font-mono text-[10px] text-neutral-500">Qty: {itemToCancel.quantity}</p>
+                <p className="font-mono text-[10px] font-bold text-neutral-900">
+                  Amount: ₹{(itemToCancel.linePaidAmount !== undefined ? itemToCancel.linePaidAmount : (itemToCancel.price * itemToCancel.quantity)).toLocaleString('en-IN')}
+                </p>
+              </div>
+              
+              <p className="text-[10px] text-neutral-500 italic">
+                The paid amount will be refunded directly to your VAULT Wallet.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-neutral-50/50 border-t border-neutral-100">
+              <button
+                onClick={() => setCancelModalOpen(false)}
+                disabled={isCancelling}
+                className="flex-1 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-600 bg-white border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                KEEP ITEM
+              </button>
+              <button
+                onClick={confirmCancellation}
+                disabled={isCancelling}
+                className="flex-1 py-2.5 text-[10px] font-mono font-bold uppercase tracking-wider text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors cursor-pointer flex justify-center items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancelling ? 'CANCELLING...' : 'CANCEL ITEM'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

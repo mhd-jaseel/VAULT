@@ -1,5 +1,9 @@
 import jwt from 'jsonwebtoken';
 import User from '../../models/User.js';
+import { OAuth2Client } from 'google-auth-library';
+import { getCookieOptions, clearCookieOptions } from '../../utils/cookie.js';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -7,83 +11,78 @@ const generateToken = (id) => {
   });
 };
 
-export const registerUser = async (req, res) => {
-  const { name, email, password, phone } = req.body;
-
-  try {
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(400).json({ success: false, message: 'User already exists' });
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-    });
-
-    if (user) {
-      res.status(201).json({
-        success: true,
-        data: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          phone: user.phone,
-          token: generateToken(user._id),
-        },
-      });
-    } else {
-      res.status(400).json({ success: false, message: 'Invalid user data' });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+const setCookie = (res, token) => {
+  res.cookie('vault_token', token, getCookieOptions(30 * 24 * 60 * 60 * 1000));
 };
 
-export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+export const googleLogin = async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ success: false, message: 'Missing Google credential.' });
+  }
 
   try {
-    const user = await User.findOne({ email });
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const { email, name, sub: googleId, email_verified } = payload;
 
-    if (user && (await user.comparePassword(password))) {
-      // Block check at login time — do not issue token for blocked users
+    if (!email_verified) {
+      return res.status(401).json({ success: false, message: 'Google email is not verified. Cannot authenticate.' });
+    }
+
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
       if (user.isBlocked) {
-        return res.status(403).json({
-          success: false,
-          blocked: true,
-          message: 'Your account has been blocked. Please contact the administrator for assistance.',
-        });
+        return res.status(403).json({ success: false, message: 'Your account is blocked.' });
+      }
+      
+      if (user.googleId && user.googleId !== googleId) {
+        return res.status(401).json({ success: false, message: 'Authentication mismatch. Please login with the original account.' });
       }
 
-      res.json({
-        success: true,
-        data: {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          phone: user.phone,
-          address: user.address,
-          isBlocked: user.isBlocked,
-          token: generateToken(user._id),
-        },
-      });
+      // Link Google Account to local account if needed
+      if (!user.googleId) {
+        user.googleId = googleId;
+        user.authProvider = 'google';
+        await user.save();
+      }
     } else {
-      res.status(401).json({ success: false, message: 'Invalid email or password' });
+      user = await User.create({
+        name,
+        email: email.toLowerCase(),
+        authProvider: 'google',
+        googleId,
+      });
     }
+
+    const token = generateToken(user._id);
+    setCookie(res, token);
+
+    res.json({
+      success: true,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        address: user.address,
+      },
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error('Google Auth Error:', error);
+    res.status(400).json({ success: false, message: 'Google Authentication failed.' });
   }
 };
 
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id);
     if (user) {
       res.json({ success: true, data: user });
     } else {
@@ -101,9 +100,6 @@ export const updateUserProfile = async (req, res) => {
     if (user) {
       user.name = req.body.name || user.name;
       user.phone = req.body.phone || user.phone;
-      if (req.body.password) {
-        user.password = req.body.password;
-      }
       if (req.body.address) {
         user.address = {
           street: req.body.address.street || user.address?.street,
@@ -124,7 +120,6 @@ export const updateUserProfile = async (req, res) => {
           role: updatedUser.role,
           phone: updatedUser.phone,
           address: updatedUser.address,
-          token: generateToken(updatedUser._id),
         },
       });
     } else {
@@ -135,21 +130,8 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-export const forgotPassword = async (req, res) => {
-  const { email, newPassword } = req.body;
-
-  try {
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User with this email does not exist' });
-    }
-
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ success: true, message: 'Password reset successfully' });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
+export const logoutUser = (req, res) => {
+  res.cookie('vault_token', '', clearCookieOptions());
+  res.json({ success: true, message: 'Logged out successfully' });
 };
+

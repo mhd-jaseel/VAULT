@@ -1,14 +1,39 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import rateLimit from 'express-rate-limit';
+
+// Rate Limiting Middlewares
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // limit each IP to 20 requests per windowMs
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+export const otpLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // limit each IP to 10 OTP requests per hour
+  message: { success: false, message: 'Too many OTP requests, please try again later.' },
+});
 
 export const protect = async (req, res, next) => {
   let token;
-  if (
+  
+  // 1. Check cookies for token
+  if (req.cookies && req.cookies.vault_token) {
+    token = req.cookies.vault_token;
+  } 
+  // 2. Fallback to Bearer token
+  else if (
     req.headers.authorization &&
     req.headers.authorization.startsWith('Bearer')
   ) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token) {
     try {
-      token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select('-password');
       if (!req.user) {
@@ -27,9 +52,7 @@ export const protect = async (req, res, next) => {
       console.error(error);
       return res.status(401).json({ success: false, message: 'Not authorized, token failed' });
     }
-  }
-
-  if (!token) {
+  } else {
     return res.status(401).json({ success: false, message: 'Not authorized, no token' });
   }
 };
@@ -42,10 +65,25 @@ export const isAdmin = (req, res, next) => {
   }
 };
 
-export const isCustomer = (req, res, next) => {
-  if (req.user && req.user.role !== 'admin') {
+export const isSuperAdmin = (req, res, next) => {
+  const superAdminEmail = (process.env.ADMIN_EMAIL || 'vault.co.6235@gmail.com').toLowerCase();
+  
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: 'Not authenticated.' });
+  }
+
+  // Ensure they are marked as admin AND match the super admin email
+  if (req.user.role === 'admin' && req.user.email.toLowerCase() === superAdminEmail) {
     next();
   } else {
-    return res.status(403).json({ success: false, message: 'Access denied: Customer only feature' });
+    return res.status(403).json({ success: false, message: 'Super Admin access required.' });
+  }
+};
+
+export const isCustomer = (req, res, next) => {
+  if (req.user) {
+    next();
+  } else {
+    return res.status(403).json({ success: false, message: 'Access denied: Customer feature' });
   }
 };

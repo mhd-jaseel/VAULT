@@ -6,7 +6,16 @@ import { toast } from 'sonner';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from './LoginRequiredModal';
 
-export default function ProductCard({ product, index, wishlistIds, onToggleWishlist, user, forceSmall = false }) {
+export default function ProductCard({
+  product,
+  index,
+  wishlistIds,
+  onToggleWishlist,
+  user,
+  forceSmall = false,
+  isReplacementMode = false,
+  replacementContext = null,
+}) {
   const { addToCart } = useContext(CartContext);
   const [isMobileActive, setIsMobileActive] = useState(false);
 
@@ -38,6 +47,11 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
     e.preventDefault();
     e.stopPropagation();
 
+    if (user && user.role === 'admin') {
+      toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
+      return;
+    }
+
     // Guard: require login
     if (!user) {
       setModalMessage('Please login to add products to your cart.');
@@ -56,6 +70,11 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
   const handleWishlistClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (user && user.role === 'admin') {
+      toast.info('Preview Mode — Wishlist actions are disabled for admin sessions.');
+      return;
+    }
 
     // Guard: require login
     if (!user) {
@@ -116,7 +135,7 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
       {/* DESKTOP & TABLET VIEW (screens >= 768px) - Keep existing layout + Cart icon */}
       {/* ========================================================================= */}
       <Link
-        to={`/product/${product._id}`}
+        to={`/product/${product._id}${isReplacementMode && replacementContext ? `?mode=replacement&returnId=${replacementContext.returnId}` : ''}`}
         className={`hidden md:flex group relative flex-col bg-white border border-border-light rounded-2xl overflow-hidden transition-all duration-300 hover:border-text-primary hover:shadow-sm ${
           product.stock === 0 ? 'opacity-65' : ''
         }`}
@@ -150,7 +169,7 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
           ) : null}
 
           {/* Action Buttons Overlay (Wishlist + Cart stacked top-right) */}
-          {(!user || user.role !== 'admin') && (
+          {!isReplacementMode && (
             <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-20 items-center">
               <button
                 onClick={handleWishlistClick}
@@ -190,11 +209,26 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
             </h3>
           </div>
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-border-light">
-            <span className="text-text-primary font-mono font-bold text-xs">₹{finalPrice.toLocaleString('en-IN')}</span>
-            {isDiscounted && (
-              <span className="text-text-secondary font-mono text-[9px] line-through">₹{originalPrice.toLocaleString('en-IN')}</span>
+            <div>
+              <span className="text-text-primary font-mono font-bold text-xs">₹{finalPrice.toLocaleString('en-IN')}</span>
+              {isDiscounted && (
+                <span className="text-text-secondary font-mono text-[9px] line-through ml-1.5">₹{originalPrice.toLocaleString('en-IN')}</span>
+              )}
+            </div>
+
+            {isReplacementMode && replacementContext ? (
+              <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                finalPrice - replacementContext.unitOriginalPaid === 0
+                  ? 'bg-neutral-100 text-neutral-800 border-neutral-300'
+                  : 'bg-emerald-50 text-emerald-700 border-emerald-300'
+              }`}>
+                {finalPrice - replacementContext.unitOriginalPaid === 0
+                  ? 'Same Value'
+                  : `+ ₹${(finalPrice - replacementContext.unitOriginalPaid).toLocaleString('en-IN')}`}
+              </span>
+            ) : (
+              <span className="text-text-secondary text-[9px] font-mono hover:underline uppercase tracking-wider">Details</span>
             )}
-            <span className="text-text-secondary text-[9px] font-mono hover:underline uppercase tracking-wider">Details</span>
           </div>
         </div>
       </Link>
@@ -245,29 +279,27 @@ export default function ProductCard({ product, index, wishlistIds, onToggleWishl
           ) : null}
 
           {/* Action Buttons (Wishlist + Cart stacked top-right of image) */}
-          {(!user || user.role !== 'admin') && (
-            <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-20 items-center">
-              {/* Wishlist Button */}
-              <button
-                onClick={handleWishlistClick}
-                className="w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
-                title="Save to Wishlist"
-              >
-                <Heart size={13} className={isWishlisted ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500"} />
-              </button>
+          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 z-20 items-center">
+            {/* Wishlist Button */}
+            <button
+              onClick={handleWishlistClick}
+              className="w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer"
+              title="Save to Wishlist"
+            >
+              <Heart size={13} className={isWishlisted ? "fill-red-500 text-red-500" : "text-neutral-400 hover:text-red-500"} />
+            </button>
 
-              {/* Cart Button */}
-              <button
-                onClick={handleCartClick}
-                className={`w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer ${
-                  product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-                title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-              >
-                <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
-              </button>
-            </div>
-          )}
+            {/* Cart Button */}
+            <button
+              onClick={handleCartClick}
+              className={`w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer ${
+                product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+            >
+              <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
+            </button>
+          </div>
         </div>
 
         {/* Details Container (Click to navigate) */}

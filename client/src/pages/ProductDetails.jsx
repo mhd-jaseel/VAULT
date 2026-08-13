@@ -1,16 +1,28 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
-import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Share2 } from 'lucide-react';
+import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Share2, Check, Lock } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from '../components/LoginRequiredModal';
 
+const loadRazorpay = () =>
+  new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
 export default function ProductDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { addToCart } = useContext(CartContext);
   const { user } = useContext(AuthContext);
 
@@ -22,6 +34,117 @@ export default function ProductDetails() {
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState([]);
   const [inWishlist, setInWishlist] = useState(false);
+
+  // Replacement Mode State
+  const mode = searchParams.get('mode');
+  const returnIdParam = searchParams.get('returnId');
+  const isReplacementMode = mode === 'replacement' && Boolean(returnIdParam);
+  const [returnRecord, setReturnRecord] = useState(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [submittingReplacement, setSubmittingReplacement] = useState(false);
+
+  const [userWallet, setUserWallet] = useState(null);
+
+  // Fetch Return Details & User Wallet for Replacement Mode
+  const fetchReturnDetails = async () => {
+    if (!isReplacementMode) return;
+    try {
+      const res = await axios.get(`/returns/${returnIdParam}`);
+      if (res.data.success) {
+        setReturnRecord(res.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching return record for replacement:', err);
+    }
+
+    try {
+      const walletRes = await axios.get('/wallet');
+      if (walletRes.data.success) {
+        setUserWallet(walletRes.data.data);
+      }
+    } catch (wErr) {
+      console.error('Error fetching wallet:', wErr);
+    }
+  };
+
+  useEffect(() => {
+    if (isReplacementMode) fetchReturnDetails();
+  }, [isReplacementMode, returnIdParam]);
+
+  const handleConfirmReplacementSelection = async () => {
+    if (!returnRecord || !product) return;
+    setSubmittingReplacement(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('orderId', returnRecord.order._id || returnRecord.order);
+      formData.append('productId', returnRecord.orderItem.product);
+      formData.append('returnType', 'replacement');
+      formData.append('reason', returnRecord.reason || 'Replacement request from catalog');
+      formData.append('replacementProductId', product._id);
+
+      const res = await axios.post('/returns', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data.success) {
+        const retData = res.data.data;
+        const additionalDue = retData.additionalAmount || 0;
+
+        if (additionalDue > 0 && retData.razorpayOrderId) {
+          // Trigger Razorpay for additional amount
+          const resScript = await loadRazorpay();
+          if (!resScript) {
+            toast.error('Razorpay SDK failed to load.');
+            setSubmittingReplacement(false);
+            return;
+          }
+
+          const options = {
+            key: res.data.razorpayKeyId,
+            amount: retData.razorpayAmount,
+            currency: 'INR',
+            name: 'VAULT',
+            description: `Replacement difference payment for Return #${retData.returnId}`,
+            order_id: retData.razorpayOrderId,
+            handler: async (response) => {
+              try {
+                const verifyRes = await axios.post(`/returns/${retData._id}/verify-payment`, {
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature,
+                });
+                if (verifyRes.data.success) {
+                  toast.success('Replacement difference paid successfully!');
+                  navigate(`/returns/${retData._id}`);
+                }
+              } catch (vErr) {
+                toast.error(vErr.response?.data?.message || 'Payment verification failed.');
+              }
+            },
+            prefill: {
+              name: user?.name,
+              email: user?.email,
+              contact: user?.phone,
+            },
+            theme: { color: '#111111' },
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        } else {
+          toast.success('Replacement request confirmed!');
+          navigate(`/returns/${retData._id}`);
+        }
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit replacement choice.');
+    } finally {
+      setSubmittingReplacement(false);
+    }
+  };
+
+
 
   // Review form states
   const [rating, setRating] = useState(5);
@@ -188,6 +311,10 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
+    if (user && user.role === 'admin') {
+      toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
+      return;
+    }
     if (!user) {
       showLoginModal('Please login to add products to your cart.');
       return;
@@ -251,6 +378,19 @@ export default function ProductDetails() {
         onClose={() => setLoginModal({ open: false, message: '' })}
         message={loginModal.message}
       />
+      {user && user.role === 'admin' && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-900 py-3 px-6 md:px-12 flex items-center justify-between font-mono text-xs shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-mono">
+              PREVIEW MODE
+            </span>
+            <span>You are previewing the customer Product Details page. Shopping actions (cart, wishlist, checkout) are disabled.</span>
+          </div>
+          <Link to="/admin/dashboard" className="text-[10px] font-bold uppercase underline hover:text-black">
+            Back to Dashboard
+          </Link>
+        </div>
+      )}
     <div className="py-6 px-4 md:px-12 max-w-7xl mx-auto w-full min-h-screen">
       <Link to="/shop" className="flex items-center gap-1.5 text-text-secondary hover:text-text-primary transition-colors font-mono text-[10px] mb-6 tracking-wider">
         <ArrowLeft size={12} /> BACK TO CATALOG
@@ -398,27 +538,80 @@ export default function ProductDetails() {
               </div>
             )}
 
-            {(!user || user.role !== 'admin') && (
-              <div className="flex gap-3">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={product.stock === 0}
-                  className="flex-grow btn-gold py-3.5"
-                >
-                  <ShoppingBag size={14} /> ADD TO CART
-                </button>
-                <button
-                  onClick={handleToggleWishlist}
-                  className={`p-3.5 rounded-full border transition-all cursor-pointer ${
-                    inWishlist
-                      ? 'bg-red-50 border-red-200 text-red-500'
-                      : 'border-border-light bg-white text-text-secondary hover:text-text-primary hover:border-text-primary'
-                  }`}
-                >
-                  <Heart size={16} fill={inWishlist ? 'currentColor' : 'none'} />
-                </button>
-              </div>
-            )}
+            {/* Add to Cart / Wishlist Actions */}
+            {isReplacementMode ? (
+                <div className="bg-[#111111] text-white p-5 rounded-2xl border border-neutral-800 space-y-4 font-mono shadow-xl">
+                  <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
+                      REPLACEMENT SELECTION
+                    </span>
+                    <span className="text-[10px] text-neutral-400">Return #{returnRecord?.returnId}</span>
+                  </div>
+
+                  {(() => {
+                    const itemPrice = (product.isDiscounted ? product.finalPrice : product.price) * quantity;
+                    const walletBal = userWallet ? userWallet.balance : 0;
+                    const walletUsed = Math.min(walletBal, itemPrice);
+                    const remainingWallet = walletBal - walletUsed;
+                    const additionalDue = Math.max(0, itemPrice - walletBal);
+
+                    return (
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-neutral-400">Available Vault Store Credit:</span>
+                          <span className="font-bold text-white">₹{walletBal.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-neutral-400">Replacement Product Total:</span>
+                          <span className="font-bold text-white">₹{itemPrice.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-neutral-400">Store Credit Contribution:</span>
+                          <span className="font-bold text-emerald-400">- ₹{walletUsed.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-neutral-400">Remaining Store Credit:</span>
+                          <span className="font-bold text-neutral-300">₹{remainingWallet.toLocaleString('en-IN')}</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-neutral-800 font-bold text-sm">
+                          <span className="text-white">Additional Razorpay Amount:</span>
+                          <span className={additionalDue > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                            ₹{additionalDue.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <button
+                    onClick={() => setConfirmModalOpen(true)}
+                    disabled={product.stock === 0}
+                    className="w-full btn-gold py-4 text-xs font-mono font-bold uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Check size={14} /> SELECT AS REPLACEMENT
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={product.stock === 0}
+                    className="flex-grow btn-gold py-3.5"
+                  >
+                    <ShoppingBag size={14} /> ADD TO CART
+                  </button>
+                  <button
+                    onClick={handleToggleWishlist}
+                    className={`p-3.5 rounded-full border transition-all cursor-pointer ${
+                      inWishlist
+                        ? 'bg-red-50 border-red-200 text-red-500'
+                        : 'border-border-light bg-white text-text-secondary hover:text-text-primary hover:border-text-primary'
+                    }`}
+                  >
+                    <Heart size={16} fill={inWishlist ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+              )}
 
             {/* 3-Column Trust-Badge Row */}
             <div className="grid grid-cols-3 gap-2 border-t border-border-light pt-5 mt-4 text-center">
@@ -574,6 +767,72 @@ export default function ProductDetails() {
           </div>
         </section>
       )}
+      {/* ── REPLACEMENT CONFIRMATION MODAL ── */}
+      {confirmModalOpen && returnRecord && product && (() => {
+        const effectivePrice = (product.isDiscounted ? product.finalPrice : product.price) * (returnRecord.orderItem?.quantity || 1);
+        const originalPaid = returnRecord.orderItem?.totalOriginalPaid || 0;
+        const diff = Math.max(0, effectivePrice - originalPaid);
+
+        return (
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setConfirmModalOpen(false)} />
+            <div className="relative w-full max-w-md bg-white border border-neutral-200 rounded-2xl p-6 z-10 text-neutral-900 font-mono shadow-2xl space-y-4">
+              <h3 className="font-bold text-sm uppercase text-neutral-900 border-b border-neutral-100 pb-3">
+                Confirm Replacement Selection
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between py-1">
+                  <span className="text-neutral-500">Original Product:</span>
+                  <span className="font-bold text-neutral-900 font-sans">{returnRecord.orderItem?.name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-t border-neutral-100">
+                  <span className="text-neutral-500">Original Amount Paid:</span>
+                  <span className="font-bold text-neutral-900">₹{originalPaid.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between py-1 border-t border-neutral-100">
+                  <span className="text-neutral-500">Replacement Product:</span>
+                  <span className="font-bold text-neutral-950 font-sans">{product.name}</span>
+                </div>
+                <div className="flex justify-between py-1 border-t border-neutral-100">
+                  <span className="text-neutral-500">Replacement Price:</span>
+                  <span className="font-bold text-neutral-900">₹{effectivePrice.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between py-2 border-t border-neutral-200 font-bold text-sm">
+                  <span className="uppercase text-neutral-900">Additional Amount Due:</span>
+                  <span className={diff > 0 ? 'text-amber-700' : 'text-emerald-700'}>
+                    ₹{diff.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => setConfirmModalOpen(false)}
+                  className="flex-1 py-3 border border-neutral-300 text-neutral-700 text-xs font-bold uppercase rounded-xl hover:bg-neutral-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmReplacementSelection}
+                  disabled={submittingReplacement}
+                  className="flex-1 btn-gold py-3 text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {submittingReplacement ? (
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : diff > 0 ? (
+                    <>
+                      <Lock size={12} /> Pay ₹{diff.toLocaleString('en-IN')} &amp; Confirm
+                    </>
+                  ) : (
+                    'Confirm Replacement'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
     </>
   );

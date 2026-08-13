@@ -1,6 +1,8 @@
 import React, { useContext } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
+import { toast } from 'sonner';
 import { 
   Home, 
   Compass, 
@@ -11,6 +13,8 @@ import {
 
 export default function MobileNav() {
   const { cartCount } = useContext(CartContext);
+  const { user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const activeStyle = "text-[#111111] flex flex-col items-center gap-1 py-2 text-[9px] font-mono tracking-wider font-bold transition-colors";
   const inactiveStyle = "text-[#6b7280] hover:text-[#111111] flex flex-col items-center gap-1 py-2 text-[9px] font-mono tracking-wider transition-colors";
@@ -33,9 +37,16 @@ export default function MobileNav() {
         <span>EXPLORE</span>
       </NavLink>
 
-      <NavLink 
-        to="/cart" 
-        className={({ isActive }) => isActive ? activeStyle : inactiveStyle}
+      <button
+        onClick={(e) => {
+          if (user && user.role === 'admin') {
+            e.preventDefault();
+            toast.info('Cart and checkout are unavailable while previewing the customer website.');
+          } else {
+            navigate('/cart');
+          }
+        }}
+        className={inactiveStyle}
       >
         <div className="relative">
           <ShoppingBag size={18} />
@@ -46,7 +57,7 @@ export default function MobileNav() {
           )}
         </div>
         <span>CART</span>
-      </NavLink>
+      </button>
 
       <NavLink 
         to="/about" 

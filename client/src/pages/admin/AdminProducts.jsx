@@ -3,13 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { PremiumSwal } from '../../utils/swalHelper';
-import { Plus, Edit2, Trash2, X, Upload, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Upload, Star, Search } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import AdminDetailsDrawer from '../../components/admin/AdminDetailsDrawer';
+import ProductDetailsView from '../../components/admin/drawers/ProductDetailsView';
 
 export default function AdminProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get('page')) || 1;
+  const searchParam = searchParams.get('search') || '';
   const [pages, setPages] = useState(1);
+  const [searchInput, setSearchInput] = useState(searchParam);
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -20,6 +24,17 @@ export default function AdminProducts() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+
+  // Quick View Drawer state
+  const [drawer, setDrawer] = useState({ isOpen: false, entityId: null });
+
+  const openDrawer = (entityId) => {
+    setDrawer({ isOpen: true, entityId });
+  };
+
+  const closeDrawer = () => {
+    setDrawer({ isOpen: false, entityId: null });
+  };
 
   // Form states
   const [name, setName] = useState('');
@@ -38,7 +53,7 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/products?page=${page}&limit=10`);
+      const res = await axios.get(`/products?page=${page}&limit=10${searchParam ? `&search=${searchParam}` : ''}`);
       if (res.data.success) {
         setProducts(res.data.data);
         setPages(res.data.pages || 1);
@@ -70,7 +85,19 @@ export default function AdminProducts() {
 
   useEffect(() => {
     fetchProducts();
-  }, [page]);
+  }, [page, searchParam]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams);
+    if (searchInput.trim()) {
+      params.set('search', searchInput.trim());
+      params.set('page', '1');
+    } else {
+      params.delete('search');
+    }
+    setSearchParams(params);
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -251,6 +278,25 @@ export default function AdminProducts() {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6 flex items-center justify-between">
+        <form onSubmit={handleSearch} className="flex gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-72">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="w-full bg-dark-card border border-dark-border text-gray-200 text-xs rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:border-gold/50"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </div>
+          <button type="submit" className="bg-dark-card border border-dark-border hover:border-gold/30 text-gray-200 text-xs px-4 py-2 rounded-lg cursor-pointer">
+            Search
+          </button>
+        </form>
+      </div>
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
@@ -290,30 +336,55 @@ export default function AdminProducts() {
                           <span className="text-zinc-800 font-bold text-[10px]">VAULT</span>
                         )}
                       </div>
-                      <span className="font-semibold text-white truncate max-w-[150px]">{prod.name}</span>
+                      <button 
+                        onClick={() => openDrawer(prod._id)}
+                        className="font-semibold text-white truncate max-w-[150px] text-left hover:text-gold hover:underline transition-colors focus:outline-none"
+                      >
+                        {prod.name}
+                      </button>
                     </div>
                   </td>
                   <td className="p-4 text-zinc-400 font-medium">
-                    {prod.category?.name || 'Unassigned'}
+                    <span 
+                      onClick={() => openDrawer(prod._id)}
+                      className="cursor-pointer hover:text-gold hover:underline transition-colors"
+                    >
+                      {prod.category?.name || 'Unassigned'}
+                    </span>
                   </td>
                   <td className="p-4 text-gold font-bold">
-                    ₹{prod.price.toLocaleString('en-IN')}
+                    <span 
+                      onClick={() => openDrawer(prod._id)}
+                      className="cursor-pointer hover:opacity-80 hover:underline decoration-dashed transition-colors"
+                    >
+                      ₹{prod.price.toLocaleString('en-IN')}
+                    </span>
                   </td>
                   <td className="p-4">
-                    {prod.stock === 0 ? (
-                      <span className="text-red-400 font-semibold bg-red-950/25 border border-red-950/50 py-0.5 px-2 rounded-full">Out of stock</span>
-                    ) : prod.stock < 5 ? (
-                      <span className="text-orange-400 font-semibold bg-orange-950/25 border border-orange-950/50 py-0.5 px-2 rounded-full">Low Stock ({prod.stock})</span>
-                    ) : (
-                      <span className="text-green-400 font-semibold bg-green-950/20 border border-green-950/30 py-0.5 px-2 rounded-full">{prod.stock} Units</span>
-                    )}
+                    <span 
+                      onClick={() => openDrawer(prod._id)}
+                      className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+                    >
+                      {prod.stock === 0 ? (
+                        <span className="text-red-400 font-semibold bg-red-950/25 border border-red-950/50 py-0.5 px-2 rounded-full">Out of stock</span>
+                      ) : prod.stock < 5 ? (
+                        <span className="text-orange-400 font-semibold bg-orange-950/25 border border-orange-950/50 py-0.5 px-2 rounded-full">Low Stock ({prod.stock})</span>
+                      ) : (
+                        <span className="text-green-400 font-semibold bg-green-950/20 border border-green-950/30 py-0.5 px-2 rounded-full">{prod.stock} Units</span>
+                      )}
+                    </span>
                   </td>
                   <td className="p-4">
-                    {prod.isFeatured ? (
-                      <span className="text-gold font-semibold flex items-center gap-0.5"><Star size={12} fill="currentColor" /> Yes</span>
-                    ) : (
-                      <span className="text-zinc-500">No</span>
-                    )}
+                    <span 
+                      onClick={() => openDrawer(prod._id)}
+                      className="cursor-pointer hover:opacity-80 transition-opacity inline-block"
+                    >
+                      {prod.isFeatured ? (
+                        <span className="text-gold font-semibold flex items-center gap-0.5"><Star size={12} fill="currentColor" /> Yes</span>
+                      ) : (
+                        <span className="text-zinc-500">No</span>
+                      )}
+                    </span>
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex justify-center gap-2">
@@ -345,6 +416,16 @@ export default function AdminProducts() {
         onPageChange={(newPage) => setSearchParams({ page: newPage })}
         loading={loading}
       />
+
+      {/* REUSABLE DETAILS DRAWER */}
+      <AdminDetailsDrawer
+        isOpen={drawer.isOpen}
+        onClose={closeDrawer}
+        title="Product Details"
+        subtitle="Quick View"
+      >
+        {drawer.isOpen && <ProductDetailsView productId={drawer.entityId} />}
+      </AdminDetailsDrawer>
 
       {/* Editor Modal Overlay */}
       {isOpen && (

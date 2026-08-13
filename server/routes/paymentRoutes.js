@@ -4,6 +4,7 @@ import {
   verifyRazorpayPayment,
   razorpayWebhook,
   getAllPayments,
+  retryPayment,
 } from '../controllers/payment/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 
@@ -11,6 +12,9 @@ const router = express.Router();
 
 // ── Customer: Create Razorpay order (POST /api/payments/razorpay/create-order)
 router.post('/razorpay/create-order', protect, createRazorpayOrder);
+
+// ── Customer: Retry payment for unpaid order (POST /api/payments/retry)
+router.post('/retry', protect, retryPayment);
 
 // ── Customer: Verify payment signature after checkout (POST /api/payments/razorpay/verify)
 router.post('/razorpay/verify', protect, verifyRazorpayPayment);

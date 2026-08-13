@@ -182,9 +182,12 @@ export default function AdminCategories() {
                     <span className="text-zinc-800 font-bold text-xs">VAULT</span>
                   )}
                 </div>
-                <div>
-                  <h4 className="font-display font-semibold text-sm text-white">{cat.name}</h4>
-                  <p className="text-[10px] text-zinc-500 max-w-[150px] truncate">{cat.description}</p>
+                <div 
+                  onClick={() => handleOpenEdit(cat)}
+                  className="cursor-pointer hover:bg-zinc-900/50 -mx-1 px-1 py-0.5 rounded transition-colors group"
+                >
+                  <h4 className="font-display font-semibold text-sm text-white group-hover:text-gold group-hover:underline transition-colors">{cat.name}</h4>
+                  <p className="text-[10px] text-zinc-500 max-w-[150px] truncate group-hover:text-zinc-400">{cat.description}</p>
                 </div>
               </div>
 

@@ -1,6 +1,9 @@
 import Order from '../../models/Order.js';
 import Product from '../../models/Product.js';
 import Return from '../../models/Return.js';
+import Wallet from '../../models/Wallet.js';
+import { calculateProductDiscounts } from '../../services/discountService.js';
+import { createNotificationHelper } from '../../services/notificationHelper.js';
 
 const generateReturnId = () => {
   const rand = Math.floor(10000 + Math.random() * 90000);
@@ -12,30 +15,51 @@ export const createReturnRequest = async (req, res) => {
   const {
     orderId,
     productId,
-    returnType,
+    settlementMethod,
+    returnType: inputReturnType,
     reason,
     customerNotes,
-    replacementProductId,
   } = req.body;
 
-  if (!orderId || !productId || !returnType || !reason) {
-    return res.status(400).json({ success: false, message: 'Missing required return details.' });
+  const actualSettlement = 'WALLET';
+  const actualReturnType = (inputReturnType === 'REPLACEMENT') ? 'REPLACEMENT' : 'RETURN';
+
+  if (!orderId || !productId || !reason) {
+    return res.status(400).json({
+      success: false,
+      message: 'Missing required return details.',
+      code: 'VALIDATION_ERROR',
+    });
   }
+
+
 
   try {
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ success: false, message: 'Order not found.' });
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found.',
+        code: 'ORDER_NOT_FOUND',
+      });
     }
 
     // Security: Verify ownership
     if (order.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized for this order.' });
+      return res.status(403).json({
+        success: false,
+        message: 'You are not authorized for this order.',
+        code: 'UNAUTHORIZED_ACCESS',
+      });
     }
 
     // Must be delivered
     if (order.status !== 'delivered') {
-      return res.status(400).json({ success: false, message: 'Return is only available for delivered orders.' });
+      return res.status(422).json({
+        success: false,
+        message: 'Return is only available for delivered orders.',
+        code: 'ORDER_NOT_DELIVERED',
+      });
     }
 
     // ── 3-Day Return Window Rule (Strict Server-Side Enforcement) ────────────
@@ -44,19 +68,36 @@ export const createReturnRequest = async (req, res) => {
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
     if (nowTime - deliveredTime > THREE_DAYS_MS) {
-      return res.status(400).json({
+      return res.status(422).json({
         success: false,
-        message: 'Return window expired. Returns can only be requested within 3 days of delivery.',
+        message: 'Return period has expired. Returns can only be requested within 3 days of delivery.',
+        code: 'RETURN_PERIOD_EXPIRED',
       });
     }
 
     // Find the order item
     const orderItem = order.items.find((item) => item.product.toString() === productId.toString());
     if (!orderItem) {
-      return res.status(404).json({ success: false, message: 'Product not found in this order.' });
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found in this order.',
+        code: 'ITEM_NOT_FOUND',
+      });
     }
 
-    // Check if an active return already exists for this order item
+    // If REPLACEMENT, validate current stock
+    if (actualReturnType === 'REPLACEMENT') {
+      const productDoc = await Product.findById(productId);
+      if (!productDoc || productDoc.stock < orderItem.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Same product replacement is currently unavailable because this product is out of stock.',
+          code: 'OUT_OF_STOCK',
+        });
+      }
+    }
+
+    // Check if an active return already exists for this order item (HTTP 409 Conflict)
     const existingReturn = await Return.findOne({
       order: order._id,
       'orderItem.product': orderItem.product,
@@ -64,9 +105,11 @@ export const createReturnRequest = async (req, res) => {
     });
 
     if (existingReturn) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
-        message: 'A return request has already been submitted for this item.',
+        message: 'A return request already exists for this item.',
+        code: 'RETURN_ALREADY_EXISTS',
+        data: existingReturn,
       });
     }
 
@@ -76,47 +119,10 @@ export const createReturnRequest = async (req, res) => {
       evidenceImages = req.files.map((file) => `/uploads/${file.filename}`);
     }
 
-    const totalOriginalPaid = orderItem.price * orderItem.quantity;
-    let replacementProductObj = null;
-    let replacementPrice = 0;
-    let additionalAmount = 0;
-    let replacementPaymentStatus = 'NOT_REQUIRED';
-
-    // ── Replacement Flow Validation ──────────────────────────────────────────
-    if (returnType === 'replacement') {
-      if (!replacementProductId) {
-        return res.status(400).json({ success: false, message: 'Please select a replacement product.' });
-      }
-
-      replacementProductObj = await Product.findById(replacementProductId);
-      if (!replacementProductObj) {
-        return res.status(404).json({ success: false, message: 'Selected replacement product not found.' });
-      }
-
-      if (replacementProductObj.status === 'inactive' || replacementProductObj.isDeleted) {
-        return res.status(400).json({ success: false, message: 'Selected replacement product is unavailable.' });
-      }
-
-      if (replacementProductObj.stock < orderItem.quantity) {
-        return res.status(400).json({ success: false, message: 'Selected replacement product is out of stock.' });
-      }
-
-      replacementPrice = replacementProductObj.price * orderItem.quantity;
-
-      // RULE: Lower-priced replacement strictly prohibited
-      if (replacementPrice < totalOriginalPaid) {
-        return res.status(400).json({
-          success: false,
-          message: 'Replacement product price cannot be less than the original amount paid.',
-        });
-      }
-
-      // Calculate difference
-      additionalAmount = replacementPrice - totalOriginalPaid;
-      if (additionalAmount > 0) {
-        replacementPaymentStatus = 'PENDING';
-      }
-    }
+    // Use snapshot paid amount if available
+    const totalOriginalPaid = orderItem.linePaidAmount !== undefined 
+      ? orderItem.linePaidAmount 
+      : (orderItem.price * orderItem.quantity);
 
     // Create Return Record
     const returnRecord = new Return({
@@ -130,27 +136,40 @@ export const createReturnRequest = async (req, res) => {
         quantity: orderItem.quantity,
         totalOriginalPaid,
       },
-      returnType,
+      returnType: actualReturnType,
+      settlementMethod: actualSettlement,
       reason,
-      customerNotes,
+      customerNotes: customerNotes ? String(customerNotes).slice(0, 1000) : '',
       evidenceImages,
-      replacementProduct: replacementProductObj ? replacementProductObj._id : undefined,
-      replacementProductName: replacementProductObj ? replacementProductObj.name : undefined,
-      replacementProductImage: replacementProductObj && replacementProductObj.images?.length > 0 ? replacementProductObj.images[0] : undefined,
-      replacementPrice: returnType === 'replacement' ? replacementPrice : undefined,
-      additionalAmount,
-      replacementPaymentStatus,
+      walletCreditStatus: (actualSettlement === 'WALLET' && actualReturnType === 'RETURN') ? 'PENDING' : 'NOT_APPLICABLE',
       status: 'REQUESTED',
       deliveredAtSnapshot: new Date(deliveredTime),
       timeline: [
         {
           status: 'REQUESTED',
-          note: `Return ${returnType} request submitted by customer. Reason: ${reason}`,
+          note: `${actualReturnType === 'REPLACEMENT' ? 'Replacement' : 'Return'} request submitted by customer. Reason: ${reason}`,
         },
       ],
     });
 
     const savedReturn = await returnRecord.save();
+
+    // Trigger Admin Notification
+    try {
+      const notifType = actualReturnType === 'REPLACEMENT' ? 'REPLACEMENT_REQUEST' : 'RETURN_REQUEST';
+      const notifAction = actualReturnType === 'REPLACEMENT' ? 'REVIEW_REPLACEMENT' : 'REVIEW_RETURN';
+      
+      await createNotificationHelper({
+        type: notifType,
+        title: `New ${actualReturnType === 'REPLACEMENT' ? 'Replacement' : 'Return'} Request`,
+        message: `${req.user.name || 'Customer'} requested a ${actualReturnType.toLowerCase()} for ${orderItem.name} (${savedReturn.returnId})`,
+        relatedId: savedReturn._id,
+        relatedType: 'Return',
+        action: notifAction,
+      });
+    } catch (notifErr) {
+      console.error(`[VAULT] Failed to create notification for ${actualReturnType}`, notifErr);
+    }
 
     res.status(201).json({
       success: true,
@@ -159,6 +178,10 @@ export const createReturnRequest = async (req, res) => {
     });
   } catch (error) {
     console.error('[VAULT] createReturnRequest error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: 'Something went wrong. Please try again.',
+      code: 'INTERNAL_SERVER_ERROR',
+    });
   }
 };

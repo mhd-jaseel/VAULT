@@ -1,9 +1,8 @@
 export {
-  registerUser,
-  loginUser,
+  googleLogin,
   getUserProfile,
   updateUserProfile,
-  forgotPassword,
+  logoutUser,
 } from './userAuth.js';
 export {
   getAllCustomers,
@@ -12,3 +11,6 @@ export {
   blockUser,
   unblockUser,
 } from './adminUser.js';
+export {
+  adminLogin,
+} from './adminAuth.js';
