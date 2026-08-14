@@ -26,6 +26,12 @@ export default function Login() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setErrorMsg('');
+    
+    if (!credentialResponse?.credential) {
+      toast.error('Unable to retrieve Google credential. Please try again.');
+      return;
+    }
+
     setLoading(true);
     const result = await googleLogin(credentialResponse.credential);
     setLoading(false);
@@ -36,8 +42,8 @@ export default function Login() {
     } else if (result.blocked) {
       navigate('/blocked');
     } else {
-      toast.error(result.message || 'Google Login failed.');
-      setErrorMsg(result.message);
+      toast.error(result.message || 'Unable to sign in with Google. Please try again.');
+      setErrorMsg(result.message || 'Unable to sign in with Google. Please try again.');
     }
   };
 

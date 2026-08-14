@@ -7,25 +7,37 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize Auth state by checking with the backend
+  // Initialize Auth state by checking with the backend (idempotent guard)
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuthStatus = async () => {
       try {
         const res = await api.get('/auth/profile');
-        if (res.data.success) {
-          setUser(res.data.data);
-        } else {
-          setUser(null);
+        if (isMounted) {
+          if (res.data.success) {
+            setUser(res.data.data);
+          } else {
+            setUser(null);
+          }
         }
       } catch (error) {
-        // Not authenticated
-        setUser(null);
+        // Not authenticated — normal for public/login visits
+        if (isMounted) {
+          setUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
     
     checkAuthStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Axios response interceptor — auto-logout blocked users
@@ -59,6 +71,9 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const googleLogin = async (credential) => {
+    if (!credential) {
+      return { success: false, message: 'Google credential is required.' };
+    }
     try {
       const res = await api.post('/auth/google-login', { credential });
       if (res.data.success) {
@@ -67,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         return { success: true, user: userData };
       }
     } catch (error) {
-      return { success: false, message: error.response?.data?.message || 'Google Login failed.' };
+      return { success: false, message: error.response?.data?.message || 'Unable to sign in with Google. Please try again.' };
     }
   };
 

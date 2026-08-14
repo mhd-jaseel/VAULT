@@ -16,10 +16,22 @@ export const validateAdminLogin = [
 ];
 
 export const validateGoogleLogin = [
+  body('credential')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Google credential is required.'),
   body('token')
+    .optional()
     .trim()
     .notEmpty()
     .withMessage('Google credential token is required.'),
+  body().custom((value, { req }) => {
+    if (!req.body.credential && !req.body.token) {
+      throw new Error('Google credential is required.');
+    }
+    return true;
+  }),
 ];
 
 export const validateUpdateProfile = [

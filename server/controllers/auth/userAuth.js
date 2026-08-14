@@ -16,7 +16,7 @@ const setCookie = (res, token) => {
 };
 
 export const googleLogin = async (req, res) => {
-  const { credential } = req.body;
+  const credential = req.body.credential || req.body.token;
 
   if (!credential) {
     return res.status(400).json({ success: false, message: 'Missing Google credential.' });
