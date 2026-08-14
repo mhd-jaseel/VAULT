@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import Category from './models/Category.js';
 import Product from './models/Product.js';
 import Setting from './models/Setting.js';
-import HeroBanner from './models/HeroBanner.js';
+import Campaign from './models/Campaign.js';
 import Brand from './models/Brand.js';
 
 dotenv.config();
@@ -16,13 +16,13 @@ const seedData = async () => {
     await mongoose.connect(mongoURI);
     console.log('Connected to MongoDB.');
 
-    // Clear existing categories, products, settings, brands, and hero banners
+    // Clear existing categories, products, settings, brands, and campaigns
     await Category.deleteMany({});
     await Product.deleteMany({});
     await Setting.deleteMany({});
-    await HeroBanner.deleteMany({});
+    await Campaign.deleteMany({});
     await Brand.deleteMany({});
-    console.log('Cleared existing categories, products, settings, brands, and hero banners.');
+    console.log('Cleared existing categories, products, settings, brands, and campaigns.');
 
     // Seed default settings
     await Setting.create({
@@ -111,7 +111,6 @@ const seedData = async () => {
         stock: 25,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: true,
-        ratings: { average: 4.7, count: 42 }
       },
       {
         name: 'Minimalist Carbon Cardholder',
@@ -122,7 +121,6 @@ const seedData = async () => {
         stock: 30,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: false,
-        ratings: { average: 4.5, count: 18 }
       },
       // Perfumes
       {
@@ -134,7 +132,6 @@ const seedData = async () => {
         stock: 10,
         images: ['/uploads/oud_perfume.png'],
         isFeatured: true,
-        ratings: { average: 4.9, count: 35 }
       },
       {
         name: 'Noir Absolute Extrait',
@@ -145,7 +142,6 @@ const seedData = async () => {
         stock: 12,
         images: ['/uploads/oud_perfume.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 20 }
       },
       // Sunglasses
       {
@@ -157,7 +153,6 @@ const seedData = async () => {
         stock: 12,
         images: ['/uploads/gold_sunglasses.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 29 }
       },
       {
         name: 'Classic Black Acetate Sunglasses',
@@ -168,7 +163,6 @@ const seedData = async () => {
         stock: 15,
         images: ['/uploads/gold_sunglasses.png'],
         isFeatured: false,
-        ratings: { average: 4.7, count: 14 }
       },
       // Watches
       {
@@ -180,7 +174,6 @@ const seedData = async () => {
         stock: 15,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 24 }
       },
       {
         name: 'Titanium Stealth Automatic',
@@ -191,7 +184,6 @@ const seedData = async () => {
         stock: 8,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.9, count: 12 }
       },
       {
         name: 'Monaco Vintage Automatic',
@@ -202,7 +194,6 @@ const seedData = async () => {
         stock: 5,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: false,
-        ratings: { average: 4.9, count: 8 }
       },
       // Belts
       {
@@ -214,7 +205,6 @@ const seedData = async () => {
         stock: 20,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: false,
-        ratings: { average: 4.6, count: 15 }
       },
       {
         name: 'Brushed Buckle Leather Belt',
@@ -225,7 +215,6 @@ const seedData = async () => {
         stock: 18,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 22 }
       },
       // Caps
       {
@@ -237,7 +226,6 @@ const seedData = async () => {
         stock: 25,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: false,
-        ratings: { average: 4.5, count: 10 }
       },
       // Bracelets
       {
@@ -249,7 +237,6 @@ const seedData = async () => {
         stock: 30,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.7, count: 19 }
       },
       {
         name: 'Minimal Braided Leather Wristlet',
@@ -260,7 +247,6 @@ const seedData = async () => {
         stock: 40,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: false,
-        ratings: { average: 4.6, count: 14 }
       },
       // Chains
       {
@@ -272,7 +258,6 @@ const seedData = async () => {
         stock: 15,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 27 }
       },
       {
         name: 'Minimalist Cable Chain Gold',
@@ -283,7 +268,6 @@ const seedData = async () => {
         stock: 10,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: false,
-        ratings: { average: 4.7, count: 12 }
       },
       // Rings
       {
@@ -295,7 +279,6 @@ const seedData = async () => {
         stock: 35,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 31 }
       },
       {
         name: 'Sterling Silver Signet Ring',
@@ -306,7 +289,6 @@ const seedData = async () => {
         stock: 20,
         images: ['/uploads/watch_chrono.png'],
         isFeatured: false,
-        ratings: { average: 4.7, count: 16 }
       },
       // Shoes
       {
@@ -318,7 +300,6 @@ const seedData = async () => {
         stock: 8,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: true,
-        ratings: { average: 4.9, count: 15 }
       },
       {
         name: 'Urban Luxe Minimal Sneakers',
@@ -329,7 +310,6 @@ const seedData = async () => {
         stock: 14,
         images: ['/uploads/carbon_wallet.png'],
         isFeatured: true,
-        ratings: { average: 4.8, count: 21 }
       }
     ];
 
@@ -360,41 +340,37 @@ const seedData = async () => {
         isActive: true,
       },
       {
-        badgeText: 'MINIMALIST DESIGN',
-        heading: 'ENGINEERED STRENGTH',
+        label: 'MINIMALIST DESIGN',
+        title: 'ENGINEERED STRENGTH',
         description: 'Upgrade your everyday carry with carbon fiber wallets. Structured cardholders crafted with RFID blocking technology and quick card access.',
-        primaryButtonText: 'EXPLORE WALLETS',
-        primaryButtonLink: '/shop',
-        secondaryButtonText: 'VIEW ALL',
-        secondaryButtonLink: '/shop',
-        imageUrl: '/uploads/carbon_wallet.png',
-        imageAlt: 'Minimalist Carbon Wallet representation',
-        featuredLabel: 'POPULAR CHOICE',
-        featuredTitle: 'Saffiano Bifold Wallet',
-        featuredPrice: 3499,
-        order: 2,
+        ctaText: 'EXPLORE WALLETS',
+        ctaLink: '/shop',
+        desktopImageUrl: '/uploads/carbon_wallet.png',
+        mobileImageUrl: '/uploads/carbon_wallet.png',
+        featuredProductName: 'Saffiano Bifold Wallet',
+        featuredProductPrice: 3499,
+        featuredProductTag: 'POPULAR CHOICE',
+        sortOrder: 2,
         isActive: true,
       },
       {
-        badgeText: 'SIGNATURE SCENTS',
-        heading: 'MAGNETIC INFLUENCE',
+        label: 'SIGNATURE SCENTS',
+        title: 'MAGNETIC INFLUENCE',
         description: 'Discover olfactory luxury with our high-concentration extrait de parfums. Infused with precious Cambodian oud, damask rose, and cardamom.',
-        primaryButtonText: 'DISCOVER FRAGRANCES',
-        primaryButtonLink: '/shop',
-        secondaryButtonText: 'VIEW ALL',
-        secondaryButtonLink: '/shop',
-        imageUrl: '/uploads/oud_perfume.png',
-        imageAlt: 'Amber Oud Perfume bottle representation',
-        featuredLabel: 'BEST SELLER',
-        featuredTitle: 'Oud Perfume Bottle',
-        featuredPrice: 8999,
-        order: 3,
+        ctaText: 'DISCOVER FRAGRANCES',
+        ctaLink: '/shop',
+        desktopImageUrl: '/uploads/oud_perfume.png',
+        mobileImageUrl: '/uploads/oud_perfume.png',
+        featuredProductName: 'Oud Perfume Bottle',
+        featuredProductPrice: 8999,
+        featuredProductTag: 'BEST SELLER',
+        sortOrder: 3,
         isActive: true,
       }
     ];
 
-    await HeroBanner.insertMany(bannersData);
-    console.log('Seeded hero banners successfully.');
+    await Campaign.insertMany(bannersData);
+    console.log('Seeded campaigns successfully.');
 
     await mongoose.connection.close();
     console.log('MongoDB connection closed.');

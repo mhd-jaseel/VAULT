@@ -1,5 +1,5 @@
 import express from 'express';
-import { getSettings, updateSettings } from '../controllers/settingsController.js';
+import { getSettings, updateSettings } from '../controllers/settings/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 

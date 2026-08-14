@@ -5,7 +5,7 @@ import {
   createBrand,
   updateBrand,
   deleteBrand,
-} from '../controllers/brandController.js';
+} from '../controllers/brand/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();

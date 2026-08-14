@@ -1,14 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle, RotateCcw, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, Clock, Check, Truck, Package, CheckSquare, XCircle, RotateCcw, ChevronRight, X, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import ReturnModal from '../components/ReturnModal';
+import WriteReviewModal from '../components/reviews/WriteReviewModal';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function OrderTracking() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Order Tracking | Vault.Co',
+      description: 'Track real-time delivery status of your Vault.Co order.',
+      noIndex: true,
+      canonicalPath: `/order-tracking/${orderId || ''}`,
+    });
+  }, [orderId]);
+
+  // Review Modal states
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [itemToReview, setItemToReview] = useState(null);
+  const [itemReviewData, setItemReviewData] = useState(null);
+  const [orderReviewsMap, setOrderReviewsMap] = useState({});
 
   // Return Modal states
   const [returnModalOpen, setReturnModalOpen] = useState(false);
@@ -24,6 +41,33 @@ export default function OrderTracking() {
     setCancelModalOpen(true);
   };
 
+  const fetchOrderReviews = async (items) => {
+    if (!items || items.length === 0) return;
+    try {
+      const promises = items.map(async (item) => {
+        const pId = item.product?._id || item.product;
+        if (!pId) return null;
+        try {
+          const res = await axios.get(`/reviews/eligibility/${pId}`);
+          if (res.data.success) {
+            return { pId, data: res.data.data };
+          }
+        } catch (e) {
+          return null;
+        }
+        return null;
+      });
+      const results = await Promise.all(promises);
+      const map = {};
+      results.forEach((r) => {
+        if (r && r.pId) map[r.pId] = r.data;
+      });
+      setOrderReviewsMap(map);
+    } catch (e) {
+      console.error('Error fetching order reviews:', e);
+    }
+  };
+
   const confirmCancellation = async () => {
     if (!itemToCancel) return;
     setIsCancelling(true);
@@ -35,7 +79,12 @@ export default function OrderTracking() {
         setItemToCancel(null);
         // Refresh order data
         const updatedOrder = await axios.get(`/orders/${orderId}`);
-        if (updatedOrder.data.success) setOrder(updatedOrder.data.data);
+        if (updatedOrder.data.success) {
+          setOrder(updatedOrder.data.data);
+          if (updatedOrder.data.data.status === 'delivered') {
+            fetchOrderReviews(updatedOrder.data.data.items);
+          }
+        }
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Unable to cancel this item.');
@@ -49,6 +98,9 @@ export default function OrderTracking() {
       .then((res) => {
         if (res.data.success) {
           setOrder(res.data.data);
+          if (res.data.data.status === 'delivered') {
+            fetchOrderReviews(res.data.data.items);
+          }
         }
       })
       .catch((err) => console.error(err))
@@ -159,6 +211,37 @@ export default function OrderTracking() {
 
                 {/* Item Actions */}
                 <div className="flex items-center gap-2">
+                  {isDelivered && itemStatus === 'ACTIVE' && (
+                    orderReviewsMap[item.product?._id || item.product]?.hasReviewed ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200/60 flex items-center gap-1">
+                          <Check size={10} /> REVIEWED
+                        </span>
+                        <button
+                          onClick={() => {
+                            setItemToReview(item);
+                            setItemReviewData(orderReviewsMap[item.product?._id || item.product]?.existingReview || null);
+                            setReviewModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-200 font-mono text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          EDIT REVIEW
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setItemToReview(item);
+                          setItemReviewData(null);
+                          setReviewModalOpen(true);
+                        }}
+                        className="px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-black text-white font-mono text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <Star size={10} className="text-[#f5a623] fill-[#f5a623]" /> WRITE A REVIEW
+                      </button>
+                    )
+                  )}
+
                   {itemStatus === 'ACTIVE' && isPrePacked && (
                     <button
                       onClick={() => handleCancelClick(item)}
@@ -236,11 +319,32 @@ export default function OrderTracking() {
         {isCancelled ? (
           <div className="flex gap-4 items-start p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600">
             <XCircle className="flex-shrink-0 mt-0.5" size={18} />
-            <div>
+            <div className="space-y-1">
               <h5 className="font-bold text-xs uppercase tracking-wide font-mono">Order Cancelled</h5>
-              <p className="text-[11px] text-text-secondary mt-1">
-                This order has been cancelled and returned to inventory. If you paid via UPI, refunds will reflect in 3-5 business days.
-              </p>
+              {order.cancelledBy && (
+                <p className="text-[11px] text-text-secondary">
+                  <strong>Cancelled by:</strong> {order.cancelledBy === 'ADMIN' ? 'Admin' : 'Customer'}
+                </p>
+              )}
+              {order.cancellationReason && (
+                <p className="text-[11px] text-text-secondary">
+                  <strong>Reason:</strong> {order.cancellationReason}
+                </p>
+              )}
+              {order.refundStatus === 'REFUNDED' ? (
+                <p className="text-[11px] text-emerald-600 font-bold mt-1">
+                  ₹{order.refundedAmount || order.grandTotal} payment refunded successfully.
+                  {order.refundTransactionReference && ` (Ref: ${order.refundTransactionReference})`}
+                </p>
+              ) : order.refundStatus === 'NOT_REFUNDED' ? (
+                <p className="text-[11px] text-amber-700 font-medium mt-1">
+                  Manual refund of ₹{order.grandTotal} is being processed.
+                </p>
+              ) : (
+                <p className="text-[11px] text-text-secondary mt-1">
+                  This order has been cancelled and returned to inventory.
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -351,6 +455,27 @@ export default function OrderTracking() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Write / Edit Review Modal for Order Item */}
+      {itemToReview && (
+        <WriteReviewModal
+          isOpen={reviewModalOpen}
+          onClose={() => {
+            setReviewModalOpen(false);
+            setItemToReview(null);
+            setItemReviewData(null);
+          }}
+          productId={itemToReview.product?._id || itemToReview.product}
+          productName={itemToReview.name}
+          existingReview={itemReviewData}
+          onReviewSubmitted={() => {
+            toast.success(itemReviewData ? 'Review updated successfully!' : 'Thank you for reviewing your purchased item!');
+            if (order && order.items) {
+              fetchOrderReviews(order.items);
+            }
+          }}
+        />
       )}
     </div>
   );

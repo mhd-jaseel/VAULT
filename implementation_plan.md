@@ -1,91 +1,125 @@
-# Implementation Plan - VAULT: Premium Men's Accessories E-commerce
+# Professional Product Review System & Review Cleanup
 
-This plan outlines the architecture, data models, API endpoints, frontend views, and real-time socket mechanics for the VAULT premium accessories e-commerce website.
+Upgrade the existing basic review system into a production-ready customer review & rating system with purchase verification, rating breakdown, image uploads, helpful voting, report mechanism, and admin moderation, followed by total cleanup of hardcoded/dummy reviews.
 
 ## User Review Required
-
-> [!IMPORTANT]
-> **Tailwind CSS Configuration**: The project requested Tailwind CSS. We will initialize a React frontend using Vite and configure Tailwind CSS v3/v4 to achieve the luxury styling (Black, Gold, White, Glassmorphism, smooth animations).
-> **Uploads**: Images for products, categories, and payment screenshots will be saved locally in the backend's `uploads/` directory for simplicity, using Express static middleware.
-> **Database**: We will use local MongoDB or standard MongoDB Atlas connection via `MONGODB_URI` specified in the `.env` file. We will include a seed database script or default admin user creation at startup.
-
-## Open Questions
-
-None at the moment. We will proceed with the proposed modular architecture.
+- Reviews will default to `approved` (or `reported` if flagged) for immediate visibility upon verified purchase submission, while allowing Admins to view, approve, reject, hide, or delete reviews from the Admin Moderation dashboard (`/admin/reviews`).
+- Eligibility rule: Only authenticated users who have purchased the item in a valid completed/delivered order where the item is active (not cancelled, not refunded/returned) can submit/edit reviews.
+- Exactly 1 review per product purchase per user.
 
 ---
 
 ## Proposed Changes
 
-### Database & Models Setup
+### Backend
 
-We will create Mongoose models in `server/models/`:
-* `User.js`: User accounts (roles: `customer`, `admin`).
-* `Category.js`: Category schema (name, description, image).
-* `Product.js`: Product details (name, description, price, category, stock, images, ratings).
-* `Order.js`: Details of items, total, shipping details, payment method, order status, timeline tracking.
-* `Payment.js`: UPI Transaction ID, uploaded screenshot path, status (`pending`, `verified`, `rejected`), associated order.
-* `Notification.js`: Notification message, user, read/unread status, type.
-* `Wishlist.js`: User's saved product items.
-* `Review.js`: Product reviews, ratings, user reference.
-* `Setting.js`: Store settings (name, logo, phone, WhatsApp number, UPI ID, UPI QR Code, shipping charges).
+#### [MODIFY] [Review.js](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/server/models/Review.js)
+- Upgrade schema:
+  - `product` (ObjectId ref Product, required)
+  - `user` (ObjectId ref User, required)
+  - `order` (ObjectId ref Order)
+  - `rating` (Number 1-5, required)
+  - `title` (String, max 100 chars, trimmed)
+  - `comment` (String, max 2000 chars, required)
+  - `images` ([String] - up to 5 images)
+  - `isVerifiedPurchase` (Boolean, default false)
+  - `status` (Enum: `['pending', 'approved', 'rejected', 'hidden']`, default `'approved'`)
+  - `helpfulVotes` ([{ type: ObjectId, ref: 'User' }])
+  - `helpfulCount` (Number, default 0)
+  - `reports` ([{ user: { type: ObjectId, ref: 'User' }, reason: String, createdAt: Date }])
+  - `reportCount` (Number, default 0)
+  - Indexes: `{ product: 1, status: 1 }`, `{ user: 1 }`, `{ product: 1, user: 1 } (unique)`.
+
+#### [MODIFY] [reviewController.js](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/server/controllers/reviewController.js)
+- `getProductReviews(req, res)`:
+  - Query parameters: `page`, `limit` (default 10), `rating` (1-5 filter), `sortBy` (`relevant`, `newest`, `highest`, `lowest`, `helpful`).
+  - Calculate real rating statistics aggregation: `averageRating`, `totalReviews`, `ratingDistribution` (counts & percentages for 5, 4, 3, 2, 1 stars).
+  - Return review items with user name, avatar, verified badge, images, helpful status for current logged-in user.
+- `checkEligibility(req, res)`:
+  - Verifies if the authenticated user has purchased the product with eligible delivered order and whether they already reviewed it.
+- `createReview(req, res)`:
+  - Strict purchase verification against delivered Order & Order item.
+  - Duplication check.
+  - Image upload support via Multer (up to 5 images).
+  - Recalculate product rating average & count.
+- `updateReview(req, res)`:
+  - Edit rating, title, comment, images (only owner).
+  - Recalculate product rating.
+- `deleteReview(req, res)`:
+  - Delete review (owner or admin).
+  - Recalculate product rating.
+- `toggleHelpful(req, res)`:
+  - Toggle helpful vote atomically (increment/decrement count, toggle user ID in `helpfulVotes`).
+- `reportReview(req, res)`:
+  - Record user report with reason, prevent duplicate reports from the same user.
+- Admin Moderation Controllers:
+  - `getAdminReviews(req, res)`: Paginated with filters (status, product, search, reported).
+  - `updateReviewStatus(req, res)`: Approve, Reject, Hide.
+  - `adminDeleteReview(req, res)`.
+
+#### [MODIFY] [reviewRoutes.js](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/server/routes/reviewRoutes.js)
+- Register public, protected customer, and admin moderation routes with Multer upload middleware.
 
 ---
 
-### Backend Components
+### Frontend
 
-#### 1. Configuration & Utilities (`server/config/`, `server/utils/`)
-* Database connection configuration.
-* Socket.io setup module.
-* Seed scripts for admin user.
+#### [NEW] [ReviewSection.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/components/reviews/ReviewSection.jsx)
+- Top Rating Overview:
+  - Large calculated average rating (e.g. 4.8 ★)
+  - Total real reviews count
+  - Star rating visualization & dynamic percentage progress bars (5★ to 1★)
+  - Rating filter pills: `[All] [5★] [4★] [3★] [2★] [1★]`
+  - Sort dropdown: `Most Relevant`, `Newest`, `Highest Rating`, `Lowest Rating`, `Most Helpful`
+  - "WRITE A REVIEW" button (opens modern modal drawer).
+- Review List:
+  - User avatar, name, `✓ Verified Purchase` badge, date.
+  - Star rating, review title, detailed comment.
+  - Review photo gallery with lightbox/preview.
+  - 👍 Helpful button with dynamic vote toggle & count.
+  - Report button with prompt modal.
+  - Edit / Delete buttons for review owner.
+- Pagination / "Load More Reviews" UX.
+- Premium Empty State: "No reviews yet. Be the first customer to share your experience."
 
-#### 2. Middleware (`server/middleware/`)
-* `auth.js`: JWT token verification and roles verification (`isAdmin`).
-* `upload.js`: Multer storage configuration for handling image uploads.
-* `validate.js`: Express Validator schemas for request body validations.
+#### [NEW] [WriteReviewModal.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/components/reviews/WriteReviewModal.jsx)
+- Interactive 1–5 Star selector with descriptive hover/selected text (e.g., 5 Stars - Excellent).
+- Review Title & Experience Textarea with length limits.
+- Multi-photo upload with thumbnail preview & remove button (up to 5 images).
+- Clean submission state & validation.
 
-#### 3. Controllers & Routes (`server/controllers/`, `server/routes/`)
-* `auth`: Register, login, forgot password, profile retrieval/update.
-* `products`: Public browse, search, filters, category-wise, plus admin CRUD.
-* `categories`: CRUD for admin, list for customers.
-* `orders`: Order creation, history, tracking status update.
-* `payments`: Payment registration (screenshot/UPI transaction ID), verification/rejection.
-* `notifications`: Retrieve user or admin notifications.
-* `settings`: Admin settings management, public store info retrieval.
+#### [NEW] [AdminReviews.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/pages/admin/AdminReviews.jsx)
+- Admin review dashboard showing Product, Customer, Rating, Verified Purchase status, Review title & preview, Report count, Status badge (`Approved`, `Pending`, `Reported`, `Hidden`, `Rejected`).
+- Actions: View details drawer, Approve, Reject, Hide, Delete.
 
-#### 4. Socket Integration (`server/socket/`)
-* Socket connection listener, room joining by User ID, and helper functions to emit status updates.
+#### [MODIFY] [ProductDetails.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/pages/ProductDetails.jsx)
+- Replace basic old review block with `<ReviewSection productId={product._id} />`.
+
+#### [MODIFY] [OrderTracking.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/pages/OrderTracking.jsx)
+- Add "Write a Review" / "View Review" action button for delivered items.
+
+#### [MODIFY] [AdminSidebar.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/components/AdminSidebar.jsx) & [App.jsx](file:///c:/Users/HP/ZBook/Power/G7/OneDrive/Desktop/vault/client/src/App.jsx)
+- Add "Customer Reviews" navigation item under `MARKETING` or `CUSTOMERS` and `/admin/reviews` route.
 
 ---
 
-### Frontend Components
+### Review System Cleanup
 
-#### 1. Context & Routing (`client/src/context/`, `client/src/routes/`)
-* `AuthContext`: Manages login status, token, user profile, and active permissions.
-* `CartContext`: Manages items added, quantities, and persistent localStorage sync.
-* `SocketContext`: Setup socket connection, listen for real-time notifications.
-* Router configuration with protected routes for dashboard and admin views.
-
-#### 2. Layouts & Themes (`client/src/layouts/`, `client/src/components/`)
-* Layout components: `Layout` (with header, footer, bottom navigation for mobile, notification drawer).
-* Premium theme components using gold accent colors (`#D4AF37`), dark styling, and rich glassmorphism.
-
-#### 3. Core Pages (`client/src/pages/`)
-* Home, shop (catalog with search/filter/sort), product details, cart, checkout, payment upload, order success with WhatsApp integration.
-* Order history, tracking, notifications, customer profile.
-* **Admin Panel**: Dashboard stats, product CRUD, category CRUD, order management, payment verification, notifications log, settings.
+1. Verify and eliminate any dummy review arrays, mock review objects, fake static star counts, or fake reviews in frontend and seed files.
+2. Remove old review form markup and unused review state variables from `ProductDetails.jsx`.
+3. Preserve all legitimate database reviews.
 
 ---
 
 ## Verification Plan
 
-### Automated Tests
-* None specified. We will perform interactive verification.
+### Automated / Build Tests
+- Execute `npm run build` in `client` to verify zero compile or bundle errors.
+- Test review endpoints via Node.js invocation / API checks.
 
-### Manual Verification
-* Start server and client locally.
-* Test registration, login, and profile modification.
-* Check product filtering, search, and sorting on mobile viewports.
-* Run through checkout process using manual UPI upload: upload a sample screenshot, input transaction ID, and check admin status.
-* Check real-time Socket.IO notifications: trigger an order update from Admin Panel and watch the customer receive the badge update immediately.
-* Click checkout WhatsApp confirmation and verify link structure.
+### Functional Verification
+- Verify unauthenticated user prompt vs authenticated eligible purchaser review flow.
+- Verify non-purchasers or cancelled orders cannot submit reviews.
+- Verify 1 review per product constraint.
+- Test helpful voting toggle and duplicate report prevention.
+- Test admin moderation (Approve, Reject, Hide, Delete) and dynamic product rating recalculation.

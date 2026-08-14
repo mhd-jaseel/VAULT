@@ -21,8 +21,12 @@ import {
   ChevronRight,
   X,
   ShieldAlert,
+  Truck,
+  Star,
+  FileText,
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import VaultLogo from './VaultLogo';
 
 export default function AdminSidebar({ isMobileOpen, onMobileClose }) {
   const { user, logout } = useContext(AuthContext);
@@ -71,12 +75,15 @@ export default function AdminSidebar({ isMobileOpen, onMobileClose }) {
     {
       title: 'CUSTOMERS',
       items: [
+        { label: 'Customer Reviews', path: '/admin/reviews', icon: Star },
         { label: 'Manage Users', path: '/admin/users', icon: Users },
       ],
     },
     {
       title: 'STORE',
       items: [
+        { label: 'Shipping Settings', path: '/admin/shipping', icon: Truck },
+        { label: 'About Page Management', path: '/admin/about', icon: FileText },
         { label: 'Store Configuration', path: '/admin/settings', icon: Sliders },
         { label: 'Home Page Preview', path: '/', icon: Eye, external: true },
         { label: 'Shop Page Preview', path: '/shop?preview=true', icon: Eye, external: true },
@@ -94,6 +101,13 @@ export default function AdminSidebar({ isMobileOpen, onMobileClose }) {
         ]
       : []),
   ];
+
+  const isSuperAdmin = Boolean(
+    user &&
+      user.email &&
+      user.email.toLowerCase() ===
+        (import.meta.env.VITE_ADMIN_EMAIL || 'vault.co.6235@gmail.com').toLowerCase()
+  );
 
   return (
     <>
@@ -113,14 +127,16 @@ export default function AdminSidebar({ isMobileOpen, onMobileClose }) {
       >
         {/* Top Branding Header */}
         <div className="p-5 border-b border-[#e5e5e5] flex items-center justify-between">
-          <Link to="/admin/dashboard" className="flex items-center gap-2">
-            <span className="font-display font-black text-xl tracking-[0.2em] text-[#111111] uppercase">
-              VAULT<span className="text-[#d97706]">.</span>
-            </span>
-            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#d97706] bg-[#fef3c7] px-2 py-0.5 rounded-full border border-[#fde68a]">
-              ADMIN
-            </span>
-          </Link>
+          <VaultLogo 
+            to="/admin/dashboard" 
+            size="admin" 
+            theme="dark"
+            badge={
+              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#d97706] bg-[#fef3c7] px-2 py-0.5 rounded-full border border-[#fde68a] ml-1">
+                {isSuperAdmin ? 'SUPER ADMIN' : 'ADMIN'}
+              </span>
+            }
+          />
 
           <button
             onClick={onMobileClose}

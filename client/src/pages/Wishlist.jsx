@@ -4,11 +4,22 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { PremiumSwal } from '../utils/swalHelper';
 import { Trash2, Heart, ChevronRight } from 'lucide-react';
+import { resolveImage } from '../utils/imageHelper';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Wishlist() {
   const { user } = useContext(AuthContext);
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Wishlist | Vault.Co',
+      description: 'Your saved favorite luxury items at Vault.Co.',
+      noIndex: true,
+      canonicalPath: '/wishlist',
+    });
+  }, []);
 
   const fetchWishlist = async () => {
     try {
@@ -100,9 +111,12 @@ export default function Wishlist() {
               <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
                 {prod.images && prod.images.length > 0 ? (
                   <img
-                    src={`http://localhost:5000${prod.images[0]}`}
+                    src={resolveImage(prod.images[0])}
                     alt={prod.name}
-                    className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500"
+                    className="w-full h-full object-contain md:max-h-full md:max-w-full group-hover:scale-105 transition-all duration-500"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
@@ -119,9 +133,11 @@ export default function Wishlist() {
                 <span className="card-pill brand-pill">
                   {prod.brand?.name || 'VAULT'}
                 </span>
-                <span className="card-pill rating-pill">
-                  ★ {prod.ratings?.average ? prod.ratings.average.toFixed(1) : '4.8'}
-                </span>
+                {prod.ratings && prod.ratings.count > 0 ? (
+                  <span className="card-pill rating-pill">
+                    ★ {prod.ratings.average ? prod.ratings.average.toFixed(1) : '0.0'}
+                  </span>
+                ) : null}
               </div>
               <div className="p-4 flex flex-col gap-2 flex-1 justify-between">
                 <div>

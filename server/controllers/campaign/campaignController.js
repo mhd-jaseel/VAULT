@@ -1,5 +1,5 @@
-import Campaign from '../models/Campaign.js';
-import { paginateAggregate } from '../utils/paginate.js';
+import Campaign from '../../models/Campaign.js';
+import { paginateAggregate } from '../../utils/paginate.js';
 
 // @desc    Get all active campaigns (public)
 // @route   GET /campaigns

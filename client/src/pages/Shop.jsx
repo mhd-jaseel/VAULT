@@ -8,6 +8,15 @@ import Pagination from '../components/Pagination';
 import CountdownTimer from '../components/CountdownTimer';
 import ProductCard from '../components/ProductCard';
 import LoginRequiredModal from '../components/LoginRequiredModal';
+import VaultSelect from '../components/VaultSelect';
+import { setDocumentSEO } from '../utils/seoHelper';
+
+// Stock filter options
+const SHOP_STOCK_OPTIONS = [
+  { value: 'all', label: 'All Stock' },
+  { value: 'in_stock', label: 'In Stock Only' },
+  { value: 'out_of_stock', label: 'Out of Stock' },
+];
 
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,10 +67,18 @@ export default function Shop() {
         }
       }
     } catch (error) {
-      console.error('Error toggling wishlist:', error);
+      toast.error('Failed to update wishlist');
     }
   };
   
+  const sortOptions = [
+    { value: 'newest', label: 'NEWEST ARRIVALS' },
+    { value: 'price_asc', label: 'PRICE: LOW TO HIGH' },
+    { value: 'price_desc', label: 'PRICE: HIGH TO LOW' },
+    { value: 'name_asc', label: 'NAME: A TO Z' },
+    { value: 'name_desc', label: 'NAME: Z TO A' },
+  ];
+
   // Filter states
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
@@ -70,7 +87,10 @@ export default function Shop() {
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [inStockOnly, setInStockOnly] = useState(searchParams.get('inStockOnly') === 'true');
+
+  // Initial stock filter parse (supports legacy inStockOnly=true or stock=in_stock/out_of_stock)
+  const initialStockParam = searchParams.get('stock') || (searchParams.get('inStockOnly') === 'true' ? 'in_stock' : 'all');
+  const [stockFilter, setStockFilter] = useState(initialStockParam);
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const [pages, setPages] = useState(1);
 
@@ -78,7 +98,7 @@ export default function Shop() {
   const [tempCategory, setTempCategory] = useState(selectedCategory);
   const [tempMinPrice, setTempMinPrice] = useState(minPrice);
   const [tempMaxPrice, setTempMaxPrice] = useState(maxPrice);
-  const [tempInStockOnly, setTempInStockOnly] = useState(inStockOnly);
+  const [tempStockFilter, setTempStockFilter] = useState(stockFilter);
   const [tempSort, setTempSort] = useState(sort);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const [desktopCategoriesOpen, setDesktopCategoriesOpen] = useState(false);
@@ -87,7 +107,7 @@ export default function Shop() {
     setTempCategory(selectedCategory);
     setTempMinPrice(minPrice);
     setTempMaxPrice(maxPrice);
-    setTempInStockOnly(inStockOnly);
+    setTempStockFilter(stockFilter);
     setTempSort(sort);
     setShowMobileFilters(true);
   };
@@ -96,7 +116,7 @@ export default function Shop() {
     setSelectedCategory(tempCategory);
     setMinPrice(tempMinPrice);
     setMaxPrice(tempMaxPrice);
-    setInStockOnly(tempInStockOnly);
+    setStockFilter(tempStockFilter);
     setSort(tempSort);
     setPage(1);
 
@@ -104,7 +124,7 @@ export default function Shop() {
       category: tempCategory,
       minPrice: tempMinPrice,
       maxPrice: tempMaxPrice,
-      inStockOnly: tempInStockOnly ? 'true' : '',
+      stock: tempStockFilter !== 'all' ? tempStockFilter : '',
       sort: tempSort,
       page: 1
     });
@@ -124,19 +144,12 @@ export default function Shop() {
     setSearchParams(updated);
   };
 
-  const sortOptions = [
-    { value: 'newest', label: 'NEWEST ARRIVALS' },
-    { value: 'price_asc', label: 'PRICE: LOW TO HIGH' },
-    { value: 'price_desc', label: 'PRICE: HIGH TO LOW' },
-    { value: 'name_asc', label: 'NAME: A TO Z' },
-    { value: 'name_desc', label: 'NAME: Z TO A' },
-  ];
-
   // Sync search parameters from URL on load
   useEffect(() => {
     setSearch(searchParams.get('search') || '');
     setSelectedCategory(searchParams.get('category') || '');
-    setInStockOnly(searchParams.get('inStockOnly') === 'true');
+    const currentStock = searchParams.get('stock') || (searchParams.get('inStockOnly') === 'true' ? 'in_stock' : 'all');
+    setStockFilter(currentStock);
     setPage(Number(searchParams.get('page')) || 1);
     setSort(searchParams.get('sort') || 'newest');
   }, [searchParams]);
@@ -156,17 +169,35 @@ export default function Shop() {
   const isReplacementMode = mode === 'replacement' && Boolean(returnIdParam);
   const [replacementContext, setReplacementContext] = useState(null);
 
+  // Debounced search state to prevent spamming backend requests on each keystroke
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      if (search !== (searchParams.get('search') || '')) {
+        updateUrlParams({ search, page: 1 });
+      }
+    }, 350);
+
+    return () => clearTimeout(handler);
+  }, [search]);
+
   // Fetch products when filters change
   const fetchProducts = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (search) params.append('search', search);
+      if (debouncedSearch) params.append('search', debouncedSearch);
       if (selectedCategory) params.append('category', selectedCategory);
       if (minPrice) params.append('minPrice', minPrice);
       if (maxPrice) params.append('maxPrice', maxPrice);
       if (sort) params.append('sort', sort);
-      if (inStockOnly) params.append('inStockOnly', 'true');
+      if (stockFilter === 'in_stock') {
+        params.append('inStockOnly', 'in_stock');
+      } else if (stockFilter === 'out_of_stock') {
+        params.append('inStockOnly', 'out_of_stock');
+      }
       if (isReplacementMode) params.append('returnId', returnIdParam);
       params.append('page', page);
       params.append('limit', 21);
@@ -190,7 +221,32 @@ export default function Shop() {
 
   useEffect(() => {
     fetchProducts();
-  }, [search, selectedCategory, sort, minPrice, maxPrice, inStockOnly, page, mode, returnIdParam]);
+
+    const currentCat = categories.find((c) => c._id === selectedCategory);
+    const catName = currentCat ? currentCat.name : null;
+
+    const pageTitle = catName
+      ? `${catName} | Vault.Co`
+      : debouncedSearch
+      ? `Search: "${debouncedSearch}" | Vault.Co`
+      : 'Shop Products | Vault.Co';
+
+    const pageDesc = catName
+      ? `Browse our curated collection of luxury ${catName.toLowerCase()} at Vault.Co. Exceptional craft and premium materials.`
+      : 'Browse premium wallets, engineered watches, belts, chains, and fragrances for the modern gentleman at Vault.Co.';
+
+    const breadcrumbs = [
+      { name: 'Home', url: '/' },
+      { name: catName || 'Shop', url: selectedCategory ? `/shop?category=${selectedCategory}` : '/shop' },
+    ];
+
+    setDocumentSEO({
+      title: pageTitle,
+      description: pageDesc,
+      canonicalPath: selectedCategory ? `/shop?category=${selectedCategory}` : '/shop',
+      breadcrumbList: breadcrumbs,
+    });
+  }, [debouncedSearch, selectedCategory, sort, minPrice, maxPrice, stockFilter, page, mode, returnIdParam, categories]);
 
   const handleClearFilters = () => {
     setSearch('');
@@ -198,7 +254,7 @@ export default function Shop() {
     setMinPrice('');
     setMaxPrice('');
     setSort('newest');
-    setInStockOnly(false);
+    setStockFilter('all');
     setPage(1);
     setSearchParams({});
   };
@@ -377,21 +433,31 @@ export default function Shop() {
             </div>
           </div>
 
-          {/* Availability (In Stock Filter) */}
+          {/* Availability (Stock Filter) */}
           <div className="glass-card !p-4">
             <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider mb-3">Availability</h4>
-            <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
-              <input
-                type="checkbox"
-                checked={inStockOnly}
-                onChange={(e) => {
-                  setInStockOnly(e.target.checked);
-                  updateUrlParams({ inStockOnly: e.target.checked ? 'true' : '', page: 1 });
-                }}
-                className="w-4 h-4 rounded border-border-light text-[#141414] focus:ring-0 focus:ring-offset-0 cursor-pointer"
-              />
-              <span className="text-xs font-mono text-text-secondary uppercase">In Stock Only</span>
-            </label>
+            <div className="space-y-1.5 font-mono text-xs">
+              {SHOP_STOCK_OPTIONS.map((opt) => {
+                const isSelected = stockFilter === opt.value;
+                return (
+                  <label
+                    key={opt.value}
+                    onClick={() => {
+                      setStockFilter(opt.value);
+                      updateUrlParams({ stock: opt.value !== 'all' ? opt.value : '', inStockOnly: '', page: 1 });
+                    }}
+                    className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
+                      isSelected
+                        ? 'bg-[#111111] text-white border-[#111111] font-bold shadow-xs'
+                        : 'bg-white text-text-secondary border-border-light hover:bg-neutral-50 hover:text-text-primary'
+                    }`}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
           {/* Sorting */}
@@ -448,54 +514,57 @@ export default function Shop() {
         {showMobileFilters && (
           <div className="fixed inset-0 z-50 bg-[#111111]/40 backdrop-blur-sm flex justify-end md:hidden">
             <div className="w-full max-w-sm bg-white h-full flex flex-col shadow-2xl animate-slide-in">
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-neutral-100">
-                <h3 className="font-mono font-bold text-sm text-[#111111] uppercase tracking-wider">Filters</h3>
-                <button 
+              {/* Drawer Header */}
+              <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
+                <span className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary">FILTERS</span>
+                <button
                   onClick={() => setShowMobileFilters(false)}
-                  className="text-xs font-mono text-neutral-400 uppercase tracking-widest hover:text-[#111111]"
+                  className="text-xs font-mono text-text-secondary hover:text-text-primary uppercase tracking-wider"
                 >
-                  CLOSE
+                  ✕ CLOSE
                 </button>
               </div>
               
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {/* Drawer Body */}
+              <div className="p-5 overflow-y-auto flex-1 space-y-6">
                 {/* Categories */}
                 <div className="space-y-3">
                   <button
+                    type="button"
                     onClick={() => setMobileCategoriesOpen(!mobileCategoriesOpen)}
-                    className="w-full flex items-center justify-between font-mono font-bold text-xs text-text-primary uppercase tracking-wider text-left focus:outline-none cursor-pointer"
+                    className="w-full flex items-center justify-between font-mono font-bold text-xs text-text-primary uppercase tracking-wider select-none"
                   >
                     <span>Categories</span>
                     <ChevronDown 
                       size={14} 
-                      className={`text-text-secondary transition-transform duration-200 ${mobileCategoriesOpen ? 'rotate-180' : 'rotate-0'}`} 
+                      className={`text-text-secondary transition-transform duration-200 ${mobileCategoriesOpen ? 'rotate-180' : ''}`} 
                     />
                   </button>
                   {mobileCategoriesOpen && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
+                    <div className="space-y-1.5 pl-1 animate-in fade-in duration-150">
                       <button
+                        type="button"
                         onClick={() => setTempCategory('')}
-                        className={`text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer border ${
-                          !tempCategory 
-                            ? 'bg-[#141414] text-white border-[#141414] font-bold' 
-                            : 'text-text-secondary border-border-light bg-white hover:bg-neutral-50'
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-colors ${
+                          tempCategory === ''
+                            ? 'bg-[#141414] text-white font-bold'
+                            : 'text-text-secondary hover:bg-neutral-50'
                         }`}
                       >
-                        ALL ACCESSORIES
+                        All Categories
                       </button>
                       {categories.map((cat) => (
                         <button
                           key={cat._id}
+                          type="button"
                           onClick={() => setTempCategory(cat._id)}
-                          className={`text-[10px] font-mono tracking-wide py-2 px-3 rounded-full transition-colors cursor-pointer border truncate ${
-                            tempCategory === cat._id 
-                              ? 'bg-[#141414] text-white border-[#141414] font-bold' 
-                              : 'text-text-secondary border-border-light bg-white hover:bg-neutral-50'
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-mono transition-colors ${
+                            tempCategory === cat._id
+                              ? 'bg-[#141414] text-white font-bold'
+                              : 'text-text-secondary hover:bg-neutral-50'
                           }`}
                         >
-                          {cat.name.toUpperCase()}
+                          {cat.name}
                         </button>
                       ))}
                     </div>
@@ -504,7 +573,7 @@ export default function Shop() {
 
                 {/* Price Range */}
                 <div className="space-y-3">
-                  <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider">Price Range</h4>
+                  <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider">Price (₹)</h4>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -524,18 +593,28 @@ export default function Shop() {
                   </div>
                 </div>
 
-                {/* Availability */}
+                {/* Availability (Mobile Stock Options) */}
                 <div className="space-y-3">
                   <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider">Availability</h4>
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none py-1">
-                    <input
-                      type="checkbox"
-                      checked={tempInStockOnly}
-                      onChange={(e) => setTempInStockOnly(e.target.checked)}
-                      className="w-4 h-4 rounded border-border-light text-[#141414] focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                    />
-                    <span className="text-xs font-mono text-text-secondary uppercase">In Stock Only</span>
-                  </label>
+                  <div className="grid grid-cols-3 gap-1.5 font-mono text-xs">
+                    {SHOP_STOCK_OPTIONS.map((opt) => {
+                      const isSelected = tempStockFilter === opt.value;
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setTempStockFilter(opt.value)}
+                          className={`p-2.5 rounded-xl border text-[11px] font-bold text-center transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-[#111111] text-white border-[#111111] shadow-xs'
+                              : 'bg-white text-text-secondary border-border-light hover:bg-neutral-50'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Sorting */}

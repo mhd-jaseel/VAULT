@@ -13,6 +13,7 @@ import {
   Menu,
   Wallet
 } from 'lucide-react';
+import VaultLogo from './VaultLogo';
 
 export default function Header({ onMenuClick }) {
   const { user, logout } = useContext(AuthContext);
@@ -44,11 +45,7 @@ export default function Header({ onMenuClick }) {
         </button>
 
         {/* Center: Stylish typography logo */}
-        <Link to="/" className="flex items-center">
-          <span className="font-sans font-black text-lg tracking-[0.25em] text-neutral-900 select-none">
-            VAULT.CO
-          </span>
-        </Link>
+        <VaultLogo to="/" size="mobile" theme="dark" />
 
         {/* Right: Wishlist Icon */}
         <button 
@@ -72,11 +69,9 @@ export default function Header({ onMenuClick }) {
       </div>
 
       {/* Desktop-only Logo */}
-      <Link to="/" className="hidden md:flex items-center gap-2">
-        <span className="font-sans font-extrabold text-2xl tracking-widest text-[#111111]">
-          VAULT<span className="text-neutral-900">.</span>
-        </span>
-      </Link>
+      <div className="hidden md:flex items-center">
+        <VaultLogo to="/" size="large" theme="dark" />
+      </div>
 
       {/* Center Nav Links (Desktop) */}
       <nav className="hidden md:flex items-center gap-2">

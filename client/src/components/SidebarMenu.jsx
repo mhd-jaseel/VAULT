@@ -3,6 +3,8 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { X, LogOut, User, LogIn, UserPlus, ChevronRight } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import { resolveImage } from '../utils/imageHelper';
+import VaultLogo from './VaultLogo';
 
 // Cached storage outside component to persist product previews between open states
 const previewCache = {};
@@ -11,13 +13,16 @@ const previewCache = {};
 const ProductPreviewCard = React.memo(({ product }) => {
   return (
     <div className="flex flex-col gap-2 group cursor-pointer active:scale-[0.98] transition-transform duration-200">
-      <div className="w-full aspect-square bg-[#FCFCFC] rounded-[18px] overflow-hidden border border-neutral-100/10 flex items-center justify-center">
+      <div className="w-full aspect-square bg-[#FCFCFC] rounded-[18px] overflow-hidden border border-neutral-100/10 flex items-center justify-center p-1">
         {product.images && product.images.length > 0 ? (
           <img
-            src={product.images[0].startsWith('/') ? `http://localhost:5000${product.images[0]}` : product.images[0]}
+            src={resolveImage(product.images[0])}
             alt={product.name}
-            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+            className="w-full h-full object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
           />
         ) : (
           <span className="text-neutral-300 font-bold font-mono text-[8px]">VAULT</span>
@@ -131,9 +136,7 @@ export default function SidebarMenu({ isOpen, onClose }) {
         
         {/* Top Header */}
         <div className="px-5 pt-6 pb-4 border-b border-neutral-100 flex items-center justify-between select-none">
-          <span className="font-sans font-black text-lg tracking-widest text-neutral-900">
-            VAULT.CO
-          </span>
+          <VaultLogo size="mobile" theme="dark" />
           <button 
             onClick={onClose} 
             className="p-1 text-neutral-400 hover:text-neutral-900 transition-colors duration-200 focus:outline-none"

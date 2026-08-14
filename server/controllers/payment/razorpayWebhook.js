@@ -59,10 +59,24 @@ export const razorpayWebhook = async (req, res) => {
     if (eventType === 'payment.captured' && payload) {
       const rpOrderId = payload.order_id;
       const rpPaymentId = payload.id;
+      const capturedAmountPaise = Number(payload.amount);
 
       const order = await Order.findOne({ razorpayOrderId: rpOrderId });
 
       if (order && order.paymentStatus !== 'captured') {
+        const expectedRazorpayAmountPaise = Math.round((order.razorpayAmountPaid || (order.grandTotal - (order.walletAmountPaid || 0))) * 100);
+
+        if (capturedAmountPaise !== expectedRazorpayAmountPaise) {
+          console.error(`[VAULT Webhook Security Alert] Amount Mismatch: Expected ${expectedRazorpayAmountPaise} paise, but webhook payload reported ${capturedAmountPaise} paise.`);
+          order.paymentStatus = 'failed';
+          order.timeline.push({
+            status: order.status,
+            note: `Payment amount mismatch in webhook: Expected ₹${expectedRazorpayAmountPaise / 100}, but received ₹${capturedAmountPaise / 100}.`,
+          });
+          await order.save();
+          return res.status(200).json({ success: true, message: 'Amount mismatch logged.' });
+        }
+
         order.razorpayPaymentId = rpPaymentId;
         order.paymentStatus = 'captured';
         order.razorpaySignatureVerified = true;

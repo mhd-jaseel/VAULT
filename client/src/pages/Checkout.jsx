@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { ArrowRight, MapPin, Edit2, Plus, ShieldCheck, Lock, Wallet } from 'lucide-react';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 // ── Load Razorpay checkout.js from CDN ──────────────────────────────────────
 const loadRazorpay = () =>
@@ -23,8 +24,21 @@ export default function Checkout() {
   const { user, updateProfile } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [shippingCharges, setShippingCharges] = useState(100);
-  const [freeShippingMin, setFreeShippingMin] = useState(1500);
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Checkout | Vault.Co',
+      description: 'Secure SSL checkout at Vault.Co.',
+      noIndex: true,
+      canonicalPath: '/checkout',
+    });
+  }, []);
+
+  const [shippingInfo, setShippingInfo] = useState({
+    shippingCharges: 100,
+    freeShippingMinAmount: 1500,
+    handlingCharge: 0,
+    activeSpecialCampaign: null,
+  });
   const [submitting, setSubmitting] = useState(false);
   const [paymentError, setPaymentError] = useState('');
 
@@ -53,6 +67,17 @@ export default function Checkout() {
       }).catch(() => {});
     }
   }, [user]);
+
+  useEffect(() => {
+    axios
+      .get('/shipping-settings')
+      .then((res) => {
+        if (res.data.success) {
+          setShippingInfo(res.data.data);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   const handleApplyCoupon = async () => {
     if (!couponCodeInput.trim()) {
@@ -113,31 +138,29 @@ export default function Checkout() {
     }
   }, [user, setValue]);
 
-  useEffect(() => {
-    axios
-      .get('/settings')
-      .then((res) => {
-        if (res.data.success) {
-          setShippingCharges(res.data.data.shippingCharges);
-          setFreeShippingMin(res.data.data.freeShippingMinAmount);
-        }
-      })
-      .catch((err) => console.error(err));
-  }, []);
+  // Dynamic Shipping Calculation
+  let shippingCost = shippingInfo.shippingCharges;
+  let isFreeShipping = false;
+  let freeShippingNotice = null;
 
-  if (cartItems.length === 0) {
-    return (
-      <div className="py-20 text-center min-h-screen">
-        <h2 className="text-text-primary font-bold font-mono text-xs uppercase">Your cart is empty.</h2>
-        <button onClick={() => navigate('/shop')} className="btn-gold text-[10px] py-2 px-6 mt-4">
-          GO SHOP
-        </button>
-      </div>
-    );
+  if (cartTotal === 0 || freeShippingCoupon) {
+    shippingCost = 0;
+    isFreeShipping = true;
+    if (freeShippingCoupon) freeShippingNotice = 'Coupon: Free Shipping';
+  } else if (
+    shippingInfo.activeSpecialCampaign &&
+    cartTotal >= (shippingInfo.activeSpecialCampaign.minOrderAmount || 0)
+  ) {
+    shippingCost = 0;
+    isFreeShipping = true;
+    freeShippingNotice = `🎉 ${shippingInfo.activeSpecialCampaign.name}: FREE DELIVERY applied!`;
+  } else if (cartTotal >= shippingInfo.freeShippingMinAmount) {
+    shippingCost = 0;
+    isFreeShipping = true;
   }
 
-  const shippingCost = cartTotal >= freeShippingMin || freeShippingCoupon ? 0 : shippingCharges;
-  const grandTotal = cartTotal - couponDiscount + shippingCost;
+  const handlingCost = cartTotal > 0 ? (shippingInfo.handlingCharge || 0) : 0;
+  const grandTotal = Math.max(0, cartTotal - couponDiscount + shippingCost + handlingCost);
 
   // ── Main form submit: build address, then launch Razorpay ──────────────────
   const onSubmit = async (data) => {
@@ -223,7 +246,7 @@ export default function Checkout() {
         key: keyId,
         amount,
         currency,
-        name: 'VAULT.',
+        name: 'VAULT.CO',
         description: `Order #${internalOrderId}`,
         order_id: razorpayOrderId,
         prefill: {
@@ -610,9 +633,24 @@ export default function Checkout() {
               <div className="flex justify-between text-text-secondary">
                 <span>Shipping Cost</span>
                 <span className="text-text-primary font-bold">
-                  {shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}
+                  {shippingCost === 0 ? (
+                    <span className="text-[#16a34a] font-extrabold">FREE</span>
+                  ) : (
+                    `₹${shippingCost}`
+                  )}
                 </span>
               </div>
+              {handlingCost > 0 && (
+                <div className="flex justify-between text-text-secondary">
+                  <span>Handling Charge</span>
+                  <span className="text-text-primary font-bold">₹{handlingCost}</span>
+                </div>
+              )}
+              {freeShippingNotice && (
+                <div className="p-2 bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg text-[10px] font-bold text-[#16a34a] font-mono">
+                  {freeShippingNotice}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center text-xs font-bold pt-1 font-mono">

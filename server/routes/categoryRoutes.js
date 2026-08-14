@@ -5,21 +5,24 @@ import {
   createCategory,
   updateCategory,
   deleteCategory,
-} from '../controllers/categoryController.js';
+} from '../controllers/category/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
+import { validateRequest } from '../middleware/validate.js';
+import { validateObjectId } from '../validators/commonValidator.js';
+import { validateCreateCategory } from '../validators/categoryValidator.js';
 
 const router = express.Router();
 
 router
   .route('/')
   .get(getCategories)
-  .post(protect, isAdmin, upload.single('image'), createCategory);
+  .post(protect, isAdmin, upload.single('image'), validateCreateCategory, validateRequest, createCategory);
 
 router
   .route('/:id')
-  .get(getCategoryById)
-  .put(protect, isAdmin, upload.single('image'), updateCategory)
-  .delete(protect, isAdmin, deleteCategory);
+  .get(validateObjectId('id'), validateRequest, getCategoryById)
+  .put(protect, isAdmin, upload.single('image'), validateObjectId('id'), validateRequest, updateCategory)
+  .delete(protect, isAdmin, validateObjectId('id'), validateRequest, deleteCategory);
 
 export default router;

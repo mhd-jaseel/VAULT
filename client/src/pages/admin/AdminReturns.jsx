@@ -220,59 +220,137 @@ export default function AdminReturns() {
           <p className="text-[11px] text-[#6b7280]">Return requests will appear here when customers submit them.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto bg-white border border-[#e5e5e5] rounded-2xl shadow-xs font-mono w-full min-w-0">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-[#e5e5e5] text-[#6b7280] uppercase text-[10px] bg-[#f9fafb]">
-                <th className="p-3">Return ID</th>
-                <th className="p-3">Customer</th>
-                <th className="p-3">Product</th>
-                <th className="p-3">Settlement</th>
-                <th className="p-3">Amount</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e5e5]">
-              {filteredReturns.map((ret) => {
-                return (
-                  <tr key={ret._id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="p-3 font-bold text-[#111111]">
-                      <button 
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className="hover:text-[#d97706] hover:underline cursor-pointer transition-colors flex items-center gap-1 text-left select-all"
-                      >
-                        {ret.returnId}
-                      </button>
-                    </td>
-                    <td className="p-3 max-w-[160px] font-sans">
-                      <div
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className="cursor-pointer hover:bg-[#f3f4f6] px-1.5 py-1 -ml-1.5 rounded transition-colors inline-block"
-                      >
-                        <p className="font-bold text-[#111111] text-xs truncate" title={ret.user?.name || 'Customer'}>
-                          {ret.user?.name || 'Customer'}
-                        </p>
-                        <p className="text-[10px] text-[#6b7280] font-mono truncate" title={ret.user?.email || '—'}>
-                          {ret.user?.email || '—'}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="p-3 max-w-[180px] font-sans text-xs">
-                      <div
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className="cursor-pointer hover:bg-[#f3f4f6] px-1.5 py-1 -ml-1.5 rounded transition-colors inline-block"
-                      >
-                        <p className="font-medium text-[#111111] truncate" title={ret.orderItem?.name}>
-                          {ret.orderItem?.name}
-                        </p>
-                        <span className="text-[#6b7280] font-mono text-[10px]">Qty: {ret.orderItem?.quantity}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span 
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className={`text-[9px] font-bold uppercase px-2.5 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${
+        <>
+          {/* Desktop Table View (md+) */}
+          <div className="hidden md:block overflow-x-auto bg-white border border-[#e5e5e5] rounded-2xl shadow-xs font-mono w-full min-w-0">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-[#e5e5e5] text-[#6b7280] uppercase text-[10px] bg-[#f9fafb]">
+                  <th className="p-3">Return ID</th>
+                  <th className="p-3">Customer</th>
+                  <th className="p-3">Product</th>
+                  <th className="p-3">Settlement</th>
+                  <th className="p-3">Amount</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#e5e5e5]">
+                {filteredReturns.map((ret) => {
+                  return (
+                    <tr key={ret._id} className="hover:bg-[#f9fafb] transition-colors">
+                      <td className="p-3 font-bold text-[#111111]">
+                        <button 
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className="hover:text-[#d97706] hover:underline cursor-pointer transition-colors flex items-center gap-1 text-left select-all"
+                        >
+                          {ret.returnId}
+                        </button>
+                      </td>
+                      <td className="p-3 max-w-[160px] font-sans">
+                        <div
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className="cursor-pointer hover:bg-[#f3f4f6] px-1.5 py-1 -ml-1.5 rounded transition-colors inline-block"
+                        >
+                          <p className="font-bold text-[#111111] text-xs truncate" title={ret.user?.name || 'Customer'}>
+                            {ret.user?.name || 'Customer'}
+                          </p>
+                          <p className="text-[10px] text-[#6b7280] font-mono truncate" title={ret.user?.email || '—'}>
+                            {ret.user?.email || '—'}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-3 max-w-[180px] font-sans text-xs">
+                        <div
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className="cursor-pointer hover:bg-[#f3f4f6] px-1.5 py-1 -ml-1.5 rounded transition-colors inline-block"
+                        >
+                          <p className="font-medium text-[#111111] truncate" title={ret.orderItem?.name}>
+                            {ret.orderItem?.name}
+                          </p>
+                          <span className="text-[#6b7280] font-mono text-[10px]">Qty: {ret.orderItem?.quantity}</span>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <span 
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className={`text-[9px] font-bold uppercase px-2.5 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${
+                            ret.returnType === 'REPLACEMENT' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                              : 'bg-[#f3f4f6] text-[#374151] border-[#e5e5e5]'
+                          }`}
+                        >
+                          {ret.returnType === 'REPLACEMENT' ? 'REPLACEMENT' : 'VAULT WALLET'}
+                        </span>
+                      </td>
+                      <td className="p-3 font-bold text-[#111111]">
+                        <span
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors"
+                        >
+                          ₹{ret.orderItem?.totalOriginalPaid?.toLocaleString('en-IN')}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span 
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className={`text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${getStatusBadgeStyle(ret.status)}`}
+                        >
+                          {ret.status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button
+                          onClick={() => handleOpenStatusModal(ret)}
+                          className="px-2.5 py-1 bg-white border border-[#e5e5e5] hover:bg-[#f9fafb] rounded-lg text-[#111111] cursor-pointer inline-flex items-center gap-1 text-[10px] font-bold uppercase shadow-xs"
+                        >
+                          Manage
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (< md) */}
+          <div className="md:hidden space-y-4">
+            {filteredReturns.map((ret) => {
+              return (
+                <div
+                  key={ret._id}
+                  className="bg-white border border-[#e5e5e5] rounded-2xl p-4 shadow-xs space-y-3 font-mono text-xs"
+                >
+                  <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2">
+                    <button
+                      onClick={() => handleOpenDetailModal(ret)}
+                      className="font-bold text-sm text-[#111111] hover:text-[#d97706] cursor-pointer select-all"
+                    >
+                      {ret.returnId}
+                    </button>
+                    <span
+                      className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${getStatusBadgeStyle(ret.status)}`}
+                    >
+                      {ret.status.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 font-sans">
+                    <p className="font-bold text-xs text-[#111111]">{ret.user?.name || 'Customer'}</p>
+                    <p className="text-[10px] text-[#6b7280] font-mono">{ret.user?.email || '—'}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#f3f4f6] text-xs font-sans">
+                    <p className="font-medium text-[#111111] truncate">{ret.orderItem?.name}</p>
+                    <span className="text-[#6b7280] font-mono text-[10px]">Qty: {ret.orderItem?.quantity}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#f3f4f6] text-[11px]">
+                    <div>
+                      <span className="text-[9px] text-[#6b7280] uppercase block font-bold">Settlement</span>
+                      <span
+                        className={`text-[8px] font-bold uppercase px-2 py-0.5 rounded-full border inline-block mt-0.5 ${
                           ret.returnType === 'REPLACEMENT' 
                             ? 'bg-blue-50 text-blue-700 border-blue-200' 
                             : 'bg-[#f3f4f6] text-[#374151] border-[#e5e5e5]'
@@ -280,32 +358,32 @@ export default function AdminReturns() {
                       >
                         {ret.returnType === 'REPLACEMENT' ? 'REPLACEMENT' : 'VAULT WALLET'}
                       </span>
-                    </td>
-                    <td className="p-3 font-bold text-[#111111]">
-                      <span
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors"
-                      >
-                        ₹{ret.orderItem?.totalOriginalPaid?.toLocaleString('en-IN')}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span 
-                        onClick={() => handleOpenDetailModal(ret)}
-                        className={`text-[8px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border cursor-pointer hover:opacity-80 transition-opacity ${getStatusBadgeStyle(ret.status)}`}
-                      >
-                        {ret.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
-                      <span className="text-[#9ca3af] italic text-[10px]"></span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-[#6b7280] uppercase block font-bold">Refund Amount</span>
+                      <span className="font-bold text-[#111111]">₹{ret.orderItem?.totalOriginalPaid?.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => handleOpenDetailModal(ret)}
+                      className="px-3 py-1.5 bg-[#f9fafb] hover:bg-[#f3f4f6] text-[#111111] border border-[#e5e5e5] rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Quick View
+                    </button>
+                    <button
+                      onClick={() => handleOpenStatusModal(ret)}
+                      className="px-3 py-1.5 btn-gold rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+                    >
+                      Manage Status
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* Pagination */}

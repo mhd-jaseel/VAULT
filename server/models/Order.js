@@ -82,6 +82,18 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    handlingCharge: {
+      type: Number,
+      default: 0,
+    },
+    shippingCampaign: {
+      type: String,
+      trim: true,
+    },
+    isFreeShippingApplied: {
+      type: Boolean,
+      default: false,
+    },
     grandTotal: {
       type: Number,
       required: true,
@@ -175,9 +187,49 @@ const orderSchema = new mongoose.Schema(
     deliveredAt: {
       type: Date,
     },
+
+    // ── Cancellation & Refund Details ──────────────────────────────
+    cancellationReason: {
+      type: String,
+      trim: true,
+    },
+    cancelledBy: {
+      type: String,
+      enum: ['CUSTOMER', 'ADMIN', null],
+      default: null,
+    },
+    cancelledAt: {
+      type: Date,
+    },
+    refundStatus: {
+      type: String,
+      enum: ['NOT_REFUNDED', 'REFUNDED', 'NOT_APPLICABLE'],
+      default: 'NOT_APPLICABLE',
+    },
+    refundedAmount: {
+      type: Number,
+      default: 0,
+    },
+    refundedAt: {
+      type: Date,
+    },
+    refundedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    refundTransactionReference: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true }
 );
+
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
+orderSchema.index({ razorpayOrderId: 1 });
+orderSchema.index({ createdAt: -1 });
 
 const Order = mongoose.model('Order', orderSchema);
 export default Order;

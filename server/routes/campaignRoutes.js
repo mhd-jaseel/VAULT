@@ -5,7 +5,7 @@ import {
   createCampaign,
   updateCampaign,
   deleteCampaign,
-} from '../controllers/campaignController.js';
+} from '../controllers/campaign/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 

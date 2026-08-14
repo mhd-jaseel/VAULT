@@ -5,13 +5,28 @@ import { AuthContext } from '../context/AuthContext';
 import { PremiumSwal } from '../utils/swalHelper';
 import axios from 'axios';
 import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { resolveImage } from '../utils/imageHelper';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Cart() {
   const { cartItems, updateQuantity, removeFromCart, cartTotal } = useContext(CartContext);
   const { user } = useContext(AuthContext);
-  const [shippingCharges, setShippingCharges] = useState(100);
-  const [freeShippingMin, setFreeShippingMin] = useState(1500);
+  const [shippingInfo, setShippingInfo] = useState({
+    shippingCharges: 100,
+    freeShippingMinAmount: 1500,
+    handlingCharge: 0,
+    activeSpecialCampaign: null,
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Shopping Cart | Vault.Co',
+      description: 'Review your selected luxury items in your Vault.Co shopping cart.',
+      noIndex: true,
+      canonicalPath: '/cart',
+    });
+  }, []);
 
   useEffect(() => {
     if (user && user.role === 'admin') {
@@ -19,19 +34,37 @@ export default function Cart() {
       return;
     }
 
-    // Fetch current settings for shipping thresholds
-    axios.get('/settings')
+    // Fetch dynamic shipping settings & active campaigns
+    axios.get('/shipping-settings')
       .then((res) => {
         if (res.data.success) {
-          setShippingCharges(res.data.data.shippingCharges);
-          setFreeShippingMin(res.data.data.freeShippingMinAmount);
+          setShippingInfo(res.data.data);
         }
       })
       .catch((err) => console.error(err));
   }, [user, navigate]);
 
-  const shippingCost = cartTotal >= freeShippingMin || cartTotal === 0 ? 0 : shippingCharges;
-  const grandTotal = cartTotal + shippingCost;
+  // Determine dynamic shipping calculation with special campaign priority
+  let shippingCost = shippingInfo.shippingCharges;
+  let isFreeShipping = false;
+  let freeShippingNotice = null;
+
+  if (cartTotal === 0) {
+    shippingCost = 0;
+  } else if (
+    shippingInfo.activeSpecialCampaign &&
+    cartTotal >= (shippingInfo.activeSpecialCampaign.minOrderAmount || 0)
+  ) {
+    shippingCost = 0;
+    isFreeShipping = true;
+    freeShippingNotice = `🎉 ${shippingInfo.activeSpecialCampaign.name}: FREE DELIVERY applied!`;
+  } else if (cartTotal >= shippingInfo.freeShippingMinAmount) {
+    shippingCost = 0;
+    isFreeShipping = true;
+  }
+
+  const handlingCost = cartTotal > 0 ? (shippingInfo.handlingCharge || 0) : 0;
+  const grandTotal = cartTotal + shippingCost + handlingCost;
 
   const handleRemoveItem = async (productId, itemName) => {
     const result = await PremiumSwal.fire({
@@ -79,9 +112,12 @@ export default function Cart() {
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-50 flex-shrink-0 flex items-center justify-center border border-border-light p-2">
                   {item.image ? (
                     <img 
-                      src={`http://localhost:5000${item.image}`} 
+                      src={resolveImage(item.image)} 
                       alt={item.name} 
                       className="max-h-full max-w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <span className="text-neutral-300 font-bold text-xs font-mono">VAULT</span>
@@ -138,15 +174,34 @@ export default function Cart() {
                   <span>Bag Subtotal</span>
                   <span className="text-text-primary font-bold font-mono">₹{cartTotal.toLocaleString('en-IN')}</span>
                 </div>
+
                 <div className="flex justify-between text-text-secondary">
                   <span>Shipping Charges</span>
                   <span className="text-text-primary font-bold font-mono">
-                    {shippingCost === 0 ? 'FREE' : `₹${shippingCost}`}
+                    {shippingCost === 0 ? (
+                      <span className="text-[#16a34a] font-extrabold">FREE</span>
+                    ) : (
+                      `₹${shippingCost}`
+                    )}
                   </span>
                 </div>
-                {shippingCost > 0 && (
+
+                {handlingCost > 0 && (
+                  <div className="flex justify-between text-text-secondary">
+                    <span>Handling Charge</span>
+                    <span className="text-text-primary font-bold font-mono">₹{handlingCost}</span>
+                  </div>
+                )}
+
+                {freeShippingNotice && (
+                  <div className="p-2 bg-[#f0fdf4] border border-[#bbf7d0] rounded-lg text-[10px] font-bold text-[#16a34a] font-mono">
+                    {freeShippingNotice}
+                  </div>
+                )}
+
+                {!isFreeShipping && shippingCost > 0 && (
                   <p className="text-[9px] font-mono text-text-secondary leading-relaxed">
-                    Add <span className="text-text-primary font-bold">₹{(freeShippingMin - cartTotal).toLocaleString('en-IN')}</span> more to qualify for Free Shipping.
+                    Add <span className="text-text-primary font-bold">₹{(shippingInfo.freeShippingMinAmount - cartTotal).toLocaleString('en-IN')}</span> more to qualify for Free Shipping.
                   </p>
                 )}
               </div>

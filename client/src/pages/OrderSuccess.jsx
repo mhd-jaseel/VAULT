@@ -53,7 +53,7 @@ export default function OrderSuccess() {
         Order Confirmed!
       </h1>
       <p className="text-xs text-text-secondary mt-2 leading-relaxed">
-        Thank you for shopping with VAULT. Your payment has been received and your order is confirmed.
+        Thank you for shopping with VAULT.CO. Your payment has been received and your order is confirmed.
       </p>
 
       {/* ── Order ID ── */}

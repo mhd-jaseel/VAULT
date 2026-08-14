@@ -1,4 +1,4 @@
-import Setting from '../models/Setting.js';
+import Setting from '../../models/Setting.js';
 
 export const getSettings = async (req, res) => {
   try {
@@ -12,6 +12,7 @@ export const getSettings = async (req, res) => {
         upiId: 'vault@upi',
         shippingCharges: 100,
         freeShippingMinAmount: 1500,
+        handlingCharge: 0,
       });
     }
     res.json({ success: true, data: settings });
@@ -34,6 +35,7 @@ export const updateSettings = async (req, res) => {
       upiId,
       shippingCharges,
       freeShippingMinAmount,
+      handlingCharge,
       heroTitle,
       heroSubtitle,
       heroDescription,
@@ -47,8 +49,9 @@ export const updateSettings = async (req, res) => {
     settings.phoneNumber = phoneNumber || settings.phoneNumber;
     settings.whatsappNumber = whatsappNumber || settings.whatsappNumber;
     settings.upiId = upiId || settings.upiId;
-    if (shippingCharges !== undefined) settings.shippingCharges = Number(shippingCharges);
-    if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Number(freeShippingMinAmount);
+    if (shippingCharges !== undefined) settings.shippingCharges = Math.max(0, Number(shippingCharges) || 0);
+    if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Math.max(0, Number(freeShippingMinAmount) || 0);
+    if (handlingCharge !== undefined) settings.handlingCharge = Math.max(0, Number(handlingCharge) || 0);
 
     if (heroTitle !== undefined) settings.heroTitle = heroTitle;
     if (heroSubtitle !== undefined) settings.heroSubtitle = heroSubtitle;

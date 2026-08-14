@@ -1,4 +1,4 @@
-import Announcement from '../models/Announcement.js';
+import Announcement from '../../models/Announcement.js';
 
 // ==========================================
 // PUBLIC CONTROLLER

@@ -157,9 +157,15 @@ export const createRazorpayOrder = async (req, res) => {
     });
 
     // ── 3. Calculate shipping & grand total ──────────────────────────────────
-    let shippingCharges = totalAmount >= setting.freeShippingMinAmount ? 0 : setting.shippingCharges;
-    if (freeShippingCoupon) shippingCharges = 0;
-    const grandTotal = totalAmount - discountAmount + shippingCharges;
+    const { calculateShipping } = await import('../../services/shippingService.js');
+    const shippingResult = await calculateShipping(totalAmount, freeShippingCoupon);
+
+    const shippingCharges = shippingResult.shippingCharge;
+    const handlingCharge = shippingResult.handlingCharge;
+    const isFreeShippingApplied = shippingResult.isFreeShipping;
+    const shippingCampaign = shippingResult.appliedCampaignName;
+
+    const grandTotal = totalAmount - discountAmount + shippingCharges + handlingCharge;
 
     // ── 3b. Wallet Balance Calculation & Partial/Full Wallet Application ────
     const Wallet = (await import('../../models/Wallet.js')).default;
@@ -195,6 +201,9 @@ export const createRazorpayOrder = async (req, res) => {
         shippingAddress,
         totalAmount,
         shippingCharges,
+        handlingCharge,
+        shippingCampaign,
+        isFreeShippingApplied,
         grandTotal,
         walletAmountPaid: walletUsed,
         razorpayAmountPaid: 0,
@@ -261,6 +270,9 @@ export const createRazorpayOrder = async (req, res) => {
       shippingAddress,
       totalAmount,
       shippingCharges,
+      handlingCharge,
+      shippingCampaign,
+      isFreeShippingApplied,
       grandTotal,
       walletAmountPaid: walletUsed,
       razorpayAmountPaid: remainingRazorpayTotal,

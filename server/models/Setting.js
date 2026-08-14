@@ -27,10 +27,17 @@ const settingSchema = new mongoose.Schema(
     shippingCharges: {
       type: Number,
       default: 100,
+      min: 0,
     },
     freeShippingMinAmount: {
       type: Number,
       default: 1500,
+      min: 0,
+    },
+    handlingCharge: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     heroTitle: {
       type: String,

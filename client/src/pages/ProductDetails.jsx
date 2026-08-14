@@ -8,6 +8,8 @@ import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, T
 import CountdownTimer from '../components/CountdownTimer';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from '../components/LoginRequiredModal';
+import ReviewSection from '../components/reviews/ReviewSection';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 const loadRazorpay = () =>
   new Promise((resolve) => {
@@ -27,7 +29,6 @@ export default function ProductDetails() {
   const { user } = useContext(AuthContext);
 
   const [product, setProduct] = useState(null);
-  const [reviews, setReviews] = useState([]);
   const [related, setRelated] = useState([]);
   const [activeImage, setActiveImage] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -44,6 +45,10 @@ export default function ProductDetails() {
   const [submittingReplacement, setSubmittingReplacement] = useState(false);
 
   const [userWallet, setUserWallet] = useState(null);
+
+  // Login-required modal
+  const [loginModal, setLoginModal] = useState({ open: false, message: '' });
+  const showLoginModal = (message) => setLoginModal({ open: true, message });
 
   // Fetch Return Details & User Wallet for Replacement Mode
   const fetchReturnDetails = async () => {
@@ -144,18 +149,6 @@ export default function ProductDetails() {
     }
   };
 
-
-
-  // Review form states
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  const [reviewError, setReviewError] = useState('');
-  const [reviewSuccess, setReviewSuccess] = useState('');
-
-  // Login-required modal
-  const [loginModal, setLoginModal] = useState({ open: false, message: '' });
-  const showLoginModal = (message) => setLoginModal({ open: true, message });
-
   const fetchProductDetails = async () => {
     setLoading(true);
     try {
@@ -171,12 +164,6 @@ export default function ProductDetails() {
       const relRes = await axios.get(`/products/related/${id}`);
       if (relRes.data.success) {
         setRelated(relRes.data.data);
-      }
-
-      // Fetch reviews
-      const revRes = await axios.get(`/reviews/${id}`);
-      if (revRes.data.success) {
-        setReviews(revRes.data.data);
       }
     } catch (error) {
       console.error(error);
@@ -210,81 +197,56 @@ export default function ProductDetails() {
   useEffect(() => {
     if (!product) return;
 
-    const originalTitle = document.title;
-    document.title = `${product.name} | VAULT.CO`;
+    const brandName = product.brand?.name || 'Vault.Co';
+    const categoryName = product.category?.name || 'Accessories';
+    const primaryImg = product.images && product.images[0] ? resolveImage(product.images[0]) : '';
 
-    let metaDesc = document.querySelector('meta[name="description"]');
-    const originalMetaDesc = metaDesc ? metaDesc.getAttribute('content') : '';
-    if (!metaDesc) {
-      metaDesc = document.createElement('meta');
-      metaDesc.setAttribute('name', 'description');
-      document.head.appendChild(metaDesc);
-    }
-    metaDesc.setAttribute('content', product.description || 'Premium accessories by VAULT.CO');
-
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', `${product.name} | VAULT.CO`);
-
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', product.description || 'Premium accessories by VAULT.CO');
-
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    if (product.images && product.images[0]) {
-      ogImage.setAttribute('content', `http://localhost:5000${product.images[0]}`);
-    }
-
-    const structuredData = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": product.name,
-      "image": product.images && product.images.map(img => resolveImage(img)),
-      "description": product.description,
-      "sku": product.sku || product._id,
-      "brand": {
-        "@type": "Brand",
-        "name": "VAULT.CO"
+    const productSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      image: product.images ? product.images.map((img) => resolveImage(img)) : [],
+      description: product.description,
+      sku: product.sku || product._id,
+      brand: {
+        '@type': 'Brand',
+        name: brandName,
       },
-      "offers": {
-        "@type": "Offer",
-        "url": window.location.href,
-        "priceCurrency": "INR",
-        "price": product.price,
-        "itemCondition": "https://schema.org/NewCondition",
-        "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
-      }
+      offers: {
+        '@type': 'Offer',
+        url: window.location.href,
+        priceCurrency: 'INR',
+        price: product.price,
+        itemCondition: 'https://schema.org/NewCondition',
+        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
     };
 
-    const scriptId = 'product-jsonld';
-    let scriptTag = document.getElementById(scriptId);
-    if (!scriptTag) {
-      scriptTag = document.createElement('script');
-      scriptTag.id = scriptId;
-      scriptTag.type = 'application/ld+json';
-      document.head.appendChild(scriptTag);
+    if (product.ratings && product.ratings.count > 0 && product.ratings.average > 0) {
+      productSchema.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: product.ratings.average.toFixed(1),
+        reviewCount: product.ratings.count,
+      };
     }
-    scriptTag.text = JSON.stringify(structuredData);
 
-    return () => {
-      document.title = originalTitle;
-      if (metaDesc) metaDesc.setAttribute('content', originalMetaDesc);
-      const createdScript = document.getElementById(scriptId);
-      if (createdScript) createdScript.remove();
-    };
+    const breadcrumbList = [
+      { name: 'Home', url: '/' },
+      { name: categoryName, url: product.category?._id ? `/shop?category=${product.category._id}` : '/shop' },
+      { name: product.name, url: `/product/${product._id}` },
+    ];
+
+    setDocumentSEO({
+      title: `${product.name} | Vault.Co`,
+      description: product.description
+        ? product.description.slice(0, 160)
+        : `Shop ${product.name} at Vault.Co. Premium craft and authentic design.`,
+      canonicalPath: `/product/${product._id}`,
+      ogType: 'product',
+      ogImage: primaryImg,
+      jsonLd: productSchema,
+      breadcrumbList,
+    });
   }, [product]);
 
   const handleToggleWishlist = async () => {
@@ -456,13 +418,17 @@ export default function ProductDetails() {
                   <Star
                     key={i}
                     size={12}
-                    fill={i < Math.round(product.ratings.average) ? '#f5a623' : 'none'}
-                    className={i < Math.round(product.ratings.average) ? 'text-[#f5a623] fill-[#f5a623]' : 'text-neutral-300'}
+                    fill={product.ratings?.average && i < Math.round(product.ratings.average) ? '#f5a623' : 'none'}
+                    className={product.ratings?.average && i < Math.round(product.ratings.average) ? 'text-[#f5a623] fill-[#f5a623]' : 'text-neutral-300'}
                   />
                 ))}
               </div>
-              <span className="font-bold text-text-primary mt-0.5">{product.ratings.average}</span>
-              <span className="text-text-secondary mt-0.5">({product.ratings.count} REVIEWS)</span>
+              <span className="font-bold text-text-primary mt-0.5">
+                {product.ratings?.average ? product.ratings.average.toFixed(1) : '0.0'}
+              </span>
+              <span className="text-text-secondary mt-0.5">
+                ({product.ratings?.count || 0} {product.ratings?.count === 1 ? 'REVIEW' : 'REVIEWS'})
+              </span>
             </div>
 
             {/* Price Block */}
@@ -501,7 +467,7 @@ export default function ProductDetails() {
               </div>
               <div className="flex items-center gap-2 text-xs text-text-primary">
                 <CheckCircle2 size={14} className="text-[#16a34a]" />
-                <span>Includes signature VAULT keepsake box</span>
+                <span>Includes signature VAULT.CO keepsake box</span>
               </div>
             </div>
 
@@ -638,97 +604,8 @@ export default function ProductDetails() {
         </div>
       </div>
 
-      {/* Reviews Section */}
-      <section className="glass-card mt-8">
-        <div className="flex items-center justify-between border-b border-border-light pb-4 mb-6">
-          <h2 className="text-md font-extrabold uppercase tracking-tight text-text-primary font-sans">
-            Customer Reviews
-          </h2>
-          <div className="bg-neutral-100 text-text-primary font-mono text-[10px] py-1 px-3 rounded-full flex items-center gap-1.5">
-            <Star size={10} className="text-[#f5a623] fill-[#f5a623]" />
-            <span>{product.ratings.average} ({reviews.length} REVIEWS)</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-          {/* Review list */}
-          <div className="md:col-span-2 space-y-6">
-            {reviews.length === 0 ? (
-              <p className="text-xs text-text-secondary font-mono">NO REVIEWS YET. BE THE FIRST TO REVIEW!</p>
-            ) : (
-              reviews.map((rev) => (
-                <div key={rev._id} className="border-b border-border-light pb-4">
-                  <div className="flex justify-between items-center mb-1">
-                    <h5 className="font-bold text-xs text-text-primary uppercase">{rev.user?.name}</h5>
-                    <span className="text-[9px] text-text-secondary font-mono">
-                      {new Date(rev.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex text-gold mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={10}
-                        fill={i < rev.rating ? '#f5a623' : 'none'}
-                        className={i < rev.rating ? 'text-[#f5a623] fill-[#f5a623]' : 'text-neutral-300'}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-text-secondary leading-relaxed font-normal">{rev.comment}</p>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Create review form */}
-          <div>
-            {user ? (
-              <form onSubmit={handleReviewSubmit} className="bg-neutral-50 p-5 rounded-2xl border border-border-light flex flex-col gap-4">
-                <h4 className="font-mono font-bold text-xs text-text-primary uppercase tracking-wider">Write a Review</h4>
-                
-                {reviewSuccess && <p className="text-[10px] text-[#16a34a] font-bold uppercase font-mono">{reviewSuccess}</p>}
-                {reviewError && <p className="text-[10px] text-red-500 font-bold uppercase font-mono">{reviewError}</p>}
-
-                <div>
-                  <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Rating</label>
-                  <select
-                    className="form-input text-xs cursor-pointer !py-2.5 font-mono"
-                    value={rating}
-                    onChange={(e) => setRating(Number(e.target.value))}
-                  >
-                    <option value={5}>5 STARS - EXCELLENT</option>
-                    <option value={4}>4 STARS - GREAT</option>
-                    <option value={3}>3 STARS - AVERAGE</option>
-                    <option value={2}>2 STARS - POOR</option>
-                    <option value={1}>1 STAR - TERRIBLE</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Comments</label>
-                  <textarea
-                    placeholder="Describe your experience with this accessory..."
-                    className="form-input text-xs min-h-[80px]"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="btn-gold text-[10px] !py-3 flex items-center justify-center gap-1.5">
-                  <Send size={12} /> SUBMIT REVIEW
-                </button>
-              </form>
-            ) : (
-              <div className="bg-neutral-50 p-6 rounded-2xl border border-border-light text-center flex flex-col gap-2">
-                <Star className="mx-auto text-neutral-400" size={24} />
-                <h5 className="text-[10px] font-mono font-bold uppercase text-text-primary">Share Your Experience</h5>
-                <p className="text-[10px] text-text-secondary leading-relaxed">Only verified users can leave reviews.</p>
-                <Link to="/login" className="btn-dark text-[10px] py-2 px-4 mt-2">LOGIN TO REVIEW</Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+      {/* Customer Reviews Section */}
+      <ReviewSection productId={product._id} productName={product.name} />
 
       {/* Related Products */}
       {related.length > 0 && (
@@ -746,9 +623,12 @@ export default function ProductDetails() {
                 <div className="relative h-48 overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light">
                   {prod.images && prod.images.length > 0 ? (
                     <img 
-                      src={`http://localhost:5000${prod.images[0]}`} 
+                      src={resolveImage(prod.images[0])} 
                       alt={prod.name} 
                       className="max-h-full max-w-full object-contain group-hover:scale-105 transition-all duration-500"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>

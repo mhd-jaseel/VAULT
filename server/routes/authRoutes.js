@@ -15,16 +15,23 @@ import {
 import { protect, isAdmin, authLimiter } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 
+import {
+  validateAdminLogin,
+  validateGoogleLogin,
+  validateUpdateProfile,
+} from '../validators/authValidator.js';
+import { validateObjectId, validatePagination } from '../validators/commonValidator.js';
+
 const router = express.Router();
 
 // Apply authLimiter to authentication endpoints
 router.use('/admin/login', authLimiter);
 router.use('/google-login', authLimiter);
 
-router.post('/google-login', googleLogin);
+router.post('/google-login', validateGoogleLogin, validateRequest, googleLogin);
 
 // Admin Auth
-router.post('/admin/login', adminLogin);
+router.post('/admin/login', validateAdminLogin, validateRequest, adminLogin);
 
 // Logout
 router.post('/logout', logoutUser);
@@ -32,19 +39,19 @@ router.post('/logout', logoutUser);
 router
   .route('/profile')
   .get(protect, getUserProfile)
-  .put(protect, updateUserProfile);
+  .put(protect, validateUpdateProfile, validateRequest, updateUserProfile);
 
 // Admin: list all customers (with search/filter/pagination)
-router.get('/customers', protect, isAdmin, getAllCustomers);
+router.get('/customers', protect, isAdmin, validatePagination, validateRequest, getAllCustomers);
 
 // Admin: single user detail + stats
-router.get('/customers/:id', protect, isAdmin, getUserById);
+router.get('/customers/:id', protect, isAdmin, validateObjectId('id'), validateRequest, getUserById);
 
 // Admin: user's order history
-router.get('/customers/:id/orders', protect, isAdmin, getUserOrders);
+router.get('/customers/:id/orders', protect, isAdmin, validateObjectId('id'), validateRequest, getUserOrders);
 
 // Admin: block / unblock
-router.patch('/customers/:id/block', protect, isAdmin, blockUser);
-router.patch('/customers/:id/unblock', protect, isAdmin, unblockUser);
+router.patch('/customers/:id/block', protect, isAdmin, validateObjectId('id'), validateRequest, blockUser);
+router.patch('/customers/:id/unblock', protect, isAdmin, validateObjectId('id'), validateRequest, unblockUser);
 
 export default router;

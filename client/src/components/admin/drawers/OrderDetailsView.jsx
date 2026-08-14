@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { DrawerSection, DrawerRow, DrawerBadge } from '../AdminDetailsDrawer';
+import { resolveImage } from '../../../utils/imageHelper';
 
 export default function OrderDetailsView({ orderId }) {
   const [order, setOrder] = useState(null);
@@ -111,6 +112,42 @@ export default function OrderDetailsView({ orderId }) {
         />
       </DrawerSection>
 
+      {/* ── Cancellation & Manual Refund Details (if applicable) ── */}
+      {order.status === 'cancelled' && (
+        <DrawerSection title="Cancellation & Refund Details">
+          {order.cancelledBy && (
+            <DrawerRow 
+              label="Cancelled By" 
+              valueNode={<DrawerBadge variant={order.cancelledBy === 'ADMIN' ? 'danger' : 'warning'}>{order.cancelledBy}</DrawerBadge>} 
+            />
+          )}
+          {order.cancellationReason && (
+            <DrawerRow label="Cancellation Reason" value={order.cancellationReason} />
+          )}
+          {order.cancelledAt && (
+            <DrawerRow label="Cancelled At" value={new Date(order.cancelledAt).toLocaleString()} />
+          )}
+          
+          <div className="pt-2 border-t border-[#e5e5e5]">
+            <DrawerRow 
+              label="Refund Status" 
+              valueNode={
+                <DrawerBadge variant={order.refundStatus === 'REFUNDED' ? 'success' : order.refundStatus === 'NOT_REFUNDED' ? 'danger' : 'default'}>
+                  {order.refundStatus || 'NOT_APPLICABLE'}
+                </DrawerBadge>
+              } 
+            />
+            {order.refundStatus === 'REFUNDED' && (
+              <>
+                <DrawerRow label="Refunded Amount" value={`₹${(order.refundedAmount || order.grandTotal || 0).toLocaleString('en-IN')}`} />
+                {order.refundedAt && <DrawerRow label="Refunded At" value={new Date(order.refundedAt).toLocaleString()} />}
+                {order.refundTransactionReference && <DrawerRow label="Reference / UTR" value={order.refundTransactionReference} />}
+              </>
+            )}
+          </div>
+        </DrawerSection>
+      )}
+
       {/* ── Customer ── */}
       <DrawerSection title="Customer">
         <DrawerRow label="Name" value={order.user?.name || order.shippingAddress?.name || 'N/A'} />
@@ -135,11 +172,18 @@ export default function OrderDetailsView({ orderId }) {
         <div className="space-y-3">
           {order.items.map((item, idx) => (
             <div key={idx} className="flex gap-3 bg-white border border-[#e5e5e5] p-3 rounded-xl items-start">
-              <div className="w-12 h-12 bg-[#f3f4f6] rounded flex items-center justify-center shrink-0 border border-[#e5e5e5] overflow-hidden">
+              <div className="w-12 h-12 bg-[#f3f4f6] rounded flex items-center justify-center shrink-0 border border-[#e5e5e5] overflow-hidden p-0.5">
                 {item.product?.images?.[0] ? (
-                  <img src={item.product.images[0]} alt="product" className="w-full h-full object-cover" />
+                  <img 
+                    src={resolveImage(item.product.images[0])} 
+                    alt={item.name} 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
-                  <span className="text-[8px] text-[#9ca3af] font-mono">NO IMG</span>
+                  <span className="text-[8px] text-[#9ca3af] font-mono font-bold">VAULT</span>
                 )}
               </div>
               <div className="flex-1 min-w-0 font-mono">
@@ -172,7 +216,13 @@ export default function OrderDetailsView({ orderId }) {
           {(order.discountAmount || 0) > 0 && (
             <DrawerRow label="Discount" value={`-₹${order.discountAmount.toLocaleString('en-IN')}`} />
           )}
-          <DrawerRow label="Shipping" value={`₹${(order.shippingCharges || 0).toLocaleString('en-IN')}`} />
+          <DrawerRow label="Shipping" value={order.shippingCharges === 0 ? 'FREE' : `₹${(order.shippingCharges || 0).toLocaleString('en-IN')}`} />
+          {order.shippingCampaign && (
+            <DrawerRow label="Shipping Campaign" value={order.shippingCampaign} />
+          )}
+          {(order.handlingCharge || 0) > 0 && (
+            <DrawerRow label="Handling" value={`₹${order.handlingCharge.toLocaleString('en-IN')}`} />
+          )}
           
           {(order.walletAmountPaid || 0) > 0 && (
             <DrawerRow label="Vault Wallet Used" value={`-₹${order.walletAmountPaid.toLocaleString('en-IN')}`} />

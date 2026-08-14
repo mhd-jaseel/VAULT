@@ -7,8 +7,7 @@ import {
   Plus, Trash2, Edit2, Eye, EyeOff, Upload, Sparkles, X, Save,
 } from 'lucide-react';
 import Pagination from '../../components/Pagination';
-
-const API_BASE = 'http://localhost:5000';
+import { resolveImage } from '../../utils/imageHelper';
 
 const emptyForm = {
   label: 'SS 2026',
@@ -255,9 +254,7 @@ export default function AdminCampaigns() {
             ) : (
               <div className="space-y-3">
                 {campaigns.map((c) => {
-                  const thumb = c.desktopImageUrl?.startsWith('/')
-                    ? `${API_BASE}${c.desktopImageUrl}`
-                    : c.desktopImageUrl;
+                  const thumb = resolveImage(c.desktopImageUrl);
                   return (
                     <div
                       key={c._id}
@@ -266,7 +263,14 @@ export default function AdminCampaigns() {
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-border-light flex-shrink-0">
                           {thumb ? (
-                            <img src={thumb} alt={c.imageAlt} className="w-full h-full object-cover" />
+                            <img 
+                              src={thumb} 
+                              alt={c.imageAlt || c.title} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
                           ) : (
                             <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
                               <span className="text-[7px] font-mono text-neutral-300">NO IMG</span>

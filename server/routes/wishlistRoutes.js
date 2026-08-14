@@ -3,7 +3,7 @@ import {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
-} from '../controllers/wishlistController.js';
+} from '../controllers/wishlist/index.js';
 import { protect, isCustomer } from '../middleware/auth.js';
 
 const router = express.Router();

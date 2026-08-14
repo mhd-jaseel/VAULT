@@ -80,6 +80,10 @@ export default function CustomerDetailsView({ customerId }) {
             </DrawerBadge>
           } 
         />
+        <DrawerRow 
+          label="Wallet Balance" 
+          value={`₹${(customer.walletBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+        />
         <DrawerRow label="Phone" value={customer.phone || 'Not provided'} />
         <DrawerRow label="Registered" value={new Date(customer.createdAt).toLocaleDateString()} />
       </DrawerSection>

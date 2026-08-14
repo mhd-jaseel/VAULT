@@ -9,7 +9,7 @@ import { calculateProductDiscounts } from '../../services/discountService.js';
 // Get all products with filters, sorting & search
 export const getProducts = async (req, res) => {
   try {
-    const { category, search, minPrice, maxPrice, sort, page = 1, limit = 12, inStockOnly, showOnHomepage, returnId } = req.query;
+    const { category, search, minPrice, maxPrice, sort, page = 1, limit = 12, inStockOnly, stock, showOnHomepage, returnId } = req.query;
     const query = {};
 
     let replacementContext = null;
@@ -94,14 +94,19 @@ export const getProducts = async (req, res) => {
       if (maxPrice) query.price.$lte = Number(maxPrice);
     }
 
-    // Stock Filter
-    if (inStockOnly === 'true' || inStockOnly === true) {
+    // Stock Filter (All Stock | In Stock Only [stock > 0] | Out of Stock [stock <= 0])
+    const effectiveStock = stock || inStockOnly;
+    if (effectiveStock === 'out_of_stock' || effectiveStock === 'out') {
+      query.stock = { $lte: 0 };
+    } else if (effectiveStock === 'in_stock' || effectiveStock === 'true' || effectiveStock === true) {
       query.stock = { $gt: 0 };
     }
 
     // Sorting options
     let sortOptions = { createdAt: -1 }; // default newest
-    if (sort === 'price_asc') {
+    if (sort === 'oldest') {
+      sortOptions = { createdAt: 1 };
+    } else if (sort === 'price_asc') {
       sortOptions = { price: 1 };
     } else if (sort === 'price_desc') {
       sortOptions = { price: -1 };
@@ -109,6 +114,12 @@ export const getProducts = async (req, res) => {
       sortOptions = { name: 1 };
     } else if (sort === 'name_desc') {
       sortOptions = { name: -1 };
+    } else if (sort === 'stock_asc') {
+      sortOptions = { stock: 1 };
+    } else if (sort === 'stock_desc') {
+      sortOptions = { stock: -1 };
+    } else if (sort === 'featured') {
+      sortOptions = { isFeatured: -1, createdAt: -1 };
     }
 
     // Lookup stages to populate category and brand details

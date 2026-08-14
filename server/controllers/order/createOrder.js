@@ -181,12 +181,15 @@ export const createOrder = async (req, res) => {
       item.unitPaidAmount = Math.round((item.linePaidAmount / item.quantity) * 100) / 100;
     });
 
-    let shippingCharges = totalAmount >= setting.freeShippingMinAmount ? 0 : setting.shippingCharges;
-    if (freeShippingCoupon) {
-      shippingCharges = 0;
-    }
+    const { calculateShipping } = await import('../../services/shippingService.js');
+    const shippingResult = await calculateShipping(totalAmount, freeShippingCoupon);
 
-    const grandTotal = totalAmount - discountAmount + shippingCharges;
+    const shippingCharges = shippingResult.shippingCharge;
+    const handlingCharge = shippingResult.handlingCharge;
+    const isFreeShippingApplied = shippingResult.isFreeShipping;
+    const shippingCampaign = shippingResult.appliedCampaignName;
+
+    const grandTotal = totalAmount - discountAmount + shippingCharges + handlingCharge;
 
     const order = new Order({
       user: req.user._id,
@@ -194,6 +197,9 @@ export const createOrder = async (req, res) => {
       shippingAddress,
       totalAmount,
       shippingCharges,
+      handlingCharge,
+      shippingCampaign,
+      isFreeShippingApplied,
       grandTotal,
       paymentMethod: 'RAZORPAY',
       paymentStatus: 'PENDING',

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { Settings, Save, Upload, Megaphone } from 'lucide-react';
+import { resolveImage } from '../../utils/imageHelper';
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
@@ -47,15 +48,15 @@ export default function AdminSettings() {
         setUpiId(d.upiId || '');
         setShippingCharges(d.shippingCharges || 0);
         setFreeShippingMinAmount(d.freeShippingMinAmount || 0);
-        setLogoPreview(d.logo ? `http://localhost:5000${d.logo}` : '');
-        setQrPreview(d.upiQrCode ? `http://localhost:5000${d.upiQrCode}` : '');
+        setLogoPreview(d.logo ? resolveImage(d.logo) : '');
+        setQrPreview(d.upiQrCode ? resolveImage(d.upiQrCode) : '');
 
         setHeroTitle(d.heroTitle || '');
         setHeroSubtitle(d.heroSubtitle || '');
         setHeroDescription(d.heroDescription || '');
         setHeroProductName(d.heroProductName || '');
         setHeroProductPrice(d.heroProductPrice || 0);
-        setHeroPreview(d.heroImage ? `http://localhost:5000${d.heroImage}` : '');
+        setHeroPreview(d.heroImage ? resolveImage(d.heroImage) : '');
       }
     } catch (err) {
       console.error(err);
@@ -207,7 +208,7 @@ export default function AdminSettings() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">Shipping Fee (₹)</label>
+                <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">Standard Shipping Fee (₹)</label>
                 <input
                   type="number"
                   className="form-input text-xs font-mono"
@@ -226,6 +227,13 @@ export default function AdminSettings() {
                   required
                 />
               </div>
+            </div>
+
+            <div className="p-3 bg-[#fffbeb] border border-[#fde68a] rounded-xl text-[10px] text-[#92400e] flex items-center justify-between font-mono">
+              <span>Looking for Special Free Shipping Campaigns & Handling Fees?</span>
+              <Link to="/admin/shipping" className="font-bold underline text-[#d97706] hover:text-[#b45309]">
+                Open Shipping Settings →
+              </Link>
             </div>
           </div>
 

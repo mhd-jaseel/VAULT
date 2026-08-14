@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /product/
+Allow: /about
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /checkout
+Disallow: /cart
+Disallow: /profile
+Disallow: /my-returns
+Disallow: /my-wallet
+Disallow: /returns/
+Disallow: /order-tracking/
+Disallow: /order-success/
+Disallow: /login
+Disallow: /blocked
+Disallow: /api/
+
+Sitemap: https://vault.co/sitemap.xml

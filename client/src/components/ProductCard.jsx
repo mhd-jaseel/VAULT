@@ -194,9 +194,11 @@ export default function ProductCard({
           <span className="card-pill brand-pill">
             {product.brand?.name || 'VAULT'}
           </span>
-          <span className="card-pill rating-pill">
-            ★ {product.ratings?.average ? product.ratings.average.toFixed(1) : '4.8'}
-          </span>
+          {product.ratings && product.ratings.count > 0 ? (
+            <span className="card-pill rating-pill">
+              ★ {product.ratings.average ? product.ratings.average.toFixed(1) : '0.0'}
+            </span>
+          ) : null}
         </div>
 
         <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
@@ -314,9 +316,11 @@ export default function ProductCard({
             <h3 className="font-sans font-semibold text-[13px] leading-tight text-neutral-900 truncate flex-1">
               {product.name}
             </h3>
-            <span className="text-[11px] font-medium text-neutral-500 flex-shrink-0 flex items-center gap-0.5">
-              ★ {product.ratings?.average ? product.ratings.average.toFixed(1) : '4.8'}
-            </span>
+            {product.ratings && product.ratings.count > 0 ? (
+              <span className="text-[11px] font-medium text-neutral-500 flex-shrink-0 flex items-center gap-0.5">
+                ★ {product.ratings.average ? product.ratings.average.toFixed(1) : '0.0'}
+              </span>
+            ) : null}
           </div>
 
           {/* Price + Old Price + Discount (same row) */}

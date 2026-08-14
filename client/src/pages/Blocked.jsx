@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ShieldX, Phone, Mail, ArrowLeft } from 'lucide-react';
+import VaultLogo from '../components/VaultLogo';
 
 export default function Blocked() {
   const [settings, setSettings] = useState(null);
@@ -28,9 +29,7 @@ export default function Blocked() {
         <div className="flex flex-col items-center gap-6 px-8 py-10 w-full">
           {/* Brand wordmark */}
           <div className="text-center mb-1">
-            <span className="font-display font-black text-xl tracking-[0.25em] text-neutral-900 uppercase">
-              VAULT<span style={{ color: '#c9a84c' }}>.</span>
-            </span>
+            <VaultLogo size="default" theme="dark" withDotAccent={true} />
           </div>
 
           {/* Blocked icon */}
@@ -151,7 +150,7 @@ export default function Blocked() {
 
       {/* Bottom attribution */}
       <p className="mt-8 text-[0.6rem] font-mono text-neutral-400 uppercase tracking-widest">
-        {settings?.storeName || 'VAULT'} — Premium Men&apos;s Accessories
+        {settings?.storeName || 'VAULT.CO'} — Premium Men&apos;s Accessories
       </p>
     </div>
   );

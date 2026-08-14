@@ -20,9 +20,9 @@ export const ORDER_STATUSES = {
 
 // Allowed forward transitions for normal admin status updates
 export const ALLOWED_TRANSITIONS = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['packed', 'cancelled'],
-  packed: ['shipped', 'cancelled'],
+  pending: ['confirmed'],
+  confirmed: ['packed'],
+  packed: ['shipped'],
   shipped: ['delivered'],
   delivered: [], // Terminal state for normal transitions
   cancelled: [], // Terminal state for normal transitions

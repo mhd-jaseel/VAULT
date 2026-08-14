@@ -66,7 +66,43 @@ export const verifyRazorpayPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Payment verification failed. Please contact support.' });
     }
 
-    // ── 6. Signature valid — confirm order ───────────────────────────────────
+    // ── 5b. Explicit Server-Side Captured Amount Verification ──────────────────
+    // Fetch authoritative payment entity directly from Razorpay API to compare amount
+    const razorpay = (await import('../../services/razorpayService.js')).default;
+    let rpPaymentEntity;
+    try {
+      rpPaymentEntity = await razorpay.payments.fetch(razorpay_payment_id);
+    } catch (fetchErr) {
+      console.error('[Razorpay] Payment fetch failed:', fetchErr);
+      return res.status(500).json({ success: false, message: 'Unable to verify payment amount with gateway.' });
+    }
+
+    // Calculate expected amount in paise (grandTotal minus any wallet credits applied)
+    const expectedRazorpayAmountPaise = Math.round((order.razorpayAmountPaid || (order.grandTotal - (order.walletAmountPaid || 0))) * 100);
+    const actualCapturedAmountPaise = Number(rpPaymentEntity.amount);
+
+    if (actualCapturedAmountPaise !== expectedRazorpayAmountPaise) {
+      console.error(`[VAULT Security Alert] Payment Amount Mismatch: Expected ${expectedRazorpayAmountPaise} paise, but received ${actualCapturedAmountPaise} paise.`);
+      
+      order.paymentStatus = 'failed';
+      order.timeline.push({
+        status: order.status,
+        note: `Payment amount mismatch: Expected ₹${expectedRazorpayAmountPaise / 100}, but captured ₹${actualCapturedAmountPaise / 100}.`,
+      });
+      await order.save();
+
+      await Payment.findOneAndUpdate(
+        { razorpayOrderId: storedRazorpayOrderId },
+        { razorpayPaymentId: razorpay_payment_id, status: 'amount_mismatch' }
+      );
+
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed: Paid amount does not match expected order total.',
+      });
+    }
+
+    // ── 6. Signature & Amount valid — confirm order ───────────────────────────
     order.razorpayPaymentId = razorpay_payment_id;
     order.razorpaySignatureVerified = true;
     order.paymentStatus = 'captured';

@@ -1,20 +1,22 @@
 import Product from '../../models/Product.js';
 
-// Helper — deduct stock idempotently (called from verify + webhook)
+// Helper — deduct stock idempotently and atomically (called from verify + webhook)
 export const deductStockForOrder = async (order) => {
   if (order.stockDeducted) return; // already deducted — do nothing
 
   for (const item of order.items) {
-    const product = await Product.findById(item.product);
-    if (!product) continue;
-    const newStock = product.stock - item.quantity;
-    if (newStock < 0) {
-      console.warn(`[VAULT] Stock underflow for product ${item.product} — setting to 0`);
-      product.stock = 0;
-    } else {
-      product.stock = newStock;
+    // Atomic deduction: only decrement if available stock >= requested quantity
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: item.product, stock: { $gte: item.quantity } },
+      { $inc: { stock: -item.quantity } },
+      { new: true }
+    );
+
+    // Fallback if stock was already at 0 or insufficient
+    if (!updatedProduct) {
+      console.warn(`[VAULT] Atomic decrement failed for product ${item.product} (stock was lower than ${item.quantity}). Setting to 0.`);
+      await Product.findByIdAndUpdate(item.product, { stock: 0 });
     }
-    await product.save();
   }
 
   order.stockDeducted = true;

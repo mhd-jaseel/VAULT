@@ -5,13 +5,26 @@ import { toast } from 'sonner';
 import { AuthContext } from '../context/AuthContext';
 import Pagination from '../components/Pagination';
 import axios from 'axios';
-import { User, ClipboardList, MapPin, CheckCircle, ChevronRight, LogOut, RotateCcw, Wallet, ArrowDownRight, ArrowUpRight, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
+import { User, ClipboardList, MapPin, CheckCircle, ChevronRight, LogOut, RotateCcw, Wallet, ArrowDownRight, ArrowUpRight, ShieldCheck, RefreshCw, AlertCircle, Star, Edit2, Trash2, ExternalLink } from 'lucide-react';
+import WriteReviewModal from '../components/reviews/WriteReviewModal';
+import { PremiumSwal } from '../utils/swalHelper';
+import { resolveImage } from '../utils/imageHelper';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Profile() {
   const { user, loading, updateProfile, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // Active section state: 'orders', 'returns', 'wallet', 'profile'
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'My Profile & Orders | Vault.Co',
+      description: 'Manage your Vault.Co account, orders, and addresses.',
+      noIndex: true,
+      canonicalPath: '/profile',
+    });
+  }, []);
+
+  // Active section state: 'orders', 'returns', 'wallet', 'reviews', 'profile'
   const [activeSection, setActiveSection] = useState('orders');
 
   // Orders State
@@ -21,6 +34,15 @@ export default function Profile() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get('page')) || 1;
   const [pages, setPages] = useState(1);
+
+  // My Reviews State
+  const [myReviews, setMyReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewsError, setReviewsError] = useState(null);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsPages, setReviewsPages] = useState(1);
+  const [editingReview, setEditingReview] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Returns State (combines Returns + Cancellations)
   const [returnsList, setReturnsList] = useState([]);
@@ -151,6 +173,61 @@ export default function Profile() {
       fetchWalletData();
     }
   }, [user, activeSection]);
+
+  // Fetch My Reviews Data
+  const fetchMyReviewsData = useCallback(async (pageNum = 1) => {
+    if (!user) return;
+    setLoadingReviews(true);
+    setReviewsError(null);
+    try {
+      const res = await axios.get(`/reviews/my-reviews?page=${pageNum}&limit=10`);
+      if (res.data.success) {
+        setMyReviews(res.data.data);
+        setReviewsPages(res.data.pagination?.pages || 1);
+        setReviewsPage(pageNum);
+      }
+    } catch (err) {
+      console.error('Fetch my reviews error:', err);
+      const status = err.response?.status;
+      if (status === 401 || status === 403) {
+        setReviewsError('AUTH_REQUIRED');
+      } else {
+        setReviewsError('SERVER_ERROR');
+      }
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user && activeSection === 'reviews') {
+      fetchMyReviewsData(reviewsPage);
+    }
+  }, [user, activeSection, reviewsPage]);
+
+  // Delete own review handler with confirmation
+  const handleDeleteReview = async (reviewId) => {
+    const result = await PremiumSwal.fire({
+      title: 'Delete Review?',
+      text: 'Are you sure you want to delete this product review?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await axios.delete(`/reviews/${reviewId}`);
+        if (res.data.success) {
+          toast.success('Review deleted successfully.');
+          fetchMyReviewsData(reviewsPage);
+        }
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to delete review.');
+      }
+    }
+  };
 
   const onProfileUpdate = async (data) => {
     setUpdating(true);
@@ -295,6 +372,19 @@ if (!user) return null;
         >
           <span className="flex items-center gap-1.5">
             <Wallet className="text-[#d97706]" size={14} /> WALLET
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveSection('reviews')}
+          className={`pb-3 text-xs font-bold uppercase tracking-wider cursor-pointer border-b-2 transition-all shrink-0 px-2 sm:px-0 ${
+            activeSection === 'reviews' 
+              ? 'border-neutral-900 text-text-primary font-extrabold' 
+              : 'border-transparent text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Star className="text-[#f5a623]" size={14} /> MY REVIEWS
           </span>
         </button>
 
@@ -690,7 +780,218 @@ if (!user) return null;
         </div>
       )}
 
-      {/* ── 6. SECTION 4: EDIT PROFILE ── */}
+      {/* ── 5. SECTION: MY REVIEWS ── */}
+      {activeSection === 'reviews' && (
+        <div className="space-y-6">
+          <div className="pb-3 border-b border-border-light flex items-center justify-between">
+            <div>
+              <h2 className="text-base md:text-lg font-extrabold uppercase tracking-tight text-text-primary flex items-center gap-2">
+                <Star className="text-[#f5a623] fill-[#f5a623]" size={18} /> MY REVIEWS
+              </h2>
+              <p className="text-xs text-text-secondary font-mono mt-0.5">
+                Reviews you've shared about your purchases.
+              </p>
+            </div>
+            {myReviews.length > 0 && (
+              <span className="text-xs font-mono font-bold text-text-secondary">
+                {myReviews.length} {myReviews.length === 1 ? 'REVIEW' : 'REVIEWS'}
+              </span>
+            )}
+          </div>
+
+          {loadingReviews ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-36 rounded-2xl shimmer-bg" />
+              ))}
+            </div>
+          ) : reviewsError === 'AUTH_REQUIRED' ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 bg-white border border-border-light rounded-2xl px-4 font-mono">
+              <AlertCircle className="text-amber-500 mb-2" size={32} />
+              <p className="text-xs font-bold text-text-primary uppercase mb-1">Please log in to view your reviews.</p>
+              <button
+                onClick={() => navigate('/login?redirect=profile')}
+                className="btn-gold text-[10px] py-2 px-5 mt-3 uppercase font-bold tracking-wider cursor-pointer"
+              >
+                LOGIN
+              </button>
+            </div>
+          ) : reviewsError ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 bg-white border border-border-light rounded-2xl px-4 font-mono">
+              <AlertCircle className="text-red-500 mb-2" size={32} />
+              <p className="text-xs font-bold text-text-primary uppercase mb-1">Unable to load your reviews.</p>
+              <button
+                onClick={() => fetchMyReviewsData(reviewsPage)}
+                className="btn-dark text-[10px] py-2 px-5 mt-3 uppercase font-bold tracking-wider cursor-pointer"
+              >
+                TRY AGAIN
+              </button>
+            </div>
+          ) : myReviews.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-16 bg-white border border-dashed border-border-light rounded-2xl px-4 space-y-3 font-mono">
+              <div className="w-12 h-12 rounded-full bg-neutral-50 flex items-center justify-center text-neutral-400">
+                <Star size={24} className="text-[#f5a623]" />
+              </div>
+              <h3 className="font-bold text-xs uppercase tracking-wider text-text-primary font-sans">
+                NO REVIEWS YET
+              </h3>
+              <p className="text-xs text-text-secondary max-w-sm">
+                Reviews you write for your purchases will appear here.
+              </p>
+              <Link
+                to="/shop"
+                className="btn-gold text-[10px] !py-2.5 !px-6 uppercase tracking-widest font-bold mt-2 inline-block cursor-pointer"
+              >
+                SHOP NOW
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {myReviews.map((rev) => {
+                const prod = rev.product;
+                const prodImg = prod?.images && prod.images.length > 0 ? prod.images[0] : null;
+
+                return (
+                  <div
+                    key={rev._id}
+                    className="p-5 bg-white border border-border-light rounded-2xl space-y-4 hover:border-text-primary/20 transition-all shadow-xs"
+                  >
+                    {/* Top row: Product image & details + actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-light pb-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Product Image Thumbnail */}
+                        <div className="w-14 h-14 rounded-xl bg-neutral-50 border border-border-light overflow-hidden flex items-center justify-center shrink-0 p-1">
+                          {prodImg ? (
+                            <img
+                              src={resolveImage(prodImg)}
+                              alt={prod?.name || 'Product'}
+                              className="w-full h-full object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <Star size={18} className="text-neutral-300" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <span className="text-[9px] font-mono uppercase text-text-secondary tracking-wider block">
+                            {prod?.brand?.name || 'VAULT'}
+                          </span>
+                          <h4 className="font-sans font-bold text-xs text-text-primary uppercase tracking-tight truncate">
+                            {prod?.name || 'Unknown Product'}
+                          </h4>
+                        </div>
+                      </div>
+
+                      {/* Actions: Edit / Delete Review */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingReview(rev);
+                            setEditModalOpen(true);
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border-light text-[10px] font-mono font-bold text-text-secondary hover:text-text-primary hover:border-text-primary transition-all cursor-pointer"
+                        >
+                          <Edit2 size={11} /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReview(rev._id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-[10px] font-mono font-bold text-red-600 hover:bg-red-50 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={11} /> Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Review content */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={12}
+                              className={
+                                star <= rev.rating
+                                  ? 'text-amber-400 fill-amber-400'
+                                  : 'text-neutral-300'
+                              }
+                            />
+                          ))}
+                        </div>
+
+                        {rev.title && (
+                          <h5 className="font-sans font-bold text-xs text-text-primary">
+                            {rev.title}
+                          </h5>
+                        )}
+
+                        {rev.isVerifiedPurchase && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                            <CheckCircle size={10} /> Verified Purchase
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-neutral-700 font-sans leading-relaxed whitespace-pre-line">
+                        {rev.comment}
+                      </p>
+
+                      {/* Review Photos if any */}
+                      {rev.images && rev.images.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {rev.images.map((img, idx) => (
+                            <a
+                              key={idx}
+                              href={resolveImage(img)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="w-14 h-14 rounded-xl overflow-hidden border border-border-light hover:opacity-85 transition-opacity"
+                            >
+                              <img
+                                src={resolveImage(img)}
+                                alt="Review attachment"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Date details */}
+                      <div className="pt-2 text-[10px] font-mono text-text-secondary flex items-center gap-3">
+                        <span>Reviewed on {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        {rev.updatedAt && rev.updatedAt !== rev.createdAt && (
+                          <span className="italic">
+                            (Updated {new Date(rev.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {reviewsPages > 1 && (
+                <div className="pt-4 flex justify-center">
+                  <Pagination
+                    currentPage={reviewsPage}
+                    totalPages={reviewsPages}
+                    onPageChange={(p) => fetchMyReviewsData(p)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 6. SECTION: EDIT PROFILE ── */}
       {activeSection === 'profile' && (
         <form onSubmit={handleSubmit(onProfileUpdate)} className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {/* Personal Info */}
@@ -781,6 +1082,24 @@ if (!user) return null;
             </button>
           </div>
         </form>
+      )}
+
+      {/* ── Edit Review Modal ── */}
+      {editingReview && (
+        <WriteReviewModal
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditingReview(null);
+          }}
+          productId={editingReview.product?._id || editingReview.product}
+          productName={editingReview.product?.name || 'Product'}
+          existingReview={editingReview}
+          onReviewSubmitted={() => {
+            toast.success('Review updated successfully.');
+            fetchMyReviewsData(reviewsPage);
+          }}
+        />
       )}
     </div>
   );

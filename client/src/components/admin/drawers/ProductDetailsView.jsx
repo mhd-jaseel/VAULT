@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { DrawerSection, DrawerRow, DrawerBadge } from '../AdminDetailsDrawer';
+import { resolveImage } from '../../../utils/imageHelper';
 
 export default function ProductDetailsView({ productId }) {
   const [product, setProduct] = useState(null);
@@ -59,11 +60,18 @@ export default function ProductDetailsView({ productId }) {
       {/* ── Header / Image ── */}
       <DrawerSection>
         <div className="flex gap-4 items-start">
-          <div className="w-24 h-24 bg-[#f3f4f6] rounded-xl flex items-center justify-center shrink-0 border border-[#e5e5e5] overflow-hidden">
+          <div className="w-24 h-24 bg-[#f3f4f6] rounded-xl flex items-center justify-center shrink-0 border border-[#e5e5e5] overflow-hidden p-1">
             {product.images?.[0] ? (
-              <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+              <img 
+                src={resolveImage(product.images[0])} 
+                alt={product.name} 
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
             ) : (
-              <span className="text-[10px] text-[#9ca3af] font-mono">NO IMG</span>
+              <span className="text-[10px] text-[#9ca3af] font-mono font-bold">VAULT</span>
             )}
           </div>
           <div className="flex-1 min-w-0">

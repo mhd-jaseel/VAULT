@@ -4,22 +4,40 @@ import { AuthContext } from '../context/AuthContext';
 import AdminSidebar from './AdminSidebar';
 import AdminNotificationBell from './AdminNotificationBell';
 import { Menu } from 'lucide-react';
+import VaultLogo from './VaultLogo';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function AdminRoute({ children }) {
   const { user, loading } = useContext(AuthContext);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  React.useEffect(() => {
+    setDocumentSEO({
+      title: 'Admin Control Center | Vault.Co',
+      noIndex: true,
+      canonicalPath: '/admin',
+    });
+  }, []);
+
   if (loading) {
     return (
-      <div className="py-20 flex items-center justify-center min-h-screen bg-[#F7F7F5]">
-        <div className="w-12 h-12 rounded-full border-2 border-[#111111] border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-[#F7F7F5] flex flex-col items-center justify-center text-[#111111] font-mono text-xs">
+        <div className="w-8 h-8 rounded-full border-2 border-[#111111] border-t-transparent animate-spin mb-3" />
+        AUTHENTICATING VAULT ACCESS...
       </div>
     );
   }
 
   if (!user || user.role !== 'admin') {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
+
+  const isSuperAdmin = Boolean(
+    user &&
+      user.email &&
+      user.email.toLowerCase() ===
+        (import.meta.env.VITE_ADMIN_EMAIL || 'vault.co.6235@gmail.com').toLowerCase()
+  );
 
   return (
     <div className="admin-panel-theme bg-[#F7F7F5] min-h-screen text-[#111111] antialiased flex">
@@ -39,18 +57,30 @@ export default function AdminRoute({ children }) {
           >
             <Menu size={20} />
           </button>
-          <span className="font-display font-black text-base tracking-[0.2em] text-[#111111]">
-            VAULT.<span className="text-[#d97706] text-xs font-mono">ADMIN</span>
-          </span>
+          <VaultLogo 
+            size="mobile" 
+            theme="dark"
+            badge={
+              <span className="text-[#d97706] text-xs font-mono font-bold">
+                [{isSuperAdmin ? 'SUPER ADMIN' : 'ADMIN'}]
+              </span>
+            }
+          />
           <AdminNotificationBell />
         </header>
 
         {/* Desktop Header Bar */}
         <header className="hidden lg:flex sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e5e5e5] px-8 py-3.5 items-center justify-between shadow-xs">
           <div>
-            <span className="font-display font-black text-sm tracking-[0.25em] text-[#111111]">
-              VAULT <span className="text-[#d97706] text-[10px] font-mono">CONTROL CENTER</span>
-            </span>
+            <VaultLogo 
+              size="small" 
+              theme="dark"
+              badge={
+                <span className="text-[#d97706] text-[10px] font-mono font-bold tracking-widest ml-1">
+                  CONTROL CENTER
+                </span>
+              }
+            />
           </div>
           <div className="flex items-center gap-4">
             <AdminNotificationBell />

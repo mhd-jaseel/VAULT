@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { PremiumSwal } from '../../utils/swalHelper';
 import { Plus, Edit2, Trash2, X, Upload } from 'lucide-react';
 import Pagination from '../../components/Pagination';
+import { resolveImage } from '../../utils/imageHelper';
 
 export default function AdminCategories() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -58,7 +59,7 @@ export default function AdminCategories() {
     setCurrentId(cat._id);
     setName(cat.name);
     setDescription(cat.description || '');
-    setImagePreview(cat.image ? `http://localhost:5000${cat.image}` : '');
+    setImagePreview(cat.image ? resolveImage(cat.image) : '');
     setImageFile(null);
     setIsOpen(true);
   };
@@ -167,16 +168,15 @@ export default function AdminCategories() {
               className="glass-card flex items-center justify-between border border-dark-border p-4 hover:border-zinc-800"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-dark-border">
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-dark-border p-1">
                   {cat.image ? (
                     <img 
-                      src={`http://localhost:5000${
-                        cat.image.includes('/uploads/')
-                          ? `/uploads/${cat.name.toLowerCase() === 'sunglasses' ? 'sunglasses' : cat.name.toLowerCase() === 'shades' ? 'shades' : cat.name.toLowerCase() + 's'}.webp`
-                          : cat.image
-                      }`} 
-                      alt="" 
+                      src={resolveImage(cat.image)} 
+                      alt={cat.name} 
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   ) : (
                     <span className="text-zinc-800 font-bold text-xs">VAULT</span>

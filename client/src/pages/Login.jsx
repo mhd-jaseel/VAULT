@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AuthContext } from '../context/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
+import VaultLogo from '../components/VaultLogo';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Login() {
   const { googleLogin } = useContext(AuthContext);
@@ -12,6 +14,15 @@ export default function Login() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    setDocumentSEO({
+      title: 'Login | Vault.Co',
+      description: 'Exclusive member access to your Vault.Co account.',
+      noIndex: true,
+      canonicalPath: '/login',
+    });
+  }, []);
 
   const handleGoogleSuccess = async (credentialResponse) => {
     setErrorMsg('');
@@ -47,9 +58,7 @@ export default function Login() {
         <div className="bg-white border border-neutral-200 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-10 flex flex-col items-center gap-8 text-center transition-all">
           
           <div className="flex flex-col items-center gap-3">
-            <span className="font-display font-black text-4xl tracking-[0.25em] text-[#111111] uppercase leading-none ml-2">
-              VAULT<span className="text-gold">.</span>
-            </span>
+            <VaultLogo to="/" size="hero" theme="dark" withDotAccent={true} />
             <div className="h-px w-12 bg-gold/50 my-2"></div>
             <h1 className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-500">
               Exclusive Member Access
@@ -82,7 +91,13 @@ export default function Login() {
             
             <p className="text-[10px] text-neutral-400 font-sans px-4 leading-relaxed max-w-[280px]">
               By continuing, you agree to Vault's <br/>
-              <span className="text-neutral-500 hover:text-[#111111] transition-colors cursor-pointer underline underline-offset-2">Terms of Service</span> and <span className="text-neutral-500 hover:text-[#111111] transition-colors cursor-pointer underline underline-offset-2">Privacy Policy</span>.
+              <Link to="/terms" className="text-neutral-600 hover:text-neutral-900 transition-colors underline underline-offset-2">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link to="/privacy" className="text-neutral-600 hover:text-neutral-900 transition-colors underline underline-offset-2">
+                Privacy Policy
+              </Link>.
             </p>
           </div>
 

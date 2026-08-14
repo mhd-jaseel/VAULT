@@ -341,7 +341,8 @@ export default function AdminDiscounts() {
         </div>
       ) : (
         <div className="bg-dark-card border border-dark-border rounded-2xl overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
+          {/* Desktop Table View (md+) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-dark-border bg-black/35 text-[10px] font-mono tracking-wider text-zinc-400 uppercase">
@@ -410,6 +411,70 @@ export default function AdminDiscounts() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Cards (< md) */}
+          <div className="md:hidden divide-y divide-dark-border p-4 space-y-3 font-sans">
+            {discounts.map((ds) => (
+              <div key={ds._id} className="pt-3 first:pt-0 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-white text-xs">{ds.discountName}</h3>
+                  <button
+                    onClick={() => handleToggleStatus(ds)}
+                    className={`text-[8px] font-mono font-bold py-0.5 px-2.5 rounded-full border transition-all cursor-pointer ${
+                      ds.status === 'active'
+                        ? 'bg-green-950/20 border-green-500/30 text-green-400'
+                        : 'bg-zinc-800 border-zinc-700 text-zinc-500'
+                    }`}
+                  >
+                    {ds.status.toUpperCase()}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                  <div>
+                    <span className="text-[9px] text-zinc-500 uppercase block font-bold font-sans">Benefit</span>
+                    <span className="font-bold text-gold">
+                      {ds.discountType === 'percentage' ? `${ds.discountValue}% OFF` : `₹${ds.discountValue} OFF`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] text-zinc-500 uppercase block font-bold font-sans">Valid Until</span>
+                    <span className="text-zinc-300 text-[10px]">
+                      {new Date(ds.endDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-zinc-400 font-mono">
+                  <span className="text-zinc-500 uppercase font-bold font-sans">Scope: </span>
+                  {ds.applyType === 'product' && `Product: ${ds.product?.name || 'Selected Item'}`}
+                  {ds.applyType === 'category' && `Category: ${ds.category?.name || 'Selected Category'}`}
+                  {ds.applyType === 'selectedProducts' && 'Selected Products'}
+                </div>
+
+                <div className="pt-2 border-t border-dark-border/40 flex items-center justify-between gap-2 text-xs">
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    Priority: {ds.priority} | Home: {ds.showOnHomepage ? 'YES' : 'NO'}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenEdit(ds)}
+                      className="px-2.5 py-1 btn-gold rounded-lg text-[10px] font-mono font-bold uppercase cursor-pointer flex items-center gap-1"
+                    >
+                      <Edit2 size={11} /> Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(ds._id)}
+                      className="p-1.5 text-zinc-500 hover:text-red-400 border border-dark-border rounded-lg cursor-pointer"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <Pagination
             page={page}
             pages={pages}

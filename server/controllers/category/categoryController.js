@@ -1,6 +1,6 @@
-import Category from '../models/Category.js';
-import Product from '../models/Product.js';
-import { paginateAggregate } from '../utils/paginate.js';
+import Category from '../../models/Category.js';
+import Product from '../../models/Product.js';
+import { paginateAggregate } from '../../utils/paginate.js';
 
 export const getCategories = async (req, res) => {
   try {

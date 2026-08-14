@@ -1,5 +1,7 @@
 import User from '../models/User.js';
 import Setting from '../models/Setting.js';
+import AboutPage from '../models/AboutPage.js';
+import { DEFAULT_ABOUT_DATA } from '../controllers/about/aboutController.js';
 
 export const seedDefaultAdminAndSettings = async () => {
   try {
@@ -41,7 +43,15 @@ export const seedDefaultAdminAndSettings = async () => {
       });
       console.log('Default Store Settings Seeded Successfully.');
     }
+
+    // Seed default About Page
+    const aboutCount = await AboutPage.countDocuments();
+    if (aboutCount === 0) {
+      await AboutPage.create(DEFAULT_ABOUT_DATA);
+      console.log('Default About Page Content Seeded Successfully.');
+    }
   } catch (error) {
     console.error('Error seeding default data:', error.message);
   }
 };
+

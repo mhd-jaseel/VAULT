@@ -4,6 +4,8 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { QrCode, Upload, CheckCircle } from 'lucide-react';
 
+import { resolveImage } from '../utils/imageHelper';
+
 export default function ManualPayment() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -115,9 +117,12 @@ export default function ManualPayment() {
           <div className="w-52 h-52 bg-white border-2 border-border-light rounded-2xl p-4 flex items-center justify-center shadow-sm">
             {settings.upiQrCode ? (
               <img 
-                src={`http://localhost:5000${settings.upiQrCode}`} 
+                src={resolveImage(settings.upiQrCode)} 
                 alt="UPI QR Code" 
                 className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             ) : (
               <div className="text-neutral-400 font-bold font-mono text-[10px] uppercase">QR Code Image Pending</div>

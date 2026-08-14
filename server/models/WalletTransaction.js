@@ -38,7 +38,7 @@ const walletTransactionSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['RETURN_CREDIT', 'CANCELLATION_CREDIT', 'ORDER_PAYMENT'],
+      enum: ['RETURN_CREDIT', 'CANCELLATION_CREDIT', 'ORDER_PAYMENT', 'ADMIN_ADJUSTMENT', 'REPLACEMENT_FALLBACK_CREDIT'],
       required: true,
     },
     referenceId: {
@@ -52,6 +52,14 @@ const walletTransactionSchema = new mongoose.Schema(
     createdBy: {
       type: String,
       default: 'SYSTEM',
+    },
+    performedByAdminEmail: {
+      type: String,
+      trim: true,
+    },
+    performedByAdminName: {
+      type: String,
+      trim: true,
     },
   },
   { timestamps: true }

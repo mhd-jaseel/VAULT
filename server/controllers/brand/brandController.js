@@ -1,6 +1,6 @@
-import Brand from '../models/Brand.js';
-import Product from '../models/Product.js';
-import { paginateAggregate } from '../utils/paginate.js';
+import Brand from '../../models/Brand.js';
+import Product from '../../models/Product.js';
+import { paginateAggregate } from '../../utils/paginate.js';
 
 // @desc    Get active brands
 // @route   GET /brands

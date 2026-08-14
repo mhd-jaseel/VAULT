@@ -3,7 +3,7 @@ import {
   getPublicAnnouncement,
   getAdminAnnouncement,
   updateAnnouncement,
-} from '../controllers/announcementController.js';
+} from '../controllers/announcement/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 
 const router = express.Router();

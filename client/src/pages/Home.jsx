@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
-import { ChevronRight, ShieldCheck, Truck, RefreshCw } from 'lucide-react';
+import { ChevronRight, ShieldCheck, Truck, RefreshCw, Star, Quote, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
 import ProductCard from '../components/ProductCard';
@@ -9,7 +9,7 @@ import DiscountCountdown from '../components/DiscountCountdown';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from '../components/LoginRequiredModal';
 
-const API_BASE = 'http://localhost:5000';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Home() {
   const [categories, setCategories] = useState([]);
@@ -18,13 +18,40 @@ export default function Home() {
   const [tickTime, setTickTime] = useState(Date.now());
   const [settings, setSettings] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
+  const [homepageReviews, setHomepageReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewCarouselIndex, setReviewCarouselIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // SEO metadata setup
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Vault.Co | Online Shopping',
+      description: 'Discover luxury men\'s accessories at Vault.Co. Curated collection of masterfully engineered watches, premium leather wallets, belts, jewelry and fragrances.',
+      canonicalPath: '/',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'Vault.Co',
+        url: window.location.origin,
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: `${window.location.origin}/shop?search={search_term_string}`,
+          'query-input': 'required name=search_term_string',
+        },
+      },
+    });
+  }, []);
 
   // Campaign carousel state
   const [campaignIndex, setCampaignIndex] = useState(0);
   const [campaignPaused, setCampaignPaused] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+
+  // Reviews touch swipe state
+  const [reviewTouchStart, setReviewTouchStart] = useState(null);
+  const [reviewTouchEnd, setReviewTouchEnd] = useState(null);
 
   // Ticker
   useEffect(() => {
@@ -98,12 +125,13 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [catRes, prodRes, discountRes, settingsRes, campaignRes] = await Promise.all([
+        const [catRes, prodRes, discountRes, settingsRes, campaignRes, reviewRes] = await Promise.all([
           api.get('/categories'),
           api.get('/products?limit=4'),
           api.get('/products/discounted'),
           api.get('/settings'),
           api.get('/campaigns'),
+          api.get('/reviews/homepage').catch(() => ({ data: { success: false, data: [] } })),
         ]);
 
         if (catRes.data.success) setCategories(catRes.data.data);
@@ -111,10 +139,14 @@ export default function Home() {
         if (discountRes.data.success) setDiscountProducts(discountRes.data.data);
         if (settingsRes.data.success) setSettings(settingsRes.data.data);
         if (campaignRes.data.success) setCampaigns(campaignRes.data.data);
+        if (reviewRes.data && reviewRes.data.success) {
+          setHomepageReviews(reviewRes.data.data || []);
+        }
       } catch (error) {
         console.error('Error fetching home data:', error);
       } finally {
         setLoading(false);
+        setReviewsLoading(false);
       }
     };
     fetchData();
@@ -124,7 +156,7 @@ export default function Home() {
   const campaignImgSrc = (campaign) => {
     const url = campaign.desktopImageUrl;
     if (!url) return null;
-    return url.startsWith('/') ? `${API_BASE}${url}` : url;
+    return resolveImage(url);
   };
 
   return (
@@ -354,8 +386,10 @@ export default function Home() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
                   <span className="text-[10px] text-red-500 uppercase tracking-widest font-mono font-bold">LIMITED TIME DEALS</span>
                 </div>
-                <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">Exclusive Offers</h2>
-                <p className="text-xs text-text-secondary mt-1">Limited-time deals on premium VAULT accessories.</p>
+                <h2 className="text-xl sm:text-2xl font-bold uppercase tracking-tight text-text-primary font-sans">
+                  Exclusive Offers
+                </h2>
+                <p className="text-xs text-text-secondary mt-1">Limited-time deals on premium VAULT.CO accessories.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -422,7 +456,13 @@ export default function Home() {
         <section className="glass-card !p-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             {[
-              { Icon: Truck, title: 'Fast Shipping', desc: 'Free delivery above ₹1500' },
+              { 
+                Icon: Truck, 
+                title: 'Fast Shipping', 
+                desc: settings?.activeSpecialCampaign 
+                  ? `🎉 ${settings.activeSpecialCampaign.name}: FREE Delivery!` 
+                  : `Free delivery above ₹${(settings?.freeShippingMinAmount || 1500).toLocaleString('en-IN')}` 
+              },
               { Icon: ShieldCheck, title: 'Authentic Products', desc: '100% genuine guarantees' },
               { Icon: RefreshCw, title: 'Easy Returns', desc: '7-day hassle free options' },
             ].map(({ Icon, title, desc }) => (
@@ -438,6 +478,207 @@ export default function Home() {
             ))}
           </div>
         </section>
+
+        {/* ── 1. CUSTOMER REVIEWS (Admin Selected & Approved Real Database Reviews) ── */}
+        {!reviewsLoading && homepageReviews.length > 0 && (
+          <section className="glass-card relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-3 border-b border-border-light pb-4">
+              <div>
+                <span className="text-[10px] text-text-secondary uppercase tracking-widest font-mono font-bold flex items-center gap-1.5">
+                  <Star size={12} className="text-[#f5a623] fill-[#f5a623]" /> VERIFIED EXPERIENCES
+                </span>
+                <h2 className="text-xl md:text-2xl font-extrabold text-text-primary uppercase tracking-tight mt-1">
+                  Customer Reviews
+                </h2>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-mono text-text-secondary font-bold">
+                  {homepageReviews.length} {homepageReviews.length === 1 ? 'FEATURED REVIEW' : 'FEATURED REVIEWS'}
+                </span>
+                {homepageReviews.length > 3 && (
+                  <div className="hidden md:flex items-center gap-1.5">
+                    <button
+                      onClick={() => setReviewCarouselIndex((prev) => Math.max(0, prev - 1))}
+                      disabled={reviewCarouselIndex === 0}
+                      className="w-8 h-8 rounded-full border border-border-light bg-white hover:bg-neutral-100 flex items-center justify-center text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      aria-label="Previous reviews"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                    <button
+                      onClick={() => setReviewCarouselIndex((prev) => Math.min(homepageReviews.length - 3, prev + 1))}
+                      disabled={reviewCarouselIndex >= homepageReviews.length - 3}
+                      className="w-8 h-8 rounded-full border border-border-light bg-white hover:bg-neutral-100 flex items-center justify-center text-text-primary disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      aria-label="Next reviews"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Desktop Layout: 3 cards visible with smooth sliding */}
+            <div className="hidden md:block overflow-hidden">
+              <div
+                className="grid grid-cols-3 gap-6 transition-transform duration-500 ease-out"
+                style={{
+                  transform: homepageReviews.length > 3 ? `translateX(-${reviewCarouselIndex * (100 / 3 + 2)}%)` : 'none',
+                }}
+              >
+                {homepageReviews.map((rev) => (
+                  <div
+                    key={rev._id}
+                    className="p-6 bg-white border border-border-light rounded-2xl flex flex-col justify-between hover:border-text-primary/25 transition-all shadow-xs space-y-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Rating Stars & Verified badge */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex text-[#f5a623]">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={13}
+                              fill={i < rev.rating ? '#f5a623' : 'none'}
+                              className={i < rev.rating ? 'text-[#f5a623] fill-[#f5a623]' : 'text-neutral-300'}
+                            />
+                          ))}
+                        </div>
+                        {rev.isVerifiedPurchase && (
+                          <span className="text-[8px] font-mono font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 flex items-center gap-1">
+                            <CheckCircle2 size={9} /> Verified
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Review Headline & Text */}
+                      {rev.title && (
+                        <h4 className="font-sans font-bold text-xs text-text-primary uppercase tracking-wide line-clamp-1">
+                          {rev.title}
+                        </h4>
+                      )}
+                      <p className="text-xs font-sans text-neutral-600 leading-relaxed line-clamp-4 italic">
+                        "{rev.comment}"
+                      </p>
+                    </div>
+
+                    {/* Customer & Product Footnote */}
+                    <div className="pt-4 border-t border-border-light flex items-center justify-between gap-2 text-xs">
+                      <div className="min-w-0">
+                        <p className="font-bold font-sans text-text-primary uppercase text-[11px] truncate">
+                          {rev.user?.name || 'Verified Customer'}
+                        </p>
+                        <p className="text-[9px] font-mono text-text-secondary">
+                          {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+
+                      {rev.product && (
+                        <Link
+                          to={`/product/${rev.product._id}`}
+                          className="text-[9px] font-mono text-text-secondary hover:text-text-primary uppercase tracking-wider font-bold truncate max-w-[120px] text-right"
+                        >
+                          {rev.product.name} →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobile Layout: 1 card per swipe with clean pagination dots */}
+            <div
+              className="md:hidden overflow-hidden"
+              onTouchStart={(e) => setReviewTouchStart(e.targetTouches[0].clientX)}
+              onTouchMove={(e) => setReviewTouchEnd(e.targetTouches[0].clientX)}
+              onTouchEnd={() => {
+                if (!reviewTouchStart || !reviewTouchEnd) return;
+                const diff = reviewTouchStart - reviewTouchEnd;
+                if (diff > 40) setReviewCarouselIndex((p) => Math.min(homepageReviews.length - 1, p + 1));
+                else if (diff < -40) setReviewCarouselIndex((p) => Math.max(0, p - 1));
+                setReviewTouchStart(null);
+                setReviewTouchEnd(null);
+              }}
+            >
+              <div
+                className="flex transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${reviewCarouselIndex * 100}%)` }}
+              >
+                {homepageReviews.map((rev) => (
+                  <div key={rev._id} className="w-full shrink-0 px-1">
+                    <div className="p-5 bg-white border border-border-light rounded-2xl flex flex-col justify-between shadow-xs space-y-3">
+                      {/* Rating Stars & Badge */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex text-[#f5a623]">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              size={12}
+                              fill={i < rev.rating ? '#f5a623' : 'none'}
+                              className={i < rev.rating ? 'text-[#f5a623] fill-[#f5a623]' : 'text-neutral-300'}
+                            />
+                          ))}
+                        </div>
+                        {rev.isVerifiedPurchase && (
+                          <span className="text-[8px] font-mono font-bold uppercase text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 flex items-center gap-1">
+                            <CheckCircle2 size={9} /> Verified
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Review Content */}
+                      {rev.title && (
+                        <h4 className="font-sans font-bold text-xs text-text-primary uppercase tracking-wide">
+                          {rev.title}
+                        </h4>
+                      )}
+                      <p className="text-xs font-sans text-neutral-600 leading-relaxed italic">
+                        "{rev.comment}"
+                      </p>
+
+                      {/* Customer & Product footer */}
+                      <div className="pt-3 border-t border-border-light flex items-center justify-between gap-2">
+                        <div>
+                          <p className="font-bold font-sans text-text-primary uppercase text-[11px]">
+                            {rev.user?.name || 'Verified Customer'}
+                          </p>
+                          <p className="text-[9px] font-mono text-text-secondary">
+                            {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                        </div>
+                        {rev.product && (
+                          <Link
+                            to={`/product/${rev.product._id}`}
+                            className="text-[9px] font-mono text-text-secondary hover:text-text-primary uppercase font-bold truncate max-w-[120px]"
+                          >
+                            {rev.product.name} →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mobile pagination dots */}
+              {homepageReviews.length > 1 && (
+                <div className="flex justify-center gap-1.5 mt-4">
+                  {homepageReviews.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setReviewCarouselIndex(i)}
+                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
+                        reviewCarouselIndex === i ? 'w-5 bg-text-primary' : 'w-1.5 bg-neutral-300'
+                      }`}
+                      aria-label={`Go to slide ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </div>
     </>

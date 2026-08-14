@@ -138,78 +138,133 @@ export default function AdminUsers() {
           <p className="text-xs text-text-secondary font-mono uppercase">No users found.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto glass-card !p-0">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-border-light text-text-secondary uppercase font-mono tracking-wider bg-neutral-50">
-                <th className="p-4">User</th>
-                <th className="p-4">Phone</th>
-                <th className="p-4">Joined</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Orders</th>
-                <th className="p-4">Spent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr
-                  key={u._id}
-                  className="border-b border-border-light/60 transition-colors group"
-                >
-                  <td className="p-4">
-                    <div 
-                      onClick={() => openDrawer(u._id)}
-                      className="flex items-center gap-3 cursor-pointer hover:bg-neutral-50 px-1.5 py-1 -ml-1.5 rounded transition-colors inline-flex"
-                    >
-                      {/* Avatar */}
-                      <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white font-bold text-xs uppercase flex-shrink-0">
-                        {u.name?.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-text-primary text-[11px] uppercase tracking-wide truncate">{u.name}</p>
-                        <p className="text-[9px] font-mono text-text-secondary truncate">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 font-mono text-text-secondary text-[10px]">
-                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-text-primary hover:underline decoration-dashed transition-colors">
-                      {u.phone || '—'}
-                    </span>
-                  </td>
-                  <td className="p-4 font-mono text-text-secondary text-[9px]">
-                    {new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </td>
-                  <td className="p-4">
-                    <span 
-                      onClick={() => openDrawer(u._id)}
-                      className="cursor-pointer hover:opacity-80 transition-opacity inline-flex"
-                    >
-                      {u.isBlocked ? (
-                        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full w-fit">
-                          <ShieldOff size={9} /> Blocked
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#16a34a] bg-[#e6f7ee] border border-[#e6f7ee] px-2 py-0.5 rounded-full w-fit">
-                          <ShieldCheck size={9} /> Active
-                        </span>
-                      )}
-                    </span>
-                  </td>
-                  <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
-                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
-                      {u.totalOrders ?? '—'}
-                    </span>
-                  </td>
-                  <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
-                    <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
-                      {u.totalSpent != null ? `₹${u.totalSpent.toLocaleString('en-IN')}` : '—'}
-                    </span>
-                  </td>
+        <>
+          {/* Desktop Table View (md+) */}
+          <div className="hidden md:block overflow-x-auto glass-card !p-0">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-border-light text-text-secondary uppercase font-mono tracking-wider bg-neutral-50">
+                  <th className="p-4">User</th>
+                  <th className="p-4">Phone</th>
+                  <th className="p-4">Joined</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4">Orders</th>
+                  <th className="p-4">Spent</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr
+                    key={u._id}
+                    className="border-b border-border-light/60 transition-colors group"
+                  >
+                    <td className="p-4">
+                      <div 
+                        onClick={() => openDrawer(u._id)}
+                        className="flex items-center gap-3 cursor-pointer hover:bg-neutral-50 px-1.5 py-1 -ml-1.5 rounded transition-colors inline-flex"
+                      >
+                        {/* Avatar */}
+                        <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white font-bold text-xs uppercase flex-shrink-0">
+                          {u.name?.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-text-primary text-[11px] uppercase tracking-wide truncate">{u.name}</p>
+                          <p className="text-[9px] font-mono text-text-secondary truncate">{u.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 font-mono text-text-secondary text-[10px]">
+                      <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-text-primary hover:underline decoration-dashed transition-colors">
+                        {u.phone || '—'}
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono text-text-secondary text-[9px]">
+                      {new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="p-4">
+                      <span 
+                        onClick={() => openDrawer(u._id)}
+                        className="cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+                      >
+                        {u.isBlocked ? (
+                          <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full w-fit">
+                            <ShieldOff size={9} /> Blocked
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[#16a34a] bg-[#e6f7ee] border border-[#e6f7ee] px-2 py-0.5 rounded-full w-fit">
+                            <ShieldCheck size={9} /> Active
+                          </span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
+                      <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
+                        {u.totalOrders ?? '—'}
+                      </span>
+                    </td>
+                    <td className="p-4 font-mono text-text-primary font-bold text-[10px]">
+                      <span onClick={() => openDrawer(u._id)} className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors">
+                        {u.totalSpent != null ? `₹${u.totalSpent.toLocaleString('en-IN')}` : '—'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View (< md) */}
+          <div className="md:hidden space-y-3">
+            {users.map((u) => (
+              <div
+                key={u._id}
+                onClick={() => openDrawer(u._id)}
+                className="bg-white border border-[#e5e5e5] rounded-2xl p-4 shadow-xs space-y-3 font-sans cursor-pointer hover:border-[#111111] transition-all"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center text-white font-bold text-xs uppercase flex-shrink-0">
+                      {u.name?.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-[#111111] truncate">{u.name}</p>
+                      <p className="text-[10px] text-[#6b7280] font-mono truncate">{u.email}</p>
+                    </div>
+                  </div>
+                  {u.isBlocked ? (
+                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
+                      <ShieldOff size={8} /> Blocked
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-[#16a34a] bg-[#e6f7ee] border border-[#e6f7ee] px-2 py-0.5 rounded-full">
+                      <ShieldCheck size={8} /> Active
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#f3f4f6] text-[10px] font-mono">
+                  <div>
+                    <span className="text-[8px] text-[#6b7280] uppercase block font-bold font-sans">Phone</span>
+                    <span className="text-[#111111] truncate block">{u.phone || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[8px] text-[#6b7280] uppercase block font-bold font-sans">Orders</span>
+                    <span className="font-bold text-[#111111]">{u.totalOrders ?? '0'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[8px] text-[#6b7280] uppercase block font-bold font-sans">Spent</span>
+                    <span className="font-bold text-[#d97706]">{u.totalSpent != null ? `₹${u.totalSpent.toLocaleString('en-IN')}` : '₹0'}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-between text-[10px] font-mono text-[#6b7280]">
+                  <span>Joined: {new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                  <span className="font-bold text-[#111111] uppercase tracking-wider text-[9px]">View Details →</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       <Pagination

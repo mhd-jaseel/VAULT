@@ -14,58 +14,82 @@ import Layout from './layouts/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
-// Pages
+// Primary Instant-Load Pages
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import ProductDetails from './pages/ProductDetails';
-import Wishlist from './pages/Wishlist';
 import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import OrderSuccess from './pages/OrderSuccess';
-import Profile from './pages/Profile';
-import OrderTracking from './pages/OrderTracking';
 import Login from './pages/Login';
-import About from './pages/About';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminCategories from './pages/admin/AdminCategories';
-import AdminProducts from './pages/admin/AdminProducts';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminPayments from './pages/admin/AdminPayments';
-import AdminSettings from './pages/admin/AdminSettings';
-import AdminCampaigns from './pages/admin/AdminCampaigns';
-import AdminBrands from './pages/admin/AdminBrands';
-import AdminCoupons from './pages/admin/AdminCoupons';
-import AdminDiscounts from './pages/admin/AdminDiscounts';
-import AdminAnnouncement from './pages/admin/AdminAnnouncement';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminUserDetail from './pages/admin/AdminUserDetail';
-import AdminReturns from './pages/admin/AdminReturns';
-import AdminSalesReport from './pages/admin/AdminSalesReport';
-import AdminManagement from './pages/admin/AdminManagement';
-import AdminTransactions from './pages/admin/AdminTransactions';
-import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
-import MyReturns from './pages/MyReturns';
-import ReturnDetails from './pages/ReturnDetails';
-import MyWallet from './pages/MyWallet';
-import Blocked from './pages/Blocked';
+// Lazy Loaded Customer Pages (Code-Split for performance)
+const Wishlist = React.lazy(() => import('./pages/Wishlist'));
+const Checkout = React.lazy(() => import('./pages/Checkout'));
+const OrderSuccess = React.lazy(() => import('./pages/OrderSuccess'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const OrderTracking = React.lazy(() => import('./pages/OrderTracking'));
+const About = React.lazy(() => import('./pages/About'));
+const MyReturns = React.lazy(() => import('./pages/MyReturns'));
+const ReturnDetails = React.lazy(() => import('./pages/ReturnDetails'));
+const MyWallet = React.lazy(() => import('./pages/MyWallet'));
+const TermsOfService = React.lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy'));
+const Blocked = React.lazy(() => import('./pages/Blocked'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+const Forbidden = React.lazy(() => import('./pages/Forbidden'));
+
+// Lazy Loaded Admin Pages (Completely isolated chunk for customer bundle savings)
+const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminCategories = React.lazy(() => import('./pages/admin/AdminCategories'));
+const AdminProducts = React.lazy(() => import('./pages/admin/AdminProducts'));
+const AdminOrders = React.lazy(() => import('./pages/admin/AdminOrders'));
+const AdminPayments = React.lazy(() => import('./pages/admin/AdminPayments'));
+const AdminSettings = React.lazy(() => import('./pages/admin/AdminSettings'));
+const AdminShippingSettings = React.lazy(() => import('./pages/admin/AdminShippingSettings'));
+const AdminCampaigns = React.lazy(() => import('./pages/admin/AdminCampaigns'));
+const AdminBrands = React.lazy(() => import('./pages/admin/AdminBrands'));
+const AdminCoupons = React.lazy(() => import('./pages/admin/AdminCoupons'));
+const AdminDiscounts = React.lazy(() => import('./pages/admin/AdminDiscounts'));
+const AdminAnnouncement = React.lazy(() => import('./pages/admin/AdminAnnouncement'));
+const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers'));
+const AdminUserDetail = React.lazy(() => import('./pages/admin/AdminUserDetail'));
+const AdminReviews = React.lazy(() => import('./pages/admin/AdminReviews'));
+const AdminAbout = React.lazy(() => import('./pages/admin/AdminAbout'));
+const AdminReturns = React.lazy(() => import('./pages/admin/AdminReturns'));
+const AdminSalesReport = React.lazy(() => import('./pages/admin/AdminSalesReport'));
+const AdminManagement = React.lazy(() => import('./pages/admin/AdminManagement'));
+const AdminTransactions = React.lazy(() => import('./pages/admin/AdminTransactions'));
+const AdminNotificationsPage = React.lazy(() => import('./pages/admin/AdminNotificationsPage'));
+
+import ErrorBoundary from './components/ErrorBoundary';
+
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+    <div className="w-8 h-8 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin" />
+    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400">Loading VAULT.CO</span>
+  </div>
+);
 
 function App() {
   return (
-    <Router>
-      <Toaster richColors closeButton position="top-right" theme="dark" />
+    <ErrorBoundary>
+      <Router>
+        <Toaster richColors closeButton position="top-right" theme="dark" />
       <AuthProvider>
         <CartProvider>
           <SocketProvider>
             <Layout>
-              <Routes>
-                {/* Public Catalog Routes */}
-                <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/product/:id" element={<ProductDetails />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/about" element={<About />} />
+              <React.Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public Catalog Routes */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/shop" element={<Shop />} />
+                  <Route path="/product/:id" element={<ProductDetails />} />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
+                  <Route path="/privacy" element={<PrivacyPolicy />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 
                 {/* Authentication Routes */}
                 <Route path="/login" element={<Login />} />
@@ -218,6 +242,14 @@ function App() {
                   } 
                 />
                 <Route 
+                  path="/admin/shipping" 
+                  element={
+                    <AdminRoute>
+                      <AdminShippingSettings />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
                   path="/admin/campaigns" 
                   element={
                     <AdminRoute>
@@ -254,6 +286,22 @@ function App() {
                   element={
                     <AdminRoute>
                       <AdminUsers />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/reviews" 
+                  element={
+                    <AdminRoute>
+                      <AdminReviews />
+                    </AdminRoute>
+                  } 
+                />
+                <Route 
+                  path="/admin/about" 
+                  element={
+                    <AdminRoute>
+                      <AdminAbout />
                     </AdminRoute>
                   } 
                 />
@@ -307,12 +355,20 @@ function App() {
                 />
                 {/* Public blocked account page */}
                 <Route path="/blocked" element={<Blocked />} />
+
+                {/* 403 Forbidden Route */}
+                <Route path="/403" element={<Forbidden />} />
+
+                {/* 404 Catch-All Route */}
+                <Route path="*" element={<NotFound />} />
               </Routes>
+            </React.Suspense>
             </Layout>
           </SocketProvider>
         </CartProvider>
       </AuthProvider>
     </Router>
+  </ErrorBoundary>
   );
 }
 
