@@ -173,18 +173,32 @@ export default function OrderDetailsView({ orderId }) {
           {order.items.map((item, idx) => (
             <div key={idx} className="flex gap-3 bg-white border border-[#e5e5e5] p-3 rounded-xl items-start">
               <div className="w-12 h-12 bg-[#f3f4f6] rounded flex items-center justify-center shrink-0 border border-[#e5e5e5] overflow-hidden p-0.5">
-                {item.product?.images?.[0] ? (
-                  <img 
-                    src={resolveImage(item.product.images[0])} 
-                    alt={item.name} 
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  <span className="text-[8px] text-[#9ca3af] font-mono font-bold">VAULT</span>
-                )}
+                {(() => {
+                  const rawImage =
+                    (Array.isArray(item.product?.images) && item.product.images.length > 0 ? item.product.images[0] : null) ||
+                    (typeof item.product?.images === 'string' ? item.product.images : null) ||
+                    item.product?.image ||
+                    item.image ||
+                    (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null);
+
+                  const resolvedSrc = rawImage ? resolveImage(rawImage) : '';
+
+                  return resolvedSrc ? (
+                    <img 
+                      src={resolvedSrc} 
+                      alt={item.name || 'Product'} 
+                      className="w-full h-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextSibling) {
+                          e.currentTarget.nextSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[8px] text-[#9ca3af] font-mono font-bold">VAULT</span>
+                  );
+                })()}
               </div>
               <div className="flex-1 min-w-0 font-mono">
                 <p className="text-xs font-bold text-[#111111] truncate">{item.name}</p>

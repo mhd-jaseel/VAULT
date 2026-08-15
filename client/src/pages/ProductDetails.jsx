@@ -4,7 +4,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
-import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Share2, Check, Lock } from 'lucide-react';
+import { Heart, Star, ShoppingBag, ArrowLeft, Send, CheckCircle2, ShieldCheck, Truck, RefreshCw, Check, Lock } from 'lucide-react';
 import CountdownTimer from '../components/CountdownTimer';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from '../components/LoginRequiredModal';
@@ -367,9 +367,6 @@ export default function ProductDetails() {
             <span className="absolute top-4 left-4 bg-[#141414] text-white text-[8px] font-mono tracking-widest uppercase py-1 px-3 rounded-full">
               BEST SELLER
             </span>
-            <button className="absolute top-4 right-4 p-2 rounded-full bg-white hover:bg-neutral-50 text-text-primary border border-border-light shadow-sm">
-              <Share2 size={14} />
-            </button>
             {activeImage ? (
               <img 
                 src={resolveImage(activeImage)} 

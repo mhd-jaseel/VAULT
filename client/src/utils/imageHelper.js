@@ -9,17 +9,22 @@
 export const getServerBaseUrl = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   if (apiUrl) {
-    // e.g., 'https://api.vault.com/api' -> 'https://api.vault.com'
-    return apiUrl.replace(/\/api\/?$/, '');
+    // e.g., 'https://vault-co-api.onrender.com' or 'https://api.vault.com/api' -> 'https://api.vault.com'
+    return apiUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
   }
-  // Default to backend dev port if on frontend dev server, or current origin
-  if (typeof window !== 'undefined' && window.location.port === '5173') {
-    return 'http://localhost:5000';
+  // Default to backend dev port if on frontend dev server (Vite default ports)
+  if (typeof window !== 'undefined') {
+    if (window.location.port === '5173' || window.location.port === '5174') {
+      return 'http://localhost:5000';
+    }
+    // If deployed on Vercel or any non-localhost host without VITE_API_URL set,
+    // point to the live Render backend production domain
+    if (window.location.hostname.includes('vercel.app') || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')) {
+      return 'https://vault-co-api.onrender.com';
+    }
+    return window.location.origin;
   }
-  if (typeof window !== 'undefined' && window.location.port === '5174') {
-    return 'http://localhost:5000';
-  }
-  return typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
+  return 'https://vault-co-api.onrender.com';
 };
 
 // Known legacy / seed path to available static webp asset mappings

@@ -5,7 +5,6 @@ import { Toaster } from 'sonner';
 // Providers
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { SocketProvider } from './context/SocketContext';
 
 // Layout
 import Layout from './layouts/Layout';
@@ -76,10 +75,9 @@ function App() {
         <Toaster richColors closeButton position="top-right" theme="dark" />
       <AuthProvider>
         <CartProvider>
-          <SocketProvider>
-            <Layout>
-              <React.Suspense fallback={<PageLoader />}>
-                <Routes>
+          <Layout>
+            <React.Suspense fallback={<PageLoader />}>
+              <Routes>
                   {/* Public Catalog Routes */}
                   <Route path="/" element={<Home />} />
                   <Route path="/shop" element={<Shop />} />
@@ -364,7 +362,6 @@ function App() {
               </Routes>
             </React.Suspense>
             </Layout>
-          </SocketProvider>
         </CartProvider>
       </AuthProvider>
     </Router>
