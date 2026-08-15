@@ -1016,10 +1016,19 @@ if (!user) return null;
             <div>
               <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">Mobile Number</label>
               <input
-                type="text"
-                className="form-input text-xs font-mono"
-                {...register('phone')}
+                type="tel"
+                placeholder="10-digit mobile number"
+                maxLength={14}
+                className={`form-input text-xs font-mono ${errors.phone ? 'border-red-500/50' : ''}`}
+                {...register('phone', {
+                  validate: (value) => {
+                    if (!value || !value.trim()) return true; // Optional on profile
+                    const sanitized = value.replace(/[\s\-()]/g, '');
+                    return /^(?:(?:\+|0{0,2})91)?[6789]\d{9}$/.test(sanitized) || 'Enter a valid 10-digit mobile number starting with 6-9';
+                  },
+                })}
               />
+              {errors.phone && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.phone.message}</span>}
             </div>
           </div>
 
@@ -1059,13 +1068,20 @@ if (!user) return null;
                 />
               </div>
               <div>
-                <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">ZIP Code</label>
+                <label className="text-[9px] font-mono text-text-secondary uppercase block mb-1">PIN Code</label>
                 <input
                   type="text"
-                  placeholder="Zip"
-                  className="form-input text-xs font-mono"
-                  {...register('zip')}
+                  placeholder="6-digit PIN"
+                  maxLength={6}
+                  className={`form-input text-xs font-mono ${errors.zip ? 'border-red-500/50' : ''}`}
+                  {...register('zip', {
+                    validate: (value) => {
+                      if (!value || !value.trim()) return true;
+                      return /^[1-9][0-9]{5}$/.test(value.trim()) || 'Enter a valid 6-digit PIN code';
+                    },
+                  })}
                 />
+                {errors.zip && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.zip.message}</span>}
               </div>
             </div>
 

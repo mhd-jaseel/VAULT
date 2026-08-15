@@ -45,8 +45,9 @@ export const validateUpdateProfile = [
   body('phone')
     .optional({ checkFalsy: true })
     .trim()
-    .matches(/^(\+?\d{1,4}[- ]?)?\d{10}$/)
-    .withMessage('Please enter a valid 10-digit phone number.'),
+    .customSanitizer((val) => (typeof val === 'string' ? val.replace(/[\s\-()]/g, '') : val))
+    .matches(/^(?:(?:\+|0{0,2})91(\s*[-]\s*)?|[0]?)?[6789]\d{9}$/)
+    .withMessage('Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9.'),
   body('address')
     .optional()
     .isObject()
@@ -69,6 +70,6 @@ export const validateUpdateProfile = [
   body('address.zip')
     .optional({ checkFalsy: true })
     .trim()
-    .matches(/^[0-9A-Za-z -]{3,10}$/)
-    .withMessage('Invalid ZIP / Postal Code format.'),
+    .matches(/^[1-9][0-9]{5}$/)
+    .withMessage('Please enter a valid 6-digit PIN code.'),
 ];

@@ -404,10 +404,17 @@ export default function Checkout() {
                 <div>
                   <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Phone Number</label>
                   <input
-                    type="text"
-                    placeholder="Active mobile number"
+                    type="tel"
+                    placeholder="10-digit mobile number (e.g. 9876543210)"
+                    maxLength={14}
                     className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
-                    {...register('phone', { required: 'Phone number is required' })}
+                    {...register('phone', {
+                      required: 'Phone number is required',
+                      validate: (value) => {
+                        const sanitized = (value || '').replace(/[\s\-()]/g, '');
+                        return /^(?:(?:\+|0{0,2})91)?[6789]\d{9}$/.test(sanitized) || 'Enter a valid 10-digit mobile number starting with 6-9';
+                      },
+                    })}
                   />
                   {errors.phone && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.phone.message}</span>}
                 </div>
@@ -445,12 +452,19 @@ export default function Checkout() {
                     {errors.state && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.state.message}</span>}
                   </div>
                   <div>
-                    <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Zip Code</label>
+                    <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">PIN Code</label>
                     <input
                       type="text"
-                      placeholder="ZIP"
+                      placeholder="6-digit PIN code"
+                      maxLength={6}
                       className={`form-input text-xs ${errors.zip ? 'border-red-500/50' : ''}`}
-                      {...register('zip', { required: 'Required' })}
+                      {...register('zip', {
+                        required: 'PIN code is required',
+                        pattern: {
+                          value: /^[1-9][0-9]{5}$/,
+                          message: 'Enter a valid 6-digit PIN code',
+                        },
+                      })}
                     />
                     {errors.zip && <span className="text-[9px] text-red-500 mt-1 block font-mono font-bold">{errors.zip.message}</span>}
                   </div>
