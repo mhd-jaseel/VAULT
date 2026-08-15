@@ -3,9 +3,23 @@ import { Server } from 'socket.io';
 let io;
 
 export const initSocket = (httpServer) => {
+  const allowedOrigins = [
+    'https://vaultco.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174',
+    ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((url) => url.trim().replace(/\/+$/, '')) : []),
+  ];
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const cleanOrigin = origin.replace(/\/+$/, '');
+        if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error(`Origin ${origin} not allowed by Socket CORS`));
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },

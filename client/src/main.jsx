@@ -6,7 +6,8 @@ import App from './App.jsx'
 import axios from 'axios';
 
 // Set global axios defaults for the entire application
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+axios.defaults.baseURL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`;
 axios.defaults.withCredentials = true;
 
 // Centralized Axios Response Interceptor
