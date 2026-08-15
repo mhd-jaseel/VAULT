@@ -65,6 +65,7 @@ export const googleLogin = async (req, res) => {
 
     res.json({
       success: true,
+      token,
       data: {
         _id: user._id,
         name: user.name,
@@ -72,6 +73,7 @@ export const googleLogin = async (req, res) => {
         role: user.role,
         phone: user.phone,
         address: user.address,
+        token,
       },
     });
   } catch (error) {

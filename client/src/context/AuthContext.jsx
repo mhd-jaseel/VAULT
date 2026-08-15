@@ -4,10 +4,18 @@ import api from '../services/api';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  // Initialize state with cached user if present to prevent race conditions during navigation
+  const [user, setUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem('vault_user');
+      return cached ? JSON.parse(cached) : null;
+    } catch (_) {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
-  // Initialize Auth state by checking with the backend (idempotent guard)
+  // Initialize Auth state by validating with the backend
   useEffect(() => {
     let isMounted = true;
 
@@ -15,16 +23,30 @@ export const AuthProvider = ({ children }) => {
       try {
         const res = await api.get('/auth/profile');
         if (isMounted) {
-          if (res.data.success) {
-            setUser(res.data.data);
+          if (res.data.success && res.data.data) {
+            const userData = res.data.data;
+            setUser(userData);
+            try {
+              localStorage.setItem('vault_user', JSON.stringify(userData));
+            } catch (_) {}
           } else {
             setUser(null);
+            try {
+              localStorage.removeItem('vault_user');
+              localStorage.removeItem('vault_token');
+            } catch (_) {}
           }
         }
       } catch (error) {
-        // Not authenticated — normal for public/login visits
         if (isMounted) {
-          setUser(null);
+          // If network error (offline) and cached user exists, keep cached user; if 401/403, clear
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            setUser(null);
+            try {
+              localStorage.removeItem('vault_user');
+              localStorage.removeItem('vault_token');
+            } catch (_) {}
+          }
         }
       } finally {
         if (isMounted) {
@@ -52,13 +74,21 @@ export const AuthProvider = ({ children }) => {
           window.location.pathname !== '/blocked'
         ) {
           setUser(null);
+          try {
+            localStorage.removeItem('vault_user');
+            localStorage.removeItem('vault_token');
+          } catch (_) {}
           await api.post('/auth/logout').catch(() => {});
           window.location.href = '/blocked';
         }
         
-        // If 401 Not Authorized, clear local user state just in case
+        // If 401 Not Authorized, clear local user state
         if (error.response?.status === 401 && user) {
           setUser(null);
+          try {
+            localStorage.removeItem('vault_user');
+            localStorage.removeItem('vault_token');
+          } catch (_) {}
         }
         
         return Promise.reject(error);
@@ -78,7 +108,12 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/google-login', { credential });
       if (res.data.success) {
         const userData = res.data.data;
+        const token = res.data.token || userData.token;
         setUser(userData);
+        try {
+          if (token) localStorage.setItem('vault_token', token);
+          localStorage.setItem('vault_user', JSON.stringify(userData));
+        } catch (_) {}
         return { success: true, user: userData };
       }
     } catch (error) {
@@ -93,6 +128,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
+      try {
+        localStorage.removeItem('vault_user');
+        localStorage.removeItem('vault_token');
+      } catch (_) {}
     }
   };
 
@@ -101,7 +140,11 @@ export const AuthProvider = ({ children }) => {
       const res = await api.put('/auth/profile', profileData);
       if (res.data.success) {
         const userData = res.data.data;
-        setUser({ ...user, ...userData });
+        const updated = { ...user, ...userData };
+        setUser(updated);
+        try {
+          localStorage.setItem('vault_user', JSON.stringify(updated));
+        } catch (_) {}
         return { success: true };
       }
     } catch (error) {
@@ -117,7 +160,12 @@ export const AuthProvider = ({ children }) => {
       const res = await api.post('/auth/admin/login', { email, password });
       if (res.data.success) {
         const userData = res.data.data;
+        const token = res.data.token || userData.token;
         setUser(userData);
+        try {
+          if (token) localStorage.setItem('vault_token', token);
+          localStorage.setItem('vault_user', JSON.stringify(userData));
+        } catch (_) {}
         return { success: true, user: userData };
       }
     } catch (error) {

@@ -4,7 +4,7 @@ import { deleteImageFiles } from './productHelper.js';
 // Create product (Admin only)
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, category, brand, brandId, stock, isFeatured } = req.body;
+    const { name, description, price, category, brand, brandId, stock, stockQty, countInStock, isFeatured } = req.body;
     const images = [];
 
     if (req.files && req.files.length > 0) {
@@ -13,13 +13,16 @@ export const createProduct = async (req, res) => {
       });
     }
 
+    const selectedBrand = brand || brandId;
+    const resolvedStock = stock !== undefined ? stock : (stockQty !== undefined ? stockQty : countInStock);
+
     const product = new Product({
       name,
       description,
       price: Number(price),
       category,
-      brand: brandId || brand,
-      stock: Number(stock),
+      brand: selectedBrand,
+      stock: Number(resolvedStock),
       images,
       isFeatured: isFeatured === 'true' || isFeatured === true,
     });
@@ -34,7 +37,7 @@ export const createProduct = async (req, res) => {
 // Update product (Admin only)
 export const updateProduct = async (req, res) => {
   try {
-    const { name, description, price, category, brand, brandId, stock, isFeatured, keepImages } = req.body;
+    const { name, description, price, category, brand, brandId, stock, stockQty, countInStock, isFeatured, keepImages } = req.body;
     const product = await Product.findById(req.params.id);
 
     if (!product) {
@@ -45,8 +48,11 @@ export const updateProduct = async (req, res) => {
     product.description = description || product.description;
     if (price !== undefined) product.price = Number(price);
     product.category = category || product.category;
-    product.brand = brandId || brand || product.brand;
-    if (stock !== undefined) product.stock = Number(stock);
+    const selectedBrand = brand || brandId;
+    if (selectedBrand) product.brand = selectedBrand;
+    
+    const resolvedStock = stock !== undefined ? stock : (stockQty !== undefined ? stockQty : countInStock);
+    if (resolvedStock !== undefined) product.stock = Number(resolvedStock);
     if (isFeatured !== undefined) {
       product.isFeatured = isFeatured === 'true' || isFeatured === true;
     }

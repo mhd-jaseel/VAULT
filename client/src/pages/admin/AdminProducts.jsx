@@ -262,7 +262,7 @@ export default function AdminProducts() {
     setPrice(prod.price);
     setCategory(prod.category?._id || '');
     setBrand(prod.brand?._id || prod.brand || '');
-    setStock(prod.stock);
+    setStock(prod.stock !== undefined ? String(prod.stock) : '');
     setIsFeatured(prod.isFeatured || false);
     setExistingImages(prod.images || []);
     setNewImageFiles([]);
@@ -313,19 +313,54 @@ export default function AdminProducts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || !description.trim() || !price || !category || !brand || stock === '') {
-      toast.warning('Please fill out all required fields.');
+
+    if (!name.trim()) {
+      toast.error('Product title is required.');
       return;
     }
+
+    if (!category) {
+      toast.error('Category is required.');
+      return;
+    }
+
+    if (!brand) {
+      toast.error('Brand is required. Please select a brand.');
+      return;
+    }
+
+    if (price === '' || isNaN(Number(price)) || Number(price) <= 0) {
+      toast.error('Enter a valid price greater than 0.');
+      return;
+    }
+
+    if (stock === '' || stock === undefined || stock === null) {
+      toast.error('Stock quantity is required.');
+      return;
+    }
+
+    const stockNum = Number(stock);
+    if (!Number.isFinite(stockNum) || !Number.isInteger(stockNum) || stockNum < 0) {
+      toast.error('Stock quantity must be a valid non-negative integer.');
+      return;
+    }
+
+    if (!description.trim()) {
+      toast.error('Product description is required.');
+      return;
+    }
+
     try {
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('description', description);
-      formData.append('price', price);
+      formData.append('name', name.trim());
+      formData.append('description', description.trim());
+      formData.append('price', String(price));
       formData.append('category', category);
-      formData.append('brandId', brand);
-      formData.append('stock', stock);
-      formData.append('isFeatured', isFeatured);
+      formData.append('brand', brand);
+      formData.append('stock', String(stockNum));
+      formData.append('stockQty', String(stockNum));
+      formData.append('countInStock', String(stockNum));
+      formData.append('isFeatured', String(isFeatured));
       if (isEditing) {
         formData.append('keepImages', JSON.stringify(existingImages));
       }
@@ -725,7 +760,9 @@ export default function AdminProducts() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Name */}
                 <div className="col-span-2">
-                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Product Title</label>
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                    Product Title
+                  </label>
                   <input
                     type="text"
                     placeholder="e.g. Minimalist Gold Chain"
@@ -738,7 +775,9 @@ export default function AdminProducts() {
 
                 {/* Category selector */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Category</label>
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                    Category
+                  </label>
                   <select
                     className="form-input text-xs cursor-pointer !py-2.5"
                     value={category}
@@ -754,7 +793,9 @@ export default function AdminProducts() {
 
                 {/* Brand selector */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Brand</label>
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                    Brand
+                  </label>
                   <select
                     className="form-input text-xs cursor-pointer !py-2.5"
                     value={brand}
@@ -770,7 +811,9 @@ export default function AdminProducts() {
 
                 {/* Price */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Price (₹)</label>
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                    Price (₹)
+                  </label>
                   <input
                     type="number"
                     placeholder="MRP price"
@@ -783,9 +826,12 @@ export default function AdminProducts() {
 
                 {/* Stock */}
                 <div>
-                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Stock Count</label>
+                  <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                    Stock Count
+                  </label>
                   <input
                     type="number"
+                    min="0"
                     placeholder="Quantity in vault"
                     className="form-input text-xs"
                     value={stock}
@@ -811,7 +857,9 @@ export default function AdminProducts() {
 
               {/* Description */}
               <div>
-                <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Detailed Description</label>
+                <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">
+                  Detailed Description
+                </label>
                 <textarea
                   placeholder="Material specs, sizing details, packaging..."
                   className="form-input text-xs min-h-[70px]"

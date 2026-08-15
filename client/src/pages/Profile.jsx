@@ -64,10 +64,10 @@ export default function Profile() {
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    if (!user) {
+    if (!loading && !user) {
       navigate('/login?redirect=profile');
     }
-  }, [user]);
+  }, [user, loading, navigate]);
 
   // Load user details into form
   useEffect(() => {

@@ -33,11 +33,13 @@ export const adminLogin = async (req, res) => {
 
     res.json({
       success: true,
+      token,
       data: {
         _id: 'admin_001',
         name: 'Super Admin',
         email: superAdminEmail,
         role: 'admin',
+        token,
       },
     });
   } catch (error) {

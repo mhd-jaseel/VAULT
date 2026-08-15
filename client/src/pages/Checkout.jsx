@@ -21,7 +21,7 @@ const loadRazorpay = () =>
 
 export default function Checkout() {
   const { cartItems, cartTotal, clearCart } = useContext(CartContext);
-  const { user, updateProfile } = useContext(AuthContext);
+  const { user, loading, updateProfile } = useContext(AuthContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,8 +122,8 @@ export default function Checkout() {
   const { register, handleSubmit, formState: { errors }, setValue } = useForm();
 
   useEffect(() => {
-    if (!user) navigate('/login?redirect=checkout');
-  }, [user]);
+    if (!loading && !user) navigate('/login?redirect=checkout');
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     if (user) {
