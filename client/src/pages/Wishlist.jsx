@@ -8,7 +8,7 @@ import { resolveImage } from '../utils/imageHelper';
 import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Wishlist() {
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,8 +37,10 @@ export default function Wishlist() {
   useEffect(() => {
     if (user) {
       fetchWishlist();
+    } else if (!authLoading) {
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const handleRemove = async (productId, productName) => {
     const result = await PremiumSwal.fire({
@@ -61,6 +63,14 @@ export default function Wishlist() {
       console.error('Error removing from wishlist:', error);
     }
   };
+
+  if (authLoading || loading) {
+    return (
+      <div className="py-20 flex items-center justify-center min-h-screen">
+        <div className="w-12 h-12 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (

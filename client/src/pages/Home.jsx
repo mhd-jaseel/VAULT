@@ -85,7 +85,7 @@ export default function Home() {
   };
 
   // Wishlist
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
   const [wishlistIds, setWishlistIds] = useState([]);
   const [loginModal, setLoginModal] = useState({ open: false, message: '' });
 
@@ -102,6 +102,7 @@ export default function Home() {
   const handleToggleWishlist = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
+    if (authLoading) return;
     if (!user) { setLoginModal({ open: true, message: 'Please login to add products to your wishlist.' }); return; }
     const isWishlisted = wishlistIds.includes(productId);
     try {

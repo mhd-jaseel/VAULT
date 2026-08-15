@@ -26,7 +26,7 @@ export default function ProductDetails() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addToCart } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
+  const { user, loading: authLoading } = useContext(AuthContext);
 
   const [product, setProduct] = useState(null);
   const [related, setRelated] = useState([]);
@@ -250,6 +250,7 @@ export default function ProductDetails() {
   }, [product]);
 
   const handleToggleWishlist = async () => {
+    if (authLoading) return;
     if (!user) {
       showLoginModal('Please login to add products to your wishlist.');
       return;
@@ -273,6 +274,7 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
+    if (authLoading) return;
     if (user && user.role === 'admin') {
       toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
       return;

@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { resolveImage } from '../utils/imageHelper';
 import LoginRequiredModal from './LoginRequiredModal';
@@ -11,12 +12,14 @@ export default function ProductCard({
   index,
   wishlistIds,
   onToggleWishlist,
-  user,
+  user: propUser,
   forceSmall = false,
   isReplacementMode = false,
   replacementContext = null,
 }) {
   const { addToCart } = useContext(CartContext);
+  const { user: contextUser, loading: authLoading } = useContext(AuthContext);
+  const user = propUser !== undefined ? propUser : contextUser;
   const [isMobileActive, setIsMobileActive] = useState(false);
 
   // Login-required modal state
@@ -47,6 +50,8 @@ export default function ProductCard({
     e.preventDefault();
     e.stopPropagation();
 
+    if (authLoading) return;
+
     if (user && user.role === 'admin') {
       toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
       return;
@@ -70,6 +75,8 @@ export default function ProductCard({
   const handleWishlistClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (authLoading) return;
 
     if (user && user.role === 'admin') {
       toast.info('Preview Mode — Wishlist actions are disabled for admin sessions.');
