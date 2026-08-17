@@ -1,5 +1,6 @@
 import Product from '../../models/Product.js';
 import { deleteImageFiles } from './productHelper.js';
+import { uploadToCloudinary } from '../../services/cloudinaryService.js';
 
 // Create product (Admin only)
 export const createProduct = async (req, res) => {
@@ -8,9 +9,12 @@ export const createProduct = async (req, res) => {
     const images = [];
 
     if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        images.push(`/uploads/${file.filename}`);
-      });
+      for (const file of req.files) {
+        const uploadedUrl = await uploadToCloudinary(file.path || file.filename, 'vault/products');
+        if (uploadedUrl) {
+          images.push(uploadedUrl);
+        }
+      }
     }
 
     const selectedBrand = brand || brandId;
@@ -65,9 +69,12 @@ export const updateProduct = async (req, res) => {
     }
 
     if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        finalImages.push(`/uploads/${file.filename}`);
-      });
+      for (const file of req.files) {
+        const uploadedUrl = await uploadToCloudinary(file.path || file.filename, 'vault/products');
+        if (uploadedUrl) {
+          finalImages.push(uploadedUrl);
+        }
+      }
     }
 
     // Delete removed images from storage
@@ -92,7 +99,7 @@ export const deleteProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    // Delete files from filesystem
+    // Delete files from storage (both Cloudinary and legacy)
     deleteImageFiles(product.images);
 
     await Product.findByIdAndDelete(req.params.id);
