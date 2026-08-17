@@ -81,6 +81,12 @@ export const createCampaign = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please upload a desktop campaign image.' });
     }
 
+    const parseSafeDate = (val) => {
+      if (!val || val === '' || val === 'undefined' || val === 'null') return undefined;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
     const campaign = await Campaign.create({
       label,
       title,
@@ -93,9 +99,9 @@ export const createCampaign = async (req, res) => {
       seoTitle,
       seoDescription,
       isActive: isActive === 'true' || isActive === true,
-      order: order !== undefined ? Number(order) : 0,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
+      order: order !== undefined && order !== '' ? Number(order) : 0,
+      startDate: parseSafeDate(startDate),
+      endDate: parseSafeDate(endDate),
     });
 
     res.status(201).json({ success: true, data: campaign });
@@ -122,9 +128,22 @@ export const updateCampaign = async (req, res) => {
     if (req.body.isActive !== undefined) {
       campaign.isActive = req.body.isActive === 'true' || req.body.isActive === true;
     }
-    if (req.body.order !== undefined) campaign.order = Number(req.body.order);
-    if (req.body.startDate !== undefined) campaign.startDate = req.body.startDate ? new Date(req.body.startDate) : undefined;
-    if (req.body.endDate !== undefined) campaign.endDate = req.body.endDate ? new Date(req.body.endDate) : undefined;
+    if (req.body.order !== undefined && req.body.order !== '') {
+      campaign.order = Number(req.body.order);
+    }
+
+    const parseSafeDate = (val) => {
+      if (!val || val === '' || val === 'undefined' || val === 'null') return undefined;
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    if (req.body.startDate !== undefined) {
+      campaign.startDate = parseSafeDate(req.body.startDate);
+    }
+    if (req.body.endDate !== undefined) {
+      campaign.endDate = parseSafeDate(req.body.endDate);
+    }
 
     if (req.files) {
       if (req.files.desktopImageUrl && req.files.desktopImageUrl[0]) {
