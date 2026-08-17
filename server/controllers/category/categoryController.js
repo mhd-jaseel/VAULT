@@ -1,6 +1,7 @@
 import Category from '../../models/Category.js';
 import Product from '../../models/Product.js';
 import { paginateAggregate } from '../../utils/paginate.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../services/cloudinaryService.js';
 
 export const getCategories = async (req, res) => {
   try {
@@ -41,11 +42,12 @@ export const createCategory = async (req, res) => {
     let image = '';
 
     if (req.file) {
-      image = `/uploads/${req.file.filename}`;
+      image = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/categories');
     }
 
     const categoryExists = await Category.findOne({ name });
     if (categoryExists) {
+      if (image) await deleteFromCloudinary(image);
       return res.status(400).json({ success: false, message: 'Category already exists' });
     }
 
@@ -75,7 +77,11 @@ export const updateCategory = async (req, res) => {
     category.description = description || category.description;
 
     if (req.file) {
-      category.image = `/uploads/${req.file.filename}`;
+      const oldImage = category.image;
+      category.image = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/categories');
+      if (oldImage && oldImage !== category.image) {
+        await deleteFromCloudinary(oldImage);
+      }
     }
 
     const updatedCategory = await category.save();
@@ -99,6 +105,10 @@ export const deleteCategory = async (req, res) => {
         success: false,
         message: 'Cannot delete category containing active products.',
       });
+    }
+
+    if (category.image) {
+      await deleteFromCloudinary(category.image);
     }
 
     await Category.findByIdAndDelete(req.params.id);

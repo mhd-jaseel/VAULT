@@ -45,6 +45,20 @@ const SEED_IMAGE_MAPPINGS = {
   '/uploads/watch.png': '/uploads/watches.webp',
   '/uploads/perfume.png': '/uploads/perfumes.webp',
 
+  // Direct category / product name aliases & persistent static webp assets
+  '/uploads/wallets.webp': '/uploads/wallets.webp',
+  '/uploads/belts.webp': '/uploads/belts.webp',
+  '/uploads/rings.webp': '/uploads/rings.webp',
+  '/uploads/caps.webp': '/uploads/caps.webp',
+  '/uploads/watches.webp': '/uploads/watches.webp',
+  '/uploads/sunglasses.webp': '/uploads/sunglasses.webp',
+  '/uploads/bracelets.webp': '/uploads/bracelets.webp',
+  '/uploads/chains.webp': '/uploads/chains.webp',
+  '/uploads/earrings.webp': '/uploads/earrings.webp',
+  '/uploads/perfumes.webp': '/uploads/perfumes.webp',
+  '/uploads/shoes.webp': '/uploads/shoes.webp',
+  '/uploads/chappals.webp': '/uploads/chappals.webp',
+
   // Without /uploads prefix
   'carbon_wallet.png': '/uploads/wallets.webp',
   'gold_sunglasses.png': '/uploads/sunglasses.webp',
@@ -60,6 +74,17 @@ const SEED_IMAGE_MAPPINGS = {
   'wallet.png': '/uploads/wallets.webp',
   'watch.png': '/uploads/watches.webp',
   'perfume.png': '/uploads/perfumes.webp',
+  'wallets.webp': '/uploads/wallets.webp',
+  'belts.webp': '/uploads/belts.webp',
+  'rings.webp': '/uploads/rings.webp',
+  'caps.webp': '/uploads/caps.webp',
+  'watches.webp': '/uploads/watches.webp',
+  'bracelets.webp': '/uploads/bracelets.webp',
+  'chains.webp': '/uploads/chains.webp',
+  'earrings.webp': '/uploads/earrings.webp',
+  'perfumes.webp': '/uploads/perfumes.webp',
+  'shoes.webp': '/uploads/shoes.webp',
+  'chappals.webp': '/uploads/chappals.webp',
 };
 
 /**
