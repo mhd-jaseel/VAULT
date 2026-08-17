@@ -9,6 +9,9 @@ import {
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 
+import { validateRequest } from '../middleware/validate.js';
+import { validateCreateCampaign } from '../validators/campaignValidator.js';
+
 const router = express.Router();
 
 // Public — active campaigns for the home page
@@ -21,7 +24,7 @@ const campaignUpload = upload.fields([
 
 // Protected Admin routes
 router.get('/admin/campaigns', protect, isAdmin, getAdminCampaigns);
-router.post('/admin/campaigns', protect, isAdmin, campaignUpload, createCampaign);
+router.post('/admin/campaigns', protect, isAdmin, campaignUpload, validateCreateCampaign, validateRequest, createCampaign);
 router.patch('/admin/campaigns/:id', protect, isAdmin, campaignUpload, updateCampaign);
 router.delete('/admin/campaigns/:id', protect, isAdmin, deleteCampaign);
 

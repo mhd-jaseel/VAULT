@@ -22,15 +22,26 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedExts = /\.(jpeg|jpg|png|webp)$/i;
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+  const allowedExts = /\.(jpeg|jpg|png|webp|jfif|pjpeg|pjp|avif)$/i;
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/jpg',
+    'image/jfif',
+    'image/pjpeg',
+    'image/avif',
+    'application/octet-stream', // Fallback for some Windows image uploads
+  ];
   const extValid = allowedExts.test(file.originalname);
-  const mimeValid = allowedMimeTypes.includes(file.mimetype);
+  const mimeValid = allowedMimeTypes.includes(file.mimetype) || file.mimetype.startsWith('image/');
 
-  if (extValid && mimeValid) {
+  if (extValid || mimeValid) {
     return cb(null, true);
   } else {
-    cb(new Error('Only JPEG, JPG, PNG, and WEBP image files are allowed.'));
+    const err = new multer.MulterError('LIMIT_UNEXPECTED_FILE', file.fieldname);
+    err.message = 'Only JPEG, JPG, PNG, WEBP, and JFIF image files are allowed.';
+    cb(err);
   }
 };
 

@@ -139,17 +139,32 @@ export default function AdminCampaigns() {
       return;
     }
 
+    if (!desktopFile && !editingId) {
+      toast.warning('Desktop image is required.');
+      return;
+    }
+
+    if (form.startDate && form.endDate) {
+      const start = new Date(form.startDate);
+      const end = new Date(form.endDate);
+      if (end < start) {
+        toast.warning('End date must be on or after the start date.');
+        return;
+      }
+    }
+
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+    Object.entries(form).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) {
+        fd.append(k, v);
+      }
+    });
 
     if (desktopFile) {
       fd.append('desktopImageUrl', desktopFile);
     } else if (editingId) {
       const old = campaigns.find((c) => c._id === editingId);
       if (old?.desktopImageUrl) fd.append('desktopImageUrl', old.desktopImageUrl);
-    } else {
-      toast.warning('Please upload a desktop campaign image.');
-      return;
     }
 
     if (mobileFile) {
@@ -173,7 +188,8 @@ export default function AdminCampaigns() {
         fetchCampaigns();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save campaign.');
+      const msg = err.response?.data?.message || err.message || 'Failed to save campaign.';
+      toast.error(msg);
     }
   };
 

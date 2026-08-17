@@ -57,14 +57,16 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // 5. Multer / File Upload Errors
-  else if (err.name === 'MulterError') {
+  else if (err.name === 'MulterError' || err.message?.includes('image files are allowed')) {
     statusCode = 400;
     if (err.code === 'LIMIT_FILE_SIZE') {
       message = 'Uploaded file is too large. Maximum allowed size is 5MB.';
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE' && err.message) {
+      message = err.message;
     } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
       message = 'Too many files uploaded or unexpected file field.';
     } else {
-      message = `File upload error: ${err.message}`;
+      message = err.message || `File upload error: ${err.code}`;
     }
   }
 
