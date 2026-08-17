@@ -153,21 +153,9 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // Resolve campaign image URL (responsive desktop / mobile fallback)
+  // Resolve campaign image URL
   const campaignImgSrc = (campaign) => {
-    const url = campaign?.desktopImageUrl || campaign?.mobileImageUrl;
-    if (!url) return null;
-    return resolveImage(url);
-  };
-
-  const campaignDesktopImgSrc = (campaign) => {
-    const url = campaign?.desktopImageUrl || campaign?.mobileImageUrl;
-    if (!url) return null;
-    return resolveImage(url);
-  };
-
-  const campaignMobileImgSrc = (campaign) => {
-    const url = campaign?.mobileImageUrl || campaign?.desktopImageUrl;
+    const url = campaign.desktopImageUrl;
     if (!url) return null;
     return resolveImage(url);
   };
@@ -377,19 +365,14 @@ export default function Home() {
 
                   {/* Right — Image area: stable reserved dimensions & properly framed model (top center focal point) */}
                   <div className="w-full h-[220px] xs:h-[240px] sm:h-[260px] md:h-full md:w-1/2 lg:w-1/2 relative bg-neutral-100 order-1 md:order-2 overflow-hidden flex-shrink-0">
-                    {campaignDesktopImgSrc(campaign) || campaignMobileImgSrc(campaign) ? (
-                      <picture className="w-full h-full block">
-                        {campaignMobileImgSrc(campaign) && (
-                          <source media="(max-width: 767px)" srcSet={campaignMobileImgSrc(campaign)} />
-                        )}
-                        <img
-                          src={campaignDesktopImgSrc(campaign)}
-                          alt={campaign.imageAlt || campaign.title}
-                          loading={campaignIndex === 0 ? "eager" : "lazy"}
-                          fetchPriority={campaignIndex === 0 ? "high" : "low"}
-                          className="w-full h-full object-cover object-[center_top] block"
-                        />
-                      </picture>
+                    {imgSrc ? (
+                      <img
+                        src={imgSrc}
+                        alt={campaign.imageAlt || campaign.title}
+                        loading={campaignIndex === 0 ? "eager" : "lazy"}
+                        fetchPriority={campaignIndex === 0 ? "high" : "low"}
+                        className="w-full h-full object-cover object-[center_top] block"
+                      />
                     ) : (
                       <div className="w-full h-full bg-neutral-100 flex items-center justify-center">
                         <span className="text-[10px] font-mono text-neutral-300 tracking-widest uppercase">VAULT.CO</span>
