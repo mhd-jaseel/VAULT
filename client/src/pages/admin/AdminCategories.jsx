@@ -137,10 +137,10 @@ export default function AdminCategories() {
       {/* Title */}
       <div className="mb-8 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wider text-white font-display">
+          <h1 className="text-2xl md:text-3xl font-bold uppercase tracking-wider text-text-primary font-display">
             Manage Categories
           </h1>
-          <p className="text-xs text-gray-500 mt-1">Add, update, and manage accessory category groupings.</p>
+          <p className="text-xs text-text-secondary mt-1">Add, update, and manage accessory category groupings.</p>
         </div>
         <button
           onClick={handleOpenAdd}
@@ -157,18 +157,18 @@ export default function AdminCategories() {
           ))}
         </div>
       ) : categories.length === 0 ? (
-        <div className="text-center py-20 bg-dark-card border border-dark-border rounded-2xl">
-          <p className="text-xs text-zinc-500">No categories found. Click add to register a new collection.</p>
+        <div className="text-center py-20 bg-white border border-border-light rounded-2xl">
+          <p className="text-xs text-text-secondary">No categories found. Click add to register a new collection.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {categories.map((cat) => (
             <div
               key={cat._id}
-              className="glass-card flex items-center justify-between border border-dark-border p-4 hover:border-zinc-800"
+              className="glass-card flex items-center justify-between border border-border-light p-4 hover:border-neutral-300 transition-colors shadow-xs"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-dark-border p-1">
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-white flex-shrink-0 flex items-center justify-center border border-border-light p-1 shadow-xs">
                   {cat.image ? (
                     <img 
                       src={resolveImage(cat.image)} 
@@ -179,28 +179,30 @@ export default function AdminCategories() {
                       }}
                     />
                   ) : (
-                    <span className="text-zinc-800 font-bold text-xs">VAULT</span>
+                    <span className="text-neutral-400 font-bold text-xs font-mono">VAULT</span>
                   )}
                 </div>
                 <div 
                   onClick={() => handleOpenEdit(cat)}
-                  className="cursor-pointer hover:bg-zinc-900/50 -mx-1 px-1 py-0.5 rounded transition-colors group"
+                  className="cursor-pointer hover:bg-neutral-50 -mx-1 px-1 py-0.5 rounded transition-colors group"
                 >
-                  <h4 className="font-display font-semibold text-sm text-white group-hover:text-gold group-hover:underline transition-colors">{cat.name}</h4>
-                  <p className="text-[10px] text-zinc-500 max-w-[150px] truncate group-hover:text-zinc-400">{cat.description}</p>
+                  <h4 className="font-display font-semibold text-sm text-text-primary group-hover:text-black group-hover:underline transition-colors">{cat.name}</h4>
+                  <p className="text-[10px] text-text-secondary max-w-[150px] truncate group-hover:text-neutral-700">{cat.description}</p>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <button
                   onClick={() => handleOpenEdit(cat)}
-                  className="p-2 border border-zinc-800 rounded-lg text-gray-400 hover:text-gold hover:border-gold/30 cursor-pointer"
+                  className="p-2 border border-border-light rounded-lg text-neutral-600 hover:text-black hover:border-neutral-400 cursor-pointer transition-colors"
+                  aria-label={`Edit ${cat.name}`}
                 >
                   <Edit2 size={12} />
                 </button>
                 <button
                   onClick={() => handleDelete(cat._id)}
-                  className="p-2 border border-zinc-800 rounded-lg text-zinc-500 hover:text-red-400 hover:border-red-950/40 cursor-pointer"
+                  className="p-2 border border-border-light rounded-lg text-neutral-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50/50 cursor-pointer transition-colors"
+                  aria-label={`Delete ${cat.name}`}
                 >
                   <Trash2 size={12} />
                 </button>
@@ -223,19 +225,19 @@ export default function AdminCategories() {
         <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
-          <div className="relative w-full max-w-md bg-dark-card border border-dark-border rounded-2xl shadow-xl p-6 z-10 text-gray-200">
-            <div className="flex items-center justify-between border-b border-dark-border pb-3 mb-4">
-              <h3 className="font-display font-semibold text-sm uppercase tracking-wider text-white">
+          <div className="relative w-full max-w-md bg-white border border-border-light rounded-2xl shadow-xl p-6 z-10 text-text-primary">
+            <div className="flex items-center justify-between border-b border-border-light pb-3 mb-4">
+              <h3 className="font-display font-semibold text-sm uppercase tracking-wider text-text-primary">
                 {isEditing ? 'Edit Category' : 'Add Category'}
               </h3>
-              <button onClick={() => setIsOpen(false)} className="text-zinc-500 hover:text-white cursor-pointer">
+              <button onClick={() => setIsOpen(false)} className="text-neutral-400 hover:text-neutral-900 cursor-pointer">
                 <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Category Name</label>
+                <label className="text-[10px] text-text-secondary uppercase tracking-widest block mb-1 font-bold">Category Name</label>
                 <input
                   type="text"
                   placeholder="e.g. Wallets"
@@ -247,7 +249,7 @@ export default function AdminCategories() {
               </div>
 
               <div>
-                <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1">Description</label>
+                <label className="text-[10px] text-text-secondary uppercase tracking-widest block mb-1 font-bold">Description</label>
                 <textarea
                   placeholder="Short description of items..."
                   className="form-input text-xs min-h-[60px]"
@@ -257,10 +259,10 @@ export default function AdminCategories() {
               </div>
 
               <div>
-                <label className="text-[10px] text-zinc-400 uppercase tracking-widest block mb-1.5">Category Image</label>
+                <label className="text-[10px] text-text-secondary uppercase tracking-widest block mb-1.5 font-bold">Category Image</label>
                 
                 {imagePreview ? (
-                  <div className="relative aspect-video rounded-xl overflow-hidden border border-dark-border bg-white flex items-center justify-center">
+                  <div className="relative aspect-video rounded-xl overflow-hidden border border-border-light bg-white flex items-center justify-center">
                     <img src={imagePreview} alt="" className="w-full h-full object-contain" />
                     <button
                       type="button"
@@ -268,15 +270,15 @@ export default function AdminCategories() {
                         setImageFile(null);
                         setImagePreview('');
                       }}
-                      className="absolute top-2 right-2 bg-red-900 border border-red-500 text-white text-[9px] py-1 px-2.5 rounded-md cursor-pointer"
+                      className="absolute top-2 right-2 bg-red-600 border border-red-700 text-white text-[9px] py-1 px-2.5 rounded-md cursor-pointer hover:bg-red-700 transition-colors"
                     >
                       Remove
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center aspect-video rounded-xl border border-dashed border-dark-border bg-dark-input hover:border-gold/40 cursor-pointer p-4">
-                    <Upload className="text-zinc-500 mb-1" size={20} />
-                    <span className="text-[10px] font-semibold text-gray-300">Choose Image</span>
+                  <label className="flex flex-col items-center justify-center aspect-video rounded-xl border border-dashed border-border-light bg-neutral-50 hover:bg-neutral-100/50 hover:border-neutral-400 cursor-pointer p-4 transition-colors">
+                    <Upload className="text-neutral-400 mb-1" size={20} />
+                    <span className="text-[10px] font-semibold text-neutral-700">Choose Image</span>
                     <input
                       type="file"
                       accept="image/*"

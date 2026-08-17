@@ -213,22 +213,19 @@ export default function Home() {
               NO CATEGORIES FOUND. SETUP IN ADMIN.
             </div>
           ) : (
-            <div className="grid grid-cols-3 min-[992px]:grid-cols-4 min-[1400px]:grid-cols-5 gap-x-6 gap-y-10 md:gap-y-12 px-1">
-              {categories
-                .filter((cat) =>
-                  ['BELTS', 'BRACELETS', 'CAPS', 'CHAINS', 'PERFUMES', 'RINGS', 'SUNGLASSES', 'WALLETS', 'WATCHES'].includes(
-                    cat.name.toUpperCase()
-                  )
-                )
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((cat) => (
+            <>
+              {/* Category Grid: Responsive presentation */}
+              <div className="grid grid-cols-3 min-[992px]:grid-cols-4 min-[1400px]:grid-cols-5 gap-x-4 sm:gap-x-6 gap-y-8 sm:gap-y-10 md:gap-y-12 px-1">
+                {categories.map((cat, index) => (
                   <Link
                     key={cat._id}
                     to={`/shop?category=${cat._id}`}
-                    className="flex flex-col items-center select-none cursor-pointer transition-all duration-[220ms] ease-out hover:-translate-y-[3px] group"
+                    className={`flex flex-col items-center select-none cursor-pointer transition-all duration-[220ms] ease-out hover:-translate-y-[3px] group ${
+                      index >= 9 ? 'hidden md:flex' : 'flex'
+                    }`}
                     aria-label={`View ${cat.name}`}
                   >
-                    <div className="w-full aspect-square bg-[#FFFFFF] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-4 p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+                    <div className="w-full aspect-square bg-[#FFFFFF] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-3 sm:mb-4 p-3 sm:p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
                       {cat.image ? (
                         <img
                           src={resolveImage(cat.image)}
@@ -245,12 +242,26 @@ export default function Home() {
                         <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
                       )}
                     </div>
-                    <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center">
+                    <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center truncate">
                       {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
                     </span>
                   </Link>
                 ))}
-            </div>
+              </div>
+
+              {/* View All Button: Rendered only on mobile when categories count exceeds 9 */}
+              {categories.length > 9 && (
+                <div className="flex md:hidden justify-center mt-6 pt-2">
+                  <Link
+                    to="/shop"
+                    className="inline-flex items-center justify-center gap-2 bg-[#111111] text-white text-[10px] font-mono tracking-[0.2em] uppercase px-6 py-2.5 rounded-full hover:bg-neutral-800 active:scale-[0.98] transition-all shadow-xs"
+                    aria-label="View all categories"
+                  >
+                    VIEW ALL <ChevronRight size={12} />
+                  </Link>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
