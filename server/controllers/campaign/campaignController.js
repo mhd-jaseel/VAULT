@@ -1,5 +1,6 @@
 import Campaign from '../../models/Campaign.js';
 import { paginateAggregate } from '../../utils/paginate.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../services/cloudinaryService.js';
 
 // @desc    Get all active campaigns (public)
 // @route   GET /campaigns
@@ -70,10 +71,16 @@ export const createCampaign = async (req, res) => {
 
     if (req.files) {
       if (req.files.desktopImageUrl && req.files.desktopImageUrl[0]) {
-        desktopImageUrl = `/uploads/${req.files.desktopImageUrl[0].filename}`;
+        desktopImageUrl = await uploadToCloudinary(
+          req.files.desktopImageUrl[0].path || req.files.desktopImageUrl[0].filename,
+          'vault/campaigns'
+        );
       }
       if (req.files.mobileImageUrl && req.files.mobileImageUrl[0]) {
-        mobileImageUrl = `/uploads/${req.files.mobileImageUrl[0].filename}`;
+        mobileImageUrl = await uploadToCloudinary(
+          req.files.mobileImageUrl[0].path || req.files.mobileImageUrl[0].filename,
+          'vault/campaigns'
+        );
       }
     }
 
@@ -147,10 +154,24 @@ export const updateCampaign = async (req, res) => {
 
     if (req.files) {
       if (req.files.desktopImageUrl && req.files.desktopImageUrl[0]) {
-        campaign.desktopImageUrl = `/uploads/${req.files.desktopImageUrl[0].filename}`;
+        const oldDesktop = campaign.desktopImageUrl;
+        campaign.desktopImageUrl = await uploadToCloudinary(
+          req.files.desktopImageUrl[0].path || req.files.desktopImageUrl[0].filename,
+          'vault/campaigns'
+        );
+        if (oldDesktop && oldDesktop !== campaign.desktopImageUrl) {
+          await deleteFromCloudinary(oldDesktop);
+        }
       }
       if (req.files.mobileImageUrl && req.files.mobileImageUrl[0]) {
-        campaign.mobileImageUrl = `/uploads/${req.files.mobileImageUrl[0].filename}`;
+        const oldMobile = campaign.mobileImageUrl;
+        campaign.mobileImageUrl = await uploadToCloudinary(
+          req.files.mobileImageUrl[0].path || req.files.mobileImageUrl[0].filename,
+          'vault/campaigns'
+        );
+        if (oldMobile && oldMobile !== campaign.mobileImageUrl) {
+          await deleteFromCloudinary(oldMobile);
+        }
       }
     } else {
       if (req.body.desktopImageUrl !== undefined) campaign.desktopImageUrl = req.body.desktopImageUrl;
@@ -172,6 +193,12 @@ export const deleteCampaign = async (req, res) => {
     const campaign = await Campaign.findById(req.params.id);
     if (!campaign) {
       return res.status(404).json({ success: false, message: 'Campaign not found' });
+    }
+    if (campaign.desktopImageUrl) {
+      await deleteFromCloudinary(campaign.desktopImageUrl);
+    }
+    if (campaign.mobileImageUrl) {
+      await deleteFromCloudinary(campaign.mobileImageUrl);
     }
     await campaign.deleteOne();
     res.json({ success: true, message: 'Campaign deleted' });
