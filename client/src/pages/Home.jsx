@@ -154,14 +154,20 @@ export default function Home() {
   }, []);
 
   // Resolve campaign image URL (responsive desktop / mobile fallback)
+  const campaignImgSrc = (campaign) => {
+    const url = campaign?.desktopImageUrl || campaign?.mobileImageUrl;
+    if (!url) return null;
+    return resolveImage(url);
+  };
+
   const campaignDesktopImgSrc = (campaign) => {
-    const url = campaign.desktopImageUrl || campaign.mobileImageUrl;
+    const url = campaign?.desktopImageUrl || campaign?.mobileImageUrl;
     if (!url) return null;
     return resolveImage(url);
   };
 
   const campaignMobileImgSrc = (campaign) => {
-    const url = campaign.mobileImageUrl || campaign.desktopImageUrl;
+    const url = campaign?.mobileImageUrl || campaign?.desktopImageUrl;
     if (!url) return null;
     return resolveImage(url);
   };
