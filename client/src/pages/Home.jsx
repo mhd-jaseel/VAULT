@@ -242,8 +242,8 @@ export default function Home() {
                         <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
                       )}
                     </div>
-                    <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center truncate">
-                      {cat.name.charAt(0).toUpperCase() + cat.name.slice(1).toLowerCase()}
+                    <span className="font-sans text-[11px] sm:text-[13px] font-medium text-[#8A8A8A] group-hover:text-text-primary text-center px-1 tracking-[0.5px] leading-[1.3] transition-colors duration-300 w-full flex items-center justify-center truncate uppercase">
+                      {cat.name.toUpperCase()}
                     </span>
                   </Link>
                 ))}
