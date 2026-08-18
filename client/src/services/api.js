@@ -1,14 +1,7 @@
 import axios from 'axios';
+import { getServerBaseUrl } from '../utils/imageHelper';
 
-const getInitialApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'))) {
-    return 'https://vault-co-api.onrender.com/api';
-  }
-  return 'http://localhost:5000/api';
-};
-const rawApiUrl = getInitialApiUrl();
-const baseURL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`;
+const baseURL = `${getServerBaseUrl()}/api`;
 
 const api = axios.create({
   baseURL,

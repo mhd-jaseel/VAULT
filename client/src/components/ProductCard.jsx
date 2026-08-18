@@ -149,17 +149,23 @@ export default function ProductCard({
       >
         <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-4 border-b border-border-light flex-shrink-0">
           {product.images && product.images.length > 0 ? (
-            <img
-              src={resolveImage(product.images[0])}
-              alt={product.name}
-              loading={loadingAttr}
-              fetchPriority={fetchPriorityAttr}
-              decoding="async"
-              className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500 rounded-lg"
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
+            <>
+              <img
+                src={resolveImage(product.images[0])}
+                alt={product.name}
+                loading={loadingAttr}
+                fetchPriority={fetchPriorityAttr}
+                decoding="async"
+                className="w-full h-full object-cover object-center md:max-h-full md:max-w-full md:object-contain group-hover:scale-105 transition-all duration-500 rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+              <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs hidden items-center justify-center">VAULT</span>
+            </>
           ) : (
             <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
           )}
@@ -260,18 +266,24 @@ export default function ProductCard({
         >
           {/* Product Image */}
           {product.images && product.images.length > 0 ? (
-            <img
-              src={resolveImage(product.images[0])}
-              alt={product.name}
-              loading={loadingAttr}
-              fetchPriority={fetchPriorityAttr}
-              decoding="async"
-              className={`w-full h-full rounded-[16px] transition-transform duration-[220ms] ease-out ${isLarge ? 'object-cover' : 'object-contain'
-                }`}
-              onError={(e) => {
-                e.target.style.display = 'none';
-              }}
-            />
+            <>
+              <img
+                src={resolveImage(product.images[0])}
+                alt={product.name}
+                loading={loadingAttr}
+                fetchPriority={fetchPriorityAttr}
+                decoding="async"
+                className={`w-full h-full rounded-[16px] transition-transform duration-[220ms] ease-out ${isLarge ? 'object-cover' : 'object-contain'
+                  }`}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+              <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs hidden items-center justify-center">VAULT</span>
+            </>
           ) : (
             <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
           )}

@@ -1,4 +1,5 @@
 import Setting from '../../models/Setting.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../services/cloudinaryService.js';
 
 export const getSettings = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const updateSettings = async (req, res) => {
   try {
     let settings = await Setting.findOne();
     if (!settings) {
-      settings = new Setting({});
+      settings = new Setting();
     }
 
     const {
@@ -36,26 +37,27 @@ export const updateSettings = async (req, res) => {
       shippingCharges,
       freeShippingMinAmount,
       handlingCharge,
-      heroTitle,
-      heroSubtitle,
-      heroDescription,
+      adminNotificationEmail,
+      socialLinks,
       heroProductName,
       heroProductPrice,
       showDiscountsOnHomepage,
       discountProductsDisplayOrder,
     } = req.body;
 
-    settings.storeName = storeName || settings.storeName;
-    settings.phoneNumber = phoneNumber || settings.phoneNumber;
-    settings.whatsappNumber = whatsappNumber || settings.whatsappNumber;
-    settings.upiId = upiId || settings.upiId;
-    if (shippingCharges !== undefined) settings.shippingCharges = Math.max(0, Number(shippingCharges) || 0);
-    if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Math.max(0, Number(freeShippingMinAmount) || 0);
-    if (handlingCharge !== undefined) settings.handlingCharge = Math.max(0, Number(handlingCharge) || 0);
+    if (storeName !== undefined) settings.storeName = storeName;
+    if (phoneNumber !== undefined) settings.phoneNumber = phoneNumber;
+    if (whatsappNumber !== undefined) settings.whatsappNumber = whatsappNumber;
+    if (upiId !== undefined) settings.upiId = upiId;
+    if (shippingCharges !== undefined) settings.shippingCharges = Number(shippingCharges);
+    if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Number(freeShippingMinAmount);
+    if (handlingCharge !== undefined) settings.handlingCharge = Number(handlingCharge);
+    if (adminNotificationEmail !== undefined) settings.adminNotificationEmail = adminNotificationEmail;
+    
+    if (socialLinks !== undefined) {
+      settings.socialLinks = typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks;
+    }
 
-    if (heroTitle !== undefined) settings.heroTitle = heroTitle;
-    if (heroSubtitle !== undefined) settings.heroSubtitle = heroSubtitle;
-    if (heroDescription !== undefined) settings.heroDescription = heroDescription;
     if (heroProductName !== undefined) settings.heroProductName = heroProductName;
     if (heroProductPrice !== undefined) settings.heroProductPrice = Number(heroProductPrice);
 
@@ -66,16 +68,37 @@ export const updateSettings = async (req, res) => {
       settings.discountProductsDisplayOrder = discountProductsDisplayOrder;
     }
 
-    // Handle logo and QR code file uploads
+    // Handle logo, QR code, and hero image file uploads via Cloudinary
     if (req.files) {
       if (req.files.logo && req.files.logo[0]) {
-        settings.logo = `/uploads/${req.files.logo[0].filename}`;
+        const oldLogo = settings.logo;
+        settings.logo = await uploadToCloudinary(
+          req.files.logo[0].path || req.files.logo[0].filename,
+          'vault/settings'
+        );
+        if (oldLogo && oldLogo !== settings.logo) {
+          await deleteFromCloudinary(oldLogo);
+        }
       }
       if (req.files.upiQrCode && req.files.upiQrCode[0]) {
-        settings.upiQrCode = `/uploads/${req.files.upiQrCode[0].filename}`;
+        const oldQr = settings.upiQrCode;
+        settings.upiQrCode = await uploadToCloudinary(
+          req.files.upiQrCode[0].path || req.files.upiQrCode[0].filename,
+          'vault/settings'
+        );
+        if (oldQr && oldQr !== settings.upiQrCode) {
+          await deleteFromCloudinary(oldQr);
+        }
       }
       if (req.files.heroImage && req.files.heroImage[0]) {
-        settings.heroImage = `/uploads/${req.files.heroImage[0].filename}`;
+        const oldHero = settings.heroImage;
+        settings.heroImage = await uploadToCloudinary(
+          req.files.heroImage[0].path || req.files.heroImage[0].filename,
+          'vault/settings'
+        );
+        if (oldHero && oldHero !== settings.heroImage) {
+          await deleteFromCloudinary(oldHero);
+        }
       }
     }
 

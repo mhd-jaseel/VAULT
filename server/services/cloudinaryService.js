@@ -2,13 +2,24 @@ import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
 import path from 'path';
 
+// Check if Cloudinary credentials are fully configured
+export const isCloudinaryConfigured = () => {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_SECRET
+  );
+};
+
 // Configure Cloudinary from environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true,
-});
+if (isCloudinaryConfigured()) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true,
+  });
+}
 
 /**
  * Upload a local file (from Multer disk storage) to Cloudinary
@@ -22,6 +33,17 @@ export const uploadToCloudinary = async (localFilePath, folder = 'vault') => {
   // If already a full external URL, return as is
   if (localFilePath.startsWith('http://') || localFilePath.startsWith('https://')) {
     return localFilePath;
+  }
+
+  // Explicit validation of Cloudinary configuration
+  if (!isCloudinaryConfigured()) {
+    const missingVars = [];
+    if (!process.env.CLOUDINARY_CLOUD_NAME) missingVars.push('CLOUDINARY_CLOUD_NAME');
+    if (!process.env.CLOUDINARY_API_KEY) missingVars.push('CLOUDINARY_API_KEY');
+    if (!process.env.CLOUDINARY_API_SECRET) missingVars.push('CLOUDINARY_API_SECRET');
+    throw new Error(
+      `Cloudinary configuration missing on server. Please set: ${missingVars.join(', ')} in environment variables.`
+    );
   }
 
   // Resolve absolute path on disk
@@ -71,7 +93,8 @@ export const deleteFromCloudinary = async (imageUrl) => {
   const staticSeedAssets = [
     'wallets.webp', 'belts.webp', 'rings.webp', 'caps.webp', 'watches.webp',
     'sunglasses.webp', 'bracelets.webp', 'chains.webp', 'earrings.webp',
-    'perfumes.webp', 'shoes.webp', 'chappals.webp',
+    'campaign_timeless_watches.png', 'campaign_signature_style.png',
+    'campaign_new_collection.png', 'campaign_leather_collection.png',
   ];
   if (staticSeedAssets.some((seed) => imageUrl.includes(seed))) {
     return;

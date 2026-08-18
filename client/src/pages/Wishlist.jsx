@@ -120,14 +120,20 @@ export default function Wishlist() {
             >
               <div className="relative h-auto aspect-square md:h-48 w-full overflow-hidden bg-neutral-50 flex items-center justify-center p-6 border-b border-border-light">
                 {prod.images && prod.images.length > 0 ? (
-                  <img
-                    src={resolveImage(prod.images[0])}
-                    alt={prod.name}
-                    className="w-full h-full object-contain md:max-h-full md:max-w-full group-hover:scale-105 transition-all duration-500"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
+                  <>
+                    <img
+                      src={resolveImage(prod.images[0])}
+                      alt={prod.name}
+                      className="w-full h-full object-contain md:max-h-full md:max-w-full group-hover:scale-105 transition-all duration-500"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                    <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs hidden items-center justify-center">VAULT</span>
+                  </>
                 ) : (
                   <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
                 )}

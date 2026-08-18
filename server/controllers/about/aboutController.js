@@ -1,7 +1,6 @@
 import AboutPage from '../../models/AboutPage.js';
 import User from '../../models/User.js';
-import fs from 'fs';
-import path from 'path';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../services/cloudinaryService.js';
 
 // Default initial state matching existing About.jsx content
 export const DEFAULT_ABOUT_DATA = {
@@ -79,17 +78,10 @@ export const DEFAULT_ABOUT_DATA = {
   additionalSections: [],
 };
 
-// Helper: Safely delete old local upload file
-const safeDeleteFile = (filePath) => {
+// Helper: Safely delete old image (Cloudinary or legacy)
+const safeDeleteFile = async (filePath) => {
   if (!filePath) return;
-  try {
-    const cleanPath = filePath.replace(/^\//, '');
-    if (fs.existsSync(cleanPath)) {
-      fs.unlinkSync(cleanPath);
-    }
-  } catch (err) {
-    console.error('Failed to delete old image file:', err);
-  }
+  await deleteFromCloudinary(filePath);
 };
 
 /**
@@ -176,15 +168,16 @@ export const updateFounder = async (req, res) => {
         : [];
     }
 
-    // Handle Image upload or replacement
+    // Handle Image upload or replacement via Cloudinary
     if (req.file) {
-      if (about.founder.image) {
-        safeDeleteFile(about.founder.image);
+      const oldImage = about.founder.image;
+      about.founder.image = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/about');
+      if (oldImage && oldImage !== about.founder.image) {
+        await safeDeleteFile(oldImage);
       }
-      about.founder.image = `/uploads/${req.file.filename}`;
     } else if (removeImage === 'true' || removeImage === true) {
       if (about.founder.image) {
-        safeDeleteFile(about.founder.image);
+        await safeDeleteFile(about.founder.image);
       }
       about.founder.image = '';
     }
@@ -230,15 +223,16 @@ export const updateCoFounder = async (req, res) => {
         : [];
     }
 
-    // Handle Image upload or replacement
+    // Handle Image upload or replacement via Cloudinary
     if (req.file) {
-      if (about.coFounder.image) {
-        safeDeleteFile(about.coFounder.image);
+      const oldImage = about.coFounder.image;
+      about.coFounder.image = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/about');
+      if (oldImage && oldImage !== about.coFounder.image) {
+        await safeDeleteFile(oldImage);
       }
-      about.coFounder.image = `/uploads/${req.file.filename}`;
     } else if (removeImage === 'true' || removeImage === true) {
       if (about.coFounder.image) {
-        safeDeleteFile(about.coFounder.image);
+        await safeDeleteFile(about.coFounder.image);
       }
       about.coFounder.image = '';
     }
@@ -272,13 +266,18 @@ export const addAdditionalSection = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Heading and content are required.' });
     }
 
+    let imageUrl = '';
+    if (req.file) {
+      imageUrl = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/about');
+    }
+
     const newSection = {
       tagline: tagline || '',
       heading,
       content,
       order: Number(order) || (about.additionalSections?.length || 0),
       isActive: isActive === 'false' || isActive === false ? false : true,
-      image: req.file ? `/uploads/${req.file.filename}` : '',
+      image: imageUrl,
     };
 
     about.additionalSections.push(newSection);
@@ -320,13 +319,14 @@ export const updateAdditionalSection = async (req, res) => {
     if (isActive !== undefined) section.isActive = isActive === 'true' || isActive === true;
 
     if (req.file) {
-      if (section.image) {
-        safeDeleteFile(section.image);
+      const oldImage = section.image;
+      section.image = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/about');
+      if (oldImage && oldImage !== section.image) {
+        await safeDeleteFile(oldImage);
       }
-      section.image = `/uploads/${req.file.filename}`;
     } else if (removeImage === 'true' || removeImage === true) {
       if (section.image) {
-        safeDeleteFile(section.image);
+        await safeDeleteFile(section.image);
       }
       section.image = '';
     }
@@ -361,7 +361,7 @@ export const deleteAdditionalSection = async (req, res) => {
     }
 
     if (section.image) {
-      safeDeleteFile(section.image);
+      await safeDeleteFile(section.image);
     }
 
     about.additionalSections.pull(sectionId);

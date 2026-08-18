@@ -111,14 +111,20 @@ export default function Cart() {
                 {/* Image */}
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-neutral-50 flex-shrink-0 flex items-center justify-center border border-border-light p-2">
                   {item.image ? (
-                    <img 
-                      src={resolveImage(item.image)} 
-                      alt={item.name} 
-                      className="max-h-full max-w-full object-contain"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
-                    />
+                    <>
+                      <img 
+                        src={resolveImage(item.image)} 
+                        alt={item.name} 
+                        className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                      <span className="text-neutral-300 font-bold text-xs font-mono hidden items-center justify-center">VAULT</span>
+                    </>
                   ) : (
                     <span className="text-neutral-300 font-bold text-xs font-mono">VAULT</span>
                   )}

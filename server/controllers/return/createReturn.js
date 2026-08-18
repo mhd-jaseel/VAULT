@@ -4,6 +4,7 @@ import Return from '../../models/Return.js';
 import Wallet from '../../models/Wallet.js';
 import { calculateProductDiscounts } from '../../services/discountService.js';
 import { createNotificationHelper } from '../../services/notificationHelper.js';
+import { uploadToCloudinary } from '../../services/cloudinaryService.js';
 
 const generateReturnId = () => {
   const rand = Math.floor(10000 + Math.random() * 90000);
@@ -113,10 +114,15 @@ export const createReturnRequest = async (req, res) => {
       });
     }
 
-    // Handle evidence images if uploaded
+    // Handle evidence images if uploaded via Cloudinary
     let evidenceImages = [];
     if (req.files && req.files.length > 0) {
-      evidenceImages = req.files.map((file) => `/uploads/${file.filename}`);
+      for (const file of req.files) {
+        const uploadedUrl = await uploadToCloudinary(file.path || file.filename, 'vault/returns');
+        if (uploadedUrl) {
+          evidenceImages.push(uploadedUrl);
+        }
+      }
     }
 
     // Use snapshot paid amount if available

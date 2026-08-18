@@ -4,17 +4,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import './index.css'
 import App from './App.jsx'
 import axios from 'axios';
+import { getServerBaseUrl } from './utils/imageHelper';
 
 // Set global axios defaults for the entire application
-const getInitialApiUrl = () => {
-  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-  if (typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'))) {
-    return 'https://vault-co-api.onrender.com/api';
-  }
-  return 'http://localhost:5000/api';
-};
-const rawApiUrl = getInitialApiUrl();
-axios.defaults.baseURL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api`;
+axios.defaults.baseURL = `${getServerBaseUrl()}/api`;
 axios.defaults.withCredentials = true;
 
 // Centralized Axios Request Interceptor — attach Authorization header fallback

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Review from '../../models/Review.js';
 import Product from '../../models/Product.js';
 import Order from '../../models/Order.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../services/cloudinaryService.js';
 
 // Helper to recalculate and persist product rating aggregate
 const recalculateProductRating = async (productId) => {
@@ -281,13 +282,18 @@ export const createReview = async (req, res) => {
       });
     }
 
-    // Process uploaded images (up to 5)
+    // Process uploaded images (up to 5) via Cloudinary
     let images = [];
     if (req.files && Array.isArray(req.files) && req.files.length > 0) {
       if (req.files.length > 5) {
         return res.status(400).json({ success: false, message: 'Maximum 5 photos allowed per review.' });
       }
-      images = req.files.map((file) => `/uploads/${file.filename}`);
+      for (const file of req.files) {
+        const uploadedUrl = await uploadToCloudinary(file.path || file.filename, 'vault/reviews');
+        if (uploadedUrl) {
+          images.push(uploadedUrl);
+        }
+      }
     }
 
     const review = await Review.create({
@@ -376,14 +382,26 @@ export const updateReview = async (req, res) => {
     }
 
     let newImages = [];
-    if (req.files && Array.isArray(req.files)) {
-      newImages = req.files.map((file) => `/uploads/${file.filename}`);
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        const uploadedUrl = await uploadToCloudinary(file.path || file.filename, 'vault/reviews');
+        if (uploadedUrl) {
+          newImages.push(uploadedUrl);
+        }
+      }
     }
 
     const totalImages = [...retainedImages, ...newImages];
     if (totalImages.length > 5) {
       return res.status(400).json({ success: false, message: 'Maximum 5 photos allowed per review.' });
     }
+
+    // Delete any removed images from Cloudinary
+    const removedImages = (review.images || []).filter((img) => !totalImages.includes(img));
+    for (const img of removedImages) {
+      await deleteFromCloudinary(img);
+    }
+
     review.images = totalImages;
 
     await review.save();
@@ -416,6 +434,12 @@ export const deleteReview = async (req, res) => {
 
     if (review.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'You can only delete your own review.' });
+    }
+
+    if (review.images && review.images.length > 0) {
+      for (const img of review.images) {
+        await deleteFromCloudinary(img);
+      }
     }
 
     const productId = review.product;

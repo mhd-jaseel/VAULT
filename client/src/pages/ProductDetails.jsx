@@ -368,14 +368,23 @@ export default function ProductDetails() {
               BEST SELLER
             </span>
             {activeImage ? (
-              <img 
-                src={resolveImage(activeImage)} 
-                alt={product.name} 
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-                className="max-h-full max-w-full object-contain"
-              />
+              <>
+                <img 
+                  src={resolveImage(activeImage)} 
+                  alt={product.name} 
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
+                  className="max-h-full max-w-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextElementSibling) {
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }
+                  }}
+                />
+                <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs hidden items-center justify-center">VAULT</span>
+              </>
             ) : (
               <span className="text-neutral-300 font-bold tracking-widest font-mono text-xs">VAULT</span>
             )}

@@ -187,10 +187,10 @@ export default function Home() {
           '@context': 'https://schema.org',
           '@type': 'WebSite',
           name: 'VAULT.CO',
-          url: 'http://localhost:5173',
+          url: typeof window !== 'undefined' ? window.location.origin : 'https://vaultco.online',
           potentialAction: {
             '@type': 'SearchAction',
-            target: 'http://localhost:5173/shop?search={search_term_string}',
+            target: `${typeof window !== 'undefined' ? window.location.origin : 'https://vaultco.online'}/shop?search={search_term_string}`,
             'query-input': 'required name=search_term_string',
           },
         })}
@@ -227,17 +227,23 @@ export default function Home() {
                   >
                     <div className="w-full aspect-square bg-[#FFFFFF] rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.015)] border border-neutral-100/10 flex items-center justify-center overflow-hidden mb-3 sm:mb-4 p-3 sm:p-4 transition-all duration-[220ms] ease-out group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
                       {cat.image ? (
-                        <img
-                          src={resolveImage(cat.image)}
-                          alt={cat.name}
-                          className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] bg-white"
-                          loading="eager"
-                          fetchPriority="high"
-                          decoding="async"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                          }}
-                        />
+                        <>
+                          <img
+                            src={resolveImage(cat.image)}
+                            alt={cat.name}
+                            className="w-full h-full object-contain rounded-xl transition-transform duration-[220ms] ease-out group-hover:scale-[1.03] bg-white"
+                            loading="eager"
+                            fetchPriority="high"
+                            decoding="async"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                          <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider hidden items-center justify-center">VAULT</span>
+                        </>
                       ) : (
                         <span className="text-neutral-300 font-bold font-mono text-[9px] tracking-wider">VAULT</span>
                       )}
