@@ -249,32 +249,42 @@ export default function ProductDetails() {
     });
   }, [product]);
 
+  const [togglingWishlist, setTogglingWishlist] = useState(false);
+
   const handleToggleWishlist = async () => {
-    if (authLoading) return;
+    if (authLoading || togglingWishlist) return;
     if (!user) {
       showLoginModal('Please login to add products to your wishlist.');
       return;
     }
 
     try {
+      setTogglingWishlist(true);
       if (inWishlist) {
         const res = await axios.delete(`/wishlist/${id}`);
         if (res.data.success) {
           setInWishlist(false);
+          toast.success('Removed from wishlist');
         }
       } else {
         const res = await axios.post('/wishlist', { productId: id });
         if (res.data.success) {
           setInWishlist(true);
+          toast.success('Added to wishlist');
         }
       }
     } catch (error) {
       console.error('Error toggling wishlist:', error);
+      toast.error('Failed to update wishlist');
+    } finally {
+      setTogglingWishlist(false);
     }
   };
 
-  const handleAddToCart = () => {
-    if (authLoading) return;
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  const handleAddToCart = async () => {
+    if (authLoading || addingToCart) return;
     if (user && user.role === 'admin') {
       toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
       return;
@@ -284,8 +294,15 @@ export default function ProductDetails() {
       return;
     }
     if (product) {
-      addToCart(product, quantity);
-      toast.success(`${product.name} successfully added to cart!`);
+      try {
+        setAddingToCart(true);
+        const res = await addToCart(product, quantity);
+        if (res && res.success) {
+          toast.success(`${res.name || product.name} successfully added to cart!`);
+        }
+      } finally {
+        setAddingToCart(false);
+      }
     }
   };
 
@@ -569,10 +586,11 @@ export default function ProductDetails() {
                 <div className="flex gap-3">
                   <button
                     onClick={handleAddToCart}
-                    disabled={product.stock === 0}
-                    className="flex-grow btn-gold py-3.5"
+                    disabled={product.stock === 0 || addingToCart}
+                    className="flex-grow btn-gold py-3.5 flex items-center justify-center gap-2"
                   >
-                    <ShoppingBag size={14} /> ADD TO CART
+                    <ShoppingBag size={14} />
+                    {addingToCart ? 'ADDING...' : 'ADD TO CART'}
                   </button>
                   <button
                     onClick={handleToggleWishlist}

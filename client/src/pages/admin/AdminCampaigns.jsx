@@ -32,6 +32,7 @@ export default function AdminCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   // Image state
@@ -175,6 +176,7 @@ export default function AdminCampaigns() {
     }
 
     try {
+      setSaving(true);
       let res;
       const cfg = { headers: { 'Content-Type': 'multipart/form-data' } };
       if (editingId) {
@@ -190,6 +192,8 @@ export default function AdminCampaigns() {
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Failed to save campaign.';
       toast.error(msg);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -579,9 +583,22 @@ export default function AdminCampaigns() {
                   CANCEL
                 </button>
               )}
-              <button type="submit" className="flex-1 btn-gold text-[10px] py-3.5 flex items-center justify-center gap-1.5">
-                <Save size={12} />
-                {editingId ? 'UPDATE CAMPAIGN' : 'CREATE CAMPAIGN'}
+              <button 
+                type="submit" 
+                disabled={saving}
+                className="flex-1 btn-gold text-[10px] py-3.5 flex items-center justify-center gap-1.5"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>{editingId ? 'UPDATING...' : 'CREATING...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Save size={12} />
+                    <span>{editingId ? 'UPDATE CAMPAIGN' : 'CREATE CAMPAIGN'}</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

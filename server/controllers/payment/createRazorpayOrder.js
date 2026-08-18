@@ -6,10 +6,11 @@ import Setting from '../../models/Setting.js';
 import Coupon from '../../models/Coupon.js';
 import CouponUsage from '../../models/CouponUsage.js';
 import razorpay from '../../services/razorpayService.js';
+import { calculateProductDiscounts } from '../../services/discountService.js';
 
 // POST /api/payments/razorpay/create-order
 export const createRazorpayOrder = async (req, res) => {
-  const { items, shippingAddress, couponCode } = req.body;
+  const { items, shippingAddress, couponCode, useWallet } = req.body;
 
   if (!items || items.length === 0) {
     return res.status(400).json({ success: false, message: 'No order items provided.' });
@@ -25,6 +26,9 @@ export const createRazorpayOrder = async (req, res) => {
     const orderItems = [];
 
     // ── 1. Validate items & calculate total from DB prices (never trust frontend price) ──
+    const envLimit = process.env.MAX_CART_QUANTITY_PER_PRODUCT ? Number(process.env.MAX_CART_QUANTITY_PER_PRODUCT) : null;
+    const configuredMaxQty = envLimit && envLimit > 0 ? envLimit : (setting.maxCartQuantityPerProduct || 5);
+
     for (const item of items) {
       if (!mongoose.Types.ObjectId.isValid(item.product)) {
         return res.status(400).json({ success: false, message: 'Invalid product ID.' });
@@ -33,6 +37,12 @@ export const createRazorpayOrder = async (req, res) => {
       if (!product) {
         return res.status(404).json({ success: false, message: `Product not found.` });
       }
+      if (item.quantity > configuredMaxQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Maximum allowed quantity for ${product.name} is ${configuredMaxQty}.`,
+        });
+      }
       if (product.stock < item.quantity) {
         return res.status(400).json({
           success: false,
@@ -40,8 +50,12 @@ export const createRazorpayOrder = async (req, res) => {
         });
       }
 
-      // Use DB price — ignore any price from frontend
-      const itemTotal = product.price * item.quantity;
+      // Authoritative effective discounted price calculation
+      const decoratedProduct = await calculateProductDiscounts(product);
+      const effectiveUnitPrice = decoratedProduct.isDiscounted ? decoratedProduct.finalPrice : decoratedProduct.price;
+      const productDiscountAmt = decoratedProduct.isDiscounted ? (decoratedProduct.discountAmount || 0) : 0;
+
+      const itemTotal = effectiveUnitPrice * item.quantity;
       totalAmount += itemTotal;
 
       orderItems.push({
@@ -49,10 +63,10 @@ export const createRazorpayOrder = async (req, res) => {
         name: product.name,
         image: product.images?.[0] || '',
         quantity: item.quantity,
-        price: product.price,
-        itemDiscount: 0,
+        price: effectiveUnitPrice,
+        itemDiscount: productDiscountAmt,
         allocatedCouponDiscount: 0,
-        unitPaidAmount: product.price,
+        unitPaidAmount: effectiveUnitPrice,
         linePaidAmount: itemTotal,
         status: 'ACTIVE',
       });

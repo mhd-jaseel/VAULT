@@ -17,6 +17,16 @@ export const otpLimiter = rateLimit({
   message: { success: false, message: 'Too many OTP requests, please try again later.' },
 });
 
+// Rate limiter for cart validation and add-to-cart operations:
+// Allows normal responsive shopping actions (60 requests per 1 minute window) while blocking rapid automated/spam click attacks.
+export const addToCartLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 60, // 60 requests per minute
+  message: { success: false, message: 'Too many cart requests. Please slow down and try again in a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 export const protect = async (req, res, next) => {
   let token;
   

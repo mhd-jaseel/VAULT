@@ -18,6 +18,7 @@ export default function AdminBrands() {
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const fetchBrands = async () => {
     setLoading(true);
@@ -60,14 +61,14 @@ export default function AdminBrands() {
         fetchBrands();
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to toggle brand status.');
+      toast.error('Failed to update brand status.');
     }
   };
 
   const handleDelete = async (id) => {
     const result = await PremiumSwal.fire({
       title: 'Delete Brand?',
-      text: 'Are you sure you want to delete this brand?',
+      text: 'Are you sure you want to remove this brand?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes, delete it',
@@ -96,6 +97,7 @@ export default function AdminBrands() {
     }
 
     try {
+      setSaving(true);
       let res;
       if (editingId) {
         res = await axios.patch(`/admin/brands/${editingId}`, {
@@ -116,6 +118,8 @@ export default function AdminBrands() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save brand details.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -244,9 +248,17 @@ export default function AdminBrands() {
               )}
               <button
                 type="submit"
-                className="flex-1 btn-gold text-[10px] py-3.5"
+                disabled={saving}
+                className="flex-1 btn-gold text-[10px] py-3.5 flex items-center justify-center gap-1.5"
               >
-                {editingId ? 'UPDATE BRAND' : 'CREATE BRAND'}
+                {saving ? (
+                  <>
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>{editingId ? 'UPDATING...' : 'CREATING...'}</span>
+                  </>
+                ) : (
+                  <span>{editingId ? 'UPDATE BRAND' : 'CREATE BRAND'}</span>
+                )}
               </button>
             </div>
           </form>

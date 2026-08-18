@@ -48,10 +48,14 @@ export const validateCreateProduct = [
       }
       return true;
     }),
-  body('discount')
-    .optional()
-    .isFloat({ min: 0, max: 100 })
-    .withMessage('Discount percentage must be between 0 and 100.'),
+  body('discountType')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(['percentage', 'fixed'])
+    .withMessage('Discount type must be either percentage or fixed.'),
+  body('discountValue')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('Discount value must be a non-negative number.'),
 ];
 
 export const validateUpdateProduct = [
@@ -103,8 +107,12 @@ export const validateUpdateProduct = [
       }
       return true;
     }),
-  body('discount')
-    .optional()
-    .isFloat({ min: 0, max: 100 })
-    .withMessage('Discount percentage must be between 0 and 100.'),
+  body('discountType')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(['percentage', 'fixed'])
+    .withMessage('Discount type must be either percentage or fixed.'),
+  body('discountValue')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0 })
+    .withMessage('Discount value must be a non-negative number.'),
 ];

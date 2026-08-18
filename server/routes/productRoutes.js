@@ -8,7 +8,7 @@ import {
   updateProduct,
   deleteProduct,
 } from '../controllers/product/index.js';
-import { protect, isAdmin } from '../middleware/auth.js';
+import { protect, isAdmin, addToCartLimiter } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
 import { validateRequest } from '../middleware/validate.js';
 import { validateObjectId, validatePagination } from '../validators/commonValidator.js';
@@ -23,6 +23,9 @@ router
 
 router.get('/related/:id', validateObjectId('id'), validateRequest, getRelatedProducts);
 router.get('/discounted', getDiscountedProducts);
+
+// Validate and add-to-cart endpoint with dedicated rate limiter
+router.post('/validate-cart/:id', addToCartLimiter, validateObjectId('id'), validateRequest, validateCartItem);
 
 router
   .route('/:id')

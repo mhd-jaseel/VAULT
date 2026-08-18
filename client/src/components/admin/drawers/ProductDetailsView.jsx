@@ -106,11 +106,21 @@ export default function ProductDetailsView({ productId }) {
           </div>
         </div>
         
-        {product.discountPrice > 0 && (
-          <DrawerRow 
-            label="Discount Price" 
-            value={`₹${product.discountPrice.toLocaleString('en-IN')}`} 
-          />
+        {product.isDiscounted && (
+          <div className="space-y-1 pt-1 border-t border-[#e5e5e5]">
+            <DrawerRow 
+              label="Effective Final Price" 
+              value={`₹${(product.finalPrice || 0).toLocaleString('en-IN')}`} 
+            />
+            <DrawerRow 
+              label="Applied Discount" 
+              value={
+                product.discountType === 'percentage' 
+                  ? `${product.discountValue}% OFF (${product.discountName || 'Active Offer'})`
+                  : `₹${product.discountValue} OFF (${product.discountName || 'Active Offer'})`
+              } 
+            />
+          </div>
         )}
       </DrawerSection>
 

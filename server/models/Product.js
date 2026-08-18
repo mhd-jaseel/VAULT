@@ -47,6 +47,16 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    discountType: {
+      type: String,
+      enum: ['percentage', 'fixed', null, ''],
+      default: null,
+    },
+    discountValue: {
+      type: Number,
+      default: 0,
+      min: [0, 'Discount value cannot be negative'],
+    },
     ratings: {
       average: { type: Number, default: 0 },
       count: { type: Number, default: 0 },

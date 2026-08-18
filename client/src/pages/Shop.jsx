@@ -44,16 +44,19 @@ export default function Shop() {
     fetchWishlist();
   }, [user]);
 
+  const [wishlistPendingId, setWishlistPendingId] = useState(null);
+
   const handleToggleWishlist = async (e, productId) => {
     e.preventDefault();
     e.stopPropagation();
-    if (authLoading) return;
+    if (authLoading || wishlistPendingId === productId) return;
     if (!user) {
       setLoginModal({ open: true, message: 'Please login to add products to your wishlist.' });
       return;
     }
     const isCurrentlyWishlisted = wishlistIds.includes(productId);
     try {
+      setWishlistPendingId(productId);
       if (isCurrentlyWishlisted) {
         const res = await axios.delete(`/wishlist/${productId}`);
         if (res.data.success) {
@@ -69,6 +72,8 @@ export default function Shop() {
       }
     } catch (error) {
       toast.error('Failed to update wishlist');
+    } finally {
+      setWishlistPendingId(null);
     }
   };
   

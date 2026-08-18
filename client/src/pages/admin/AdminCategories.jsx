@@ -19,6 +19,7 @@ export default function AdminCategories() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Input states
   const [name, setName] = useState('');
@@ -76,11 +77,12 @@ export default function AdminCategories() {
     e.preventDefault();
 
     if (!name.trim()) {
-      toast.warning('Please fill name.');
+      toast.warning('Category name is required.');
       return;
     }
 
     try {
+      setSubmitting(true);
       const formData = new FormData();
       formData.append('name', name);
       formData.append('description', description);
@@ -106,6 +108,8 @@ export default function AdminCategories() {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error processing category request.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -291,9 +295,17 @@ export default function AdminCategories() {
 
               <button
                 type="submit"
-                className="w-full btn-gold text-xs uppercase tracking-widest py-3 mt-2"
+                disabled={submitting}
+                className="w-full btn-gold text-xs uppercase tracking-widest py-3 mt-2 flex items-center justify-center gap-2"
               >
-                {isEditing ? 'Save Changes' : 'Create Category'}
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>SAVING CATEGORY...</span>
+                  </>
+                ) : (
+                  <span>{isEditing ? 'Save Changes' : 'Create Category'}</span>
+                )}
               </button>
             </form>
           </div>

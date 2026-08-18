@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import Product from '../../models/Product.js';
+import Category from '../../models/Category.js';
+import Brand from '../../models/Brand.js';
 import Discount from '../../models/Discount.js';
 import Setting from '../../models/Setting.js';
 import Return from '../../models/Return.js';
@@ -68,6 +70,11 @@ export const getProducts = async (req, res) => {
       if (categoryIds.length > 0) {
         matchCriteria.push({ category: { $in: categoryIds } });
       }
+      // Also match products with active product-level discount
+      matchCriteria.push({
+        discountValue: { $gt: 0 },
+        discountType: { $in: ['percentage', 'fixed'] },
+      });
 
       if (matchCriteria.length > 0) {
         query.$or = matchCriteria;
@@ -194,6 +201,75 @@ export const getProductById = async (req, res) => {
   }
 };
 
+// Validate requested cart quantity against live stock & system maxCartQuantityPerProduct limit
+export const validateCartItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const requestedQty = Number(req.body.quantity) || 1;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: 'Invalid product ID.' });
+    }
+
+    if (requestedQty < 1) {
+      return res.status(400).json({ success: false, message: 'Quantity must be at least 1.' });
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found.' });
+    }
+
+    // Configurable maximum quantity per product
+    const setting = await Setting.findOne();
+    const envLimit = process.env.MAX_CART_QUANTITY_PER_PRODUCT ? Number(process.env.MAX_CART_QUANTITY_PER_PRODUCT) : null;
+    const configuredMax = envLimit && envLimit > 0 ? envLimit : (setting?.maxCartQuantityPerProduct || 5);
+
+    const availableStock = product.stock || 0;
+    const effectiveMax = Math.max(0, Math.min(availableStock, configuredMax));
+
+    if (availableStock === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This product is currently out of stock.',
+        code: 'OUT_OF_STOCK',
+        maxAllowed: 0,
+        stock: 0,
+      });
+    }
+
+    if (requestedQty > effectiveMax) {
+      const reasonMsg = requestedQty > availableStock
+        ? `Only ${availableStock} item${availableStock > 1 ? 's' : ''} left in stock.`
+        : `Maximum allowed quantity for this product is ${configuredMax}.`;
+
+      return res.status(400).json({
+        success: false,
+        message: reasonMsg,
+        code: 'MAX_LIMIT_REACHED',
+        maxAllowed: effectiveMax,
+        stock: availableStock,
+        configuredMax,
+      });
+    }
+
+    const decorated = await calculateProductDiscounts(product);
+
+    res.json({
+      success: true,
+      message: 'Quantity is valid.',
+      data: {
+        product: decorated,
+        quantity: requestedQty,
+        maxAllowed: effectiveMax,
+        configuredMax,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Get related products (same category, excluding current product)
 export const getRelatedProducts = async (req, res) => {
   try {
@@ -230,10 +306,6 @@ export const getDiscountedProducts = async (req, res) => {
       endDate: { $gte: now }
     });
 
-    if (activeDiscounts.length === 0) {
-      return res.json({ success: true, data: [] });
-    }
-
     // 2. Extract productIds, categoryIds, selectedProducts
     const productIds = [];
     const categoryIds = [];
@@ -247,9 +319,11 @@ export const getDiscountedProducts = async (req, res) => {
       }
     });
 
-    // 3. Find products
+    // 3. Find products matching campaigns or having direct product discounts
     const query = {
-      $or: []
+      $or: [
+        { discountValue: { $gt: 0 }, discountType: { $in: ['percentage', 'fixed'] } }
+      ]
     };
     if (productIds.length > 0) {
       query.$or.push({ _id: { $in: productIds } });
@@ -258,15 +332,11 @@ export const getDiscountedProducts = async (req, res) => {
       query.$or.push({ category: { $in: categoryIds } });
     }
 
-    if (query.$or.length === 0) {
-      return res.json({ success: true, data: [] });
-    }
-
     const products = await Product.find(query)
       .populate('category', 'name')
       .populate('brand', 'name');
 
-    // 4. Calculate prices with existing discount logic
+    // 4. Calculate prices with unified discount logic (highest benefit wins)
     let productsWithDiscounts = await calculateProductDiscounts(products);
     
     // Filter out items without active discount

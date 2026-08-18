@@ -72,6 +72,11 @@ const settingSchema = new mongoose.Schema(
       enum: ['highest', 'lowest', 'latest', 'priority'],
       default: 'priority',
     },
+    maxCartQuantityPerProduct: {
+      type: Number,
+      default: 5,
+      min: [1, 'Maximum cart quantity must be at least 1'],
+    },
   },
   { timestamps: true }
 );

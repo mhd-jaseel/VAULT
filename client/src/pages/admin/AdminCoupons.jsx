@@ -21,6 +21,7 @@ export default function AdminCoupons() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [couponCode, setCouponCode] = useState('');
   const [description, setDescription] = useState('');
@@ -189,6 +190,7 @@ export default function AdminCoupons() {
     };
 
     try {
+      setSaving(true);
       if (isEditing) {
         const res = await axios.put(`/admin/coupons/${currentId}`, payload);
         if (res.data.success) {
@@ -206,6 +208,8 @@ export default function AdminCoupons() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save coupon details');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -560,9 +564,17 @@ export default function AdminCoupons() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-gold py-2.5 px-8 font-mono text-xs uppercase tracking-widest"
+                  disabled={saving}
+                  className="btn-gold py-2.5 px-8 font-mono text-xs uppercase tracking-widest flex items-center gap-2"
                 >
-                  Save Coupon
+                  {saving ? (
+                    <>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>{isEditing ? 'SAVING...' : 'CREATING...'}</span>
+                    </>
+                  ) : (
+                    <span>{isEditing ? 'Save Coupon' : 'Create Coupon'}</span>
+                  )}
                 </button>
               </div>
             </form>

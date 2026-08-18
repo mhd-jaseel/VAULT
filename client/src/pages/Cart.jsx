@@ -66,6 +66,18 @@ export default function Cart() {
   const handlingCost = cartTotal > 0 ? (shippingInfo.handlingCharge || 0) : 0;
   const grandTotal = cartTotal + shippingCost + handlingCost;
 
+  const [updatingQtyId, setUpdatingQtyId] = useState(null);
+
+  const handleUpdateQuantity = async (productId, newQty) => {
+    if (updatingQtyId) return;
+    try {
+      setUpdatingQtyId(productId);
+      await updateQuantity(productId, newQty);
+    } finally {
+      setUpdatingQtyId(null);
+    }
+  };
+
   const handleRemoveItem = async (productId, itemName) => {
     const result = await PremiumSwal.fire({
       title: 'Remove Item?',
@@ -140,15 +152,19 @@ export default function Cart() {
                     <span className="text-[9px] font-mono tracking-wider text-text-secondary uppercase">QTY:</span>
                     <div className="flex items-center border border-border-light rounded-full bg-white px-2 py-0.5">
                       <button
-                        onClick={() => updateQuantity(item.product, item.quantity - 1)}
-                        className="px-2 py-0.5 hover:text-text-primary text-text-secondary transition-colors font-bold text-xs cursor-pointer"
+                        onClick={() => handleUpdateQuantity(item.product, item.quantity - 1)}
+                        disabled={updatingQtyId === item.product}
+                        className="px-2 py-0.5 hover:text-text-primary text-text-secondary transition-colors font-bold text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         -
                       </button>
-                      <span className="px-2 text-xs font-bold text-text-primary">{item.quantity}</span>
+                      <span className="px-2 text-xs font-bold text-text-primary">
+                        {updatingQtyId === item.product ? '...' : item.quantity}
+                      </span>
                       <button
-                        onClick={() => updateQuantity(item.product, item.quantity + 1)}
-                        className="px-2 py-0.5 hover:text-text-primary text-text-secondary transition-colors font-bold text-xs cursor-pointer"
+                        onClick={() => handleUpdateQuantity(item.product, item.quantity + 1)}
+                        disabled={updatingQtyId === item.product}
+                        className="px-2 py-0.5 hover:text-text-primary text-text-secondary transition-colors font-bold text-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         +
                       </button>

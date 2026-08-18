@@ -1,6 +1,10 @@
 import React, { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'sonner';
 
 export const CartContext = createContext();
+
+const DEFAULT_MAX_CART_QTY = 5;
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -9,7 +13,32 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     const storedCart = localStorage.getItem('vault_cart');
     if (storedCart) {
-      setCartItems(JSON.parse(storedCart));
+      try {
+        const parsed = JSON.parse(storedCart);
+        if (Array.isArray(parsed)) {
+          // Normalize to ensure no duplicate products exist in localStorage
+          const deduplicated = [];
+          const seen = new Set();
+          for (const item of parsed) {
+            const pid = String(item.product);
+            if (!seen.has(pid)) {
+              seen.add(pid);
+              deduplicated.push(item);
+            } else {
+              const existing = deduplicated.find((i) => String(i.product) === pid);
+              if (existing) {
+                existing.quantity = Math.min(
+                  existing.stock || DEFAULT_MAX_CART_QTY,
+                  existing.quantity + item.quantity
+                );
+              }
+            }
+          }
+          setCartItems(deduplicated);
+        }
+      } catch (err) {
+        console.error('Failed to parse cart storage', err);
+      }
     }
   }, []);
 
@@ -19,42 +48,117 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('vault_cart', JSON.stringify(items));
   };
 
-  const addToCart = (product, quantity = 1) => {
-    const existingItemIndex = cartItems.findIndex((item) => item.product === product._id);
-    const itemQuantity = Number(quantity);
+  /**
+   * Add to Cart with:
+   * 1. Backend live stock and MAX_CART_QUANTITY_PER_PRODUCT validation.
+   * 2. Duplicate prevention (reusing existing item entry).
+   * 3. Live price resolution (honoring active product/campaign discounts).
+   * 4. User-friendly limit notifications.
+   */
+  const addToCart = async (product, quantity = 1) => {
+    const productId = String(product._id || product.product);
+    const addQuantity = Math.max(1, Number(quantity) || 1);
 
-    if (existingItemIndex > -1) {
-      const updatedCart = [...cartItems];
-      const newQty = updatedCart[existingItemIndex].quantity + itemQuantity;
-      
-      // Stock protection checks can be reinforced during actual dispatch
-      updatedCart[existingItemIndex].quantity = newQty;
-      saveCart(updatedCart);
-    } else {
-      const newItem = {
-        product: product._id,
-        name: product.name,
-        price: product.price,
-        image: product.images && product.images.length > 0 ? product.images[0] : '',
-        quantity: itemQuantity,
-        stock: product.stock,
-      };
-      saveCart([...cartItems, newItem]);
+    const existingItemIndex = cartItems.findIndex((item) => String(item.product) === productId);
+    const currentQty = existingItemIndex > -1 ? cartItems[existingItemIndex].quantity : 0;
+    const targetQty = currentQty + addQuantity;
+
+    try {
+      // Validate with backend source of truth
+      const res = await axios.post(`/products/validate-cart/${productId}`, {
+        quantity: targetQty,
+      });
+
+      if (res.data.success) {
+        const validatedProduct = res.data.data.product;
+        const unitPrice = validatedProduct.isDiscounted ? validatedProduct.finalPrice : validatedProduct.price;
+
+        if (existingItemIndex > -1) {
+          const updatedCart = [...cartItems];
+          updatedCart[existingItemIndex] = {
+            ...updatedCart[existingItemIndex],
+            name: validatedProduct.name,
+            price: unitPrice,
+            quantity: targetQty,
+            stock: validatedProduct.stock,
+            image: validatedProduct.images?.[0] || updatedCart[existingItemIndex].image || '',
+          };
+          saveCart(updatedCart);
+        } else {
+          const newItem = {
+            product: validatedProduct._id,
+            name: validatedProduct.name,
+            price: unitPrice,
+            image: validatedProduct.images?.[0] || '',
+            quantity: targetQty,
+            stock: validatedProduct.stock,
+          };
+          saveCart([...cartItems, newItem]);
+        }
+        return { success: true, name: validatedProduct.name };
+      }
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Cannot add more of this item to your cart.';
+      const maxAllowed = err.response?.data?.maxAllowed;
+
+      if (maxAllowed !== undefined && maxAllowed > 0 && maxAllowed !== currentQty) {
+        // Adjust existing cart item to maximum allowed if partially permitted
+        if (existingItemIndex > -1) {
+          const updatedCart = [...cartItems];
+          updatedCart[existingItemIndex].quantity = maxAllowed;
+          saveCart(updatedCart);
+        }
+      }
+
+      toast.error(errMsg);
+      return { success: false, message: errMsg };
     }
   };
 
-  const updateQuantity = (productId, quantity) => {
-    const updatedCart = cartItems.map((item) => {
-      if (item.product === productId) {
-        return { ...item, quantity: Math.max(1, Number(quantity)) };
+  /**
+   * Update Quantity with backend limit validation:
+   * Protects against manual input / rapid click manipulation.
+   */
+  const updateQuantity = async (productId, newQuantity) => {
+    const prodIdStr = String(productId);
+    const targetQty = Number(newQuantity);
+
+    if (targetQty <= 0) {
+      removeFromCart(prodIdStr);
+      return;
+    }
+
+    try {
+      const res = await axios.post(`/products/validate-cart/${prodIdStr}`, {
+        quantity: targetQty,
+      });
+
+      if (res.data.success) {
+        const validatedProduct = res.data.data.product;
+        const unitPrice = validatedProduct.isDiscounted ? validatedProduct.finalPrice : validatedProduct.price;
+
+        const updatedCart = cartItems.map((item) => {
+          if (String(item.product) === prodIdStr) {
+            return {
+              ...item,
+              price: unitPrice,
+              quantity: targetQty,
+              stock: validatedProduct.stock,
+            };
+          }
+          return item;
+        });
+        saveCart(updatedCart);
       }
-      return item;
-    });
-    saveCart(updatedCart);
+    } catch (err) {
+      const errMsg = err.response?.data?.message || 'Maximum quantity reached for this product.';
+      toast.error(errMsg);
+    }
   };
 
   const removeFromCart = (productId) => {
-    const updatedCart = cartItems.filter((item) => item.product !== productId);
+    const prodIdStr = String(productId);
+    const updatedCart = cartItems.filter((item) => String(item.product) !== prodIdStr);
     saveCart(updatedCart);
   };
 

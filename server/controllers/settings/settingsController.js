@@ -43,6 +43,7 @@ export const updateSettings = async (req, res) => {
       heroProductPrice,
       showDiscountsOnHomepage,
       discountProductsDisplayOrder,
+      maxCartQuantityPerProduct,
     } = req.body;
 
     if (storeName !== undefined) settings.storeName = storeName;
@@ -53,6 +54,9 @@ export const updateSettings = async (req, res) => {
     if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Number(freeShippingMinAmount);
     if (handlingCharge !== undefined) settings.handlingCharge = Number(handlingCharge);
     if (adminNotificationEmail !== undefined) settings.adminNotificationEmail = adminNotificationEmail;
+    if (maxCartQuantityPerProduct !== undefined && Number(maxCartQuantityPerProduct) > 0) {
+      settings.maxCartQuantityPerProduct = Number(maxCartQuantityPerProduct);
+    }
     
     if (socialLinks !== undefined) {
       settings.socialLinks = typeof socialLinks === 'string' ? JSON.parse(socialLinks) : socialLinks;

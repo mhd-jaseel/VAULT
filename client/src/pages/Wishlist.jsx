@@ -42,7 +42,11 @@ export default function Wishlist() {
     }
   }, [user, authLoading]);
 
+  const [removingId, setRemovingId] = useState(null);
+
   const handleRemove = async (productId, productName) => {
+    if (removingId === productId) return;
+
     const result = await PremiumSwal.fire({
       title: 'Remove from Wishlist?',
       text: `Are you sure you want to remove "${productName}" from your wishlist?`,
@@ -55,12 +59,17 @@ export default function Wishlist() {
     if (!result.isConfirmed) return;
 
     try {
+      setRemovingId(productId);
       const res = await axios.delete(`/wishlist/${productId}`);
       if (res.data.success) {
         setWishlistItems((prev) => prev.filter((p) => p._id !== productId));
+        toast.success(`"${productName}" removed from wishlist.`);
       }
     } catch (error) {
       console.error('Error removing from wishlist:', error);
+      toast.error('Failed to remove from wishlist.');
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -140,10 +149,11 @@ export default function Wishlist() {
                 {/* Delete button */}
                 <button
                   onClick={() => handleRemove(prod._id, prod.name)}
-                  className="absolute top-3 right-3 bg-white/95 border border-border-light text-red-500 hover:text-red-600 p-2 rounded-full shadow-sm cursor-pointer transition-colors z-20"
+                  disabled={removingId === prod._id}
+                  className="absolute top-3 right-3 bg-white/95 border border-border-light text-red-500 hover:text-red-600 p-2 rounded-full shadow-sm cursor-pointer transition-colors z-20 disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Remove item"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={14} className={removingId === prod._id ? 'animate-pulse' : ''} />
                 </button>
                 {/* Brand & Rating Overlays */}
                 <span className="card-pill brand-pill">

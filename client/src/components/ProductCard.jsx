@@ -46,11 +46,13 @@ export default function ProductCard({
     }
   }
 
-  const handleCartClick = (e) => {
+  const [addingToCart, setAddingToCart] = useState(false);
+
+  const handleCartClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (authLoading) return;
+    if (authLoading || addingToCart) return;
 
     if (user && user.role === 'admin') {
       toast.info('Preview Mode — Shopping actions are disabled for admin sessions.');
@@ -68,8 +70,16 @@ export default function ProductCard({
       toast.warning('This product is currently out of stock.');
       return;
     }
-    addToCart(product, 1);
-    toast.success(`${product.name} added to cart.`);
+
+    try {
+      setAddingToCart(true);
+      const res = await addToCart(product, 1);
+      if (res && res.success) {
+        toast.success(`${res.name || product.name} added to cart.`);
+      }
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   const handleWishlistClick = (e) => {
@@ -193,12 +203,13 @@ export default function ProductCard({
               </button>
               <button
                 onClick={handleCartClick}
+                disabled={product.stock === 0 || addingToCart}
                 className={`p-2 rounded-full bg-white/90 backdrop-blur-md border border-neutral-200/40 text-neutral-800 hover:scale-110 active:scale-95 transition-all shadow-sm flex items-center justify-center cursor-pointer ${
-                  product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                  product.stock === 0 || addingToCart ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
-                title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+                title={product.stock === 0 ? "Out of Stock" : (addingToCart ? "Adding..." : "Add to Cart")}
               >
-                <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
+                <ShoppingCart size={13} className={addingToCart ? "animate-pulse text-amber-600" : "text-neutral-500 hover:text-neutral-800"} />
               </button>
             </div>
           )}
@@ -313,12 +324,13 @@ export default function ProductCard({
             {/* Cart Button */}
             <button
               onClick={handleCartClick}
+              disabled={product.stock === 0 || addingToCart}
               className={`w-7.5 h-7.5 rounded-full bg-white/85 backdrop-blur-md border border-neutral-200/50 text-neutral-800 transition-all active:scale-95 shadow-sm flex items-center justify-center cursor-pointer ${
-                product.stock === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                product.stock === 0 || addingToCart ? 'opacity-50 cursor-not-allowed' : ''
               }`}
-              title={product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+              title={product.stock === 0 ? "Out of Stock" : (addingToCart ? "Adding..." : "Add to Cart")}
             >
-              <ShoppingCart size={13} className="text-neutral-500 hover:text-neutral-800" />
+              <ShoppingCart size={13} className={addingToCart ? "animate-pulse text-amber-600" : "text-neutral-500 hover:text-neutral-800"} />
             </button>
           </div>
         </div>

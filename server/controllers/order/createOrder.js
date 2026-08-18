@@ -5,6 +5,7 @@ import Setting from '../../models/Setting.js';
 import Coupon from '../../models/Coupon.js';
 import CouponUsage from '../../models/CouponUsage.js';
 import { createNotificationHelper } from '../../services/notificationHelper.js';
+import { calculateProductDiscounts } from '../../services/discountService.js';
 
 // Create order
 export const createOrder = async (req, res) => {
@@ -21,11 +22,21 @@ export const createOrder = async (req, res) => {
     let totalAmount = 0;
     const orderItems = [];
 
-    // Verify stock and calculate total
+    // Verify stock, per-product cart limit, and calculate total
+    const envLimit = process.env.MAX_CART_QUANTITY_PER_PRODUCT ? Number(process.env.MAX_CART_QUANTITY_PER_PRODUCT) : null;
+    const configuredMaxQty = envLimit && envLimit > 0 ? envLimit : (setting.maxCartQuantityPerProduct || 5);
+
     for (const item of items) {
       const product = await Product.findById(item.product);
       if (!product) {
         return res.status(404).json({ success: false, message: `Product ${item.name} not found` });
+      }
+
+      if (item.quantity > configuredMaxQty) {
+        return res.status(400).json({
+          success: false,
+          message: `Maximum allowed quantity for ${product.name} is ${configuredMaxQty}.`,
+        });
       }
 
       if (product.stock < item.quantity) {
@@ -35,7 +46,11 @@ export const createOrder = async (req, res) => {
         });
       }
 
-      const itemTotal = product.price * item.quantity;
+      const decoratedProduct = await calculateProductDiscounts(product);
+      const effectiveUnitPrice = decoratedProduct.isDiscounted ? decoratedProduct.finalPrice : decoratedProduct.price;
+      const productDiscountAmt = decoratedProduct.isDiscounted ? (decoratedProduct.discountAmount || 0) : 0;
+
+      const itemTotal = effectiveUnitPrice * item.quantity;
       totalAmount += itemTotal;
 
       orderItems.push({
@@ -43,10 +58,10 @@ export const createOrder = async (req, res) => {
         name: product.name,
         image: product.images?.[0] || '',
         quantity: item.quantity,
-        price: product.price,
-        itemDiscount: 0,
+        price: effectiveUnitPrice,
+        itemDiscount: productDiscountAmt,
         allocatedCouponDiscount: 0,
-        unitPaidAmount: product.price,
+        unitPaidAmount: effectiveUnitPrice,
         linePaidAmount: itemTotal,
         status: 'ACTIVE',
       });

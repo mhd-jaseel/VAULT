@@ -84,7 +84,6 @@ export default function AdminSidebar({ isMobileOpen, onMobileClose }) {
       items: [
         { label: 'Shipping Settings', path: '/admin/shipping', icon: Truck },
         { label: 'About Page Management', path: '/admin/about', icon: FileText },
-        { label: 'Store Configuration', path: '/admin/settings', icon: Sliders },
         { label: 'Home Page Preview', path: '/', icon: Eye, external: true },
         { label: 'Shop Page Preview', path: '/shop?preview=true', icon: Eye, external: true },
         { label: 'About Page Preview', path: '/about', icon: Eye, external: true },

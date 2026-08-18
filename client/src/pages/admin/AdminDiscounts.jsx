@@ -21,6 +21,7 @@ export default function AdminDiscounts() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const [discountName, setDiscountName] = useState('');
   const [description, setDescription] = useState('');
@@ -238,6 +239,7 @@ export default function AdminDiscounts() {
     };
 
     try {
+      setSaving(true);
       if (isEditing) {
         const res = await axios.put(`/admin/discounts/${currentId}`, payload);
         if (res.data.success) {
@@ -255,6 +257,8 @@ export default function AdminDiscounts() {
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save discount details');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -707,9 +711,17 @@ export default function AdminDiscounts() {
                 </button>
                 <button
                   type="submit"
-                  className="btn-gold py-2.5 px-8 font-mono text-xs uppercase tracking-widest"
+                  disabled={saving}
+                  className="btn-gold py-2.5 px-8 font-mono text-xs uppercase tracking-widest flex items-center gap-2"
                 >
-                  Save Campaign
+                  {saving ? (
+                    <>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>{isEditing ? 'SAVING...' : 'CREATING...'}</span>
+                    </>
+                  ) : (
+                    <span>{isEditing ? 'Save Discount' : 'Create Discount'}</span>
+                  )}
                 </button>
               </div>
             </form>

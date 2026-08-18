@@ -69,6 +69,7 @@ export default function AdminProducts() {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   // Quick View Drawer state
   const [drawer, setDrawer] = useState({ isOpen: false, entityId: null });
@@ -89,6 +90,8 @@ export default function AdminProducts() {
   const [brand, setBrand] = useState('');
   const [stock, setStock] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
+  const [discountType, setDiscountType] = useState('percentage');
+  const [discountValue, setDiscountValue] = useState('');
   
   // Image handling
   const [existingImages, setExistingImages] = useState([]);
@@ -248,6 +251,8 @@ export default function AdminProducts() {
     setBrand(brands[0]?._id || '');
     setStock('');
     setIsFeatured(false);
+    setDiscountType('percentage');
+    setDiscountValue('');
     setExistingImages([]);
     setNewImageFiles([]);
     setNewImagePreviews([]);
@@ -264,6 +269,8 @@ export default function AdminProducts() {
     setBrand(prod.brand?._id || prod.brand || '');
     setStock(prod.stock !== undefined ? String(prod.stock) : '');
     setIsFeatured(prod.isFeatured || false);
+    setDiscountType(prod.discountType || 'percentage');
+    setDiscountValue(prod.discountValue ? String(prod.discountValue) : '');
     setExistingImages(prod.images || []);
     setNewImageFiles([]);
     setNewImagePreviews([]);
@@ -350,7 +357,24 @@ export default function AdminProducts() {
       return;
     }
 
+    const numPrice = Number(price);
+    const numDiscount = discountValue !== '' ? Number(discountValue) : 0;
+
+    if (numDiscount < 0) {
+      toast.error('Discount cannot be negative.');
+      return;
+    }
+    if (discountType === 'percentage' && numDiscount > 100) {
+      toast.error('Percentage discount cannot exceed 100%.');
+      return;
+    }
+    if (discountType === 'fixed' && numDiscount > numPrice) {
+      toast.error('Fixed discount cannot exceed product price.');
+      return;
+    }
+
     try {
+      setSubmitting(true);
       const formData = new FormData();
       formData.append('name', name.trim());
       formData.append('description', description.trim());
@@ -361,6 +385,8 @@ export default function AdminProducts() {
       formData.append('stockQty', String(stockNum));
       formData.append('countInStock', String(stockNum));
       formData.append('isFeatured', String(isFeatured));
+      formData.append('discountType', numDiscount > 0 ? discountType : '');
+      formData.append('discountValue', String(numDiscount));
       if (isEditing) {
         formData.append('keepImages', JSON.stringify(existingImages));
       }
@@ -384,6 +410,8 @@ export default function AdminProducts() {
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Error processing product.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -578,13 +606,40 @@ export default function AdminProducts() {
                         {prod.category?.name || 'Unassigned'}
                       </span>
                     </td>
-                    <td className="p-3.5 text-[#111111] font-bold text-sm">
-                      <span 
+                    <td className="p-3.5">
+                      <div 
                         onClick={() => openDrawer(prod._id)}
-                        className="cursor-pointer hover:text-[#d97706] hover:underline decoration-dashed transition-colors"
+                        className="cursor-pointer flex flex-col gap-0.5 group"
                       >
-                        ₹{prod.price.toLocaleString('en-IN')}
-                      </span>
+                        {prod.isDiscounted ? (
+                          <>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[#111111] font-bold text-sm font-mono group-hover:text-[#d97706] transition-colors">
+                                ₹{(prod.finalPrice ?? prod.price).toLocaleString('en-IN')}
+                              </span>
+                              <span className="text-[#9ca3af] font-mono text-[11px] line-through">
+                                ₹{(prod.originalPrice ?? prod.price).toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="bg-red-50 text-red-600 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border border-red-200/60 leading-none">
+                                {prod.discountType === 'percentage'
+                                  ? `${prod.discountValue}% OFF`
+                                  : `₹${prod.discountValue} OFF`}
+                              </span>
+                              {prod.discountAmount > 0 && (
+                                <span className="text-[10px] text-[#16a34a] font-medium font-sans">
+                                  Save ₹{Math.round(prod.discountAmount).toLocaleString('en-IN')}
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-[#111111] font-bold text-sm font-mono group-hover:text-[#d97706] group-hover:underline decoration-dashed transition-colors">
+                            ₹{prod.price.toLocaleString('en-IN')}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3.5">
                       <span 
@@ -816,6 +871,7 @@ export default function AdminProducts() {
                   </label>
                   <input
                     type="number"
+                    min="1"
                     placeholder="MRP price"
                     className="form-input text-xs"
                     value={price}
@@ -840,8 +896,64 @@ export default function AdminProducts() {
                   />
                 </div>
 
+                {/* Discount Configuration Section */}
+                <div className="col-span-2 p-3.5 bg-neutral-100/90 border border-border-light rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-primary">
+                      Product Discount (Optional)
+                    </span>
+                    {discountValue !== '' && Number(discountValue) > 0 && Number(price) > 0 && (
+                      <span className="text-[10px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Final Price: ₹
+                        {Math.max(
+                          0,
+                          Math.round(
+                            discountType === 'percentage'
+                              ? Number(price) - (Number(price) * Math.min(100, Number(discountValue))) / 100
+                              : Number(price) - Number(discountValue)
+                          )
+                        ).toLocaleString('en-IN')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-wider block mb-1">
+                        Discount Type
+                      </label>
+                      <select
+                        className="form-input text-xs cursor-pointer !py-2 bg-white text-text-primary border-border-light"
+                        value={discountType}
+                        onChange={(e) => setDiscountType(e.target.value)}
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount (₹)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-text-primary uppercase tracking-wider block mb-1">
+                        {discountType === 'percentage' ? 'Discount Percentage (%)' : 'Discount Amount (₹)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={discountType === 'percentage' ? '100' : price || undefined}
+                        placeholder={discountType === 'percentage' ? 'e.g. 15' : 'e.g. 500'}
+                        className="form-input text-xs bg-white text-text-primary border-border-light placeholder-neutral-400"
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-text-secondary font-mono leading-relaxed">
+                    * If a category or campaign discount also applies, the system automatically awards the customer the single highest benefit discount.
+                  </p>
+                </div>
+
                 {/* Featured checkbox */}
-                <div className="flex items-center gap-2 pt-5">
+                <div className="col-span-2 flex items-center gap-2 pt-1">
                   <input
                     type="checkbox"
                     id="featured_chk"
@@ -957,9 +1069,17 @@ export default function AdminProducts() {
 
               <button
                 type="submit"
-                className="w-full btn-gold text-xs uppercase tracking-widest py-3 mt-4"
+                disabled={submitting}
+                className="w-full btn-gold text-xs uppercase tracking-widest py-3 mt-4 flex items-center justify-center gap-2"
               >
-                {isEditing ? 'Save Product Details' : 'Create Product'}
+                {submitting ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>SAVING PRODUCT...</span>
+                  </>
+                ) : (
+                  <span>{isEditing ? 'Save Product Details' : 'Create Product'}</span>
+                )}
               </button>
             </form>
           </div>

@@ -2,7 +2,13 @@ import Discount from '../models/Discount.js';
 
 /**
  * Calculates active discounts for a product or list of products.
- * Prevents N+1 queries by fetching active discounts in a single pass.
+ * Evaluates:
+ * 1. Product-level discount (configured directly on Product)
+ * 2. Product-specific discount campaign (from Discount model)
+ * 3. Category-level discount campaign (from Discount model)
+ * 4. Selected-products discount campaign (from Discount model)
+ * 
+ * Strict Rule: Discounts NEVER stack. The customer receives only the SINGLE HIGHEST BENEFIT discount.
  * 
  * @param {Object|Array} products - Mongoose product documents or plain product objects.
  * @returns {Promise<Object|Array>} Plain objects with resolved discount pricing fields.
@@ -11,88 +17,131 @@ export const calculateProductDiscounts = async (products) => {
   if (!products) return products;
 
   const now = new Date();
-  // Fetch active discounts
+  // Fetch active discount campaigns
   const activeDiscounts = await Discount.find({
     status: 'active',
     startDate: { $lte: now },
-    endDate: { $gte: now }
+    endDate: { $gte: now },
   });
 
   const isArray = Array.isArray(products);
   const productList = isArray ? products : [products];
 
-  const decorated = productList.map(prod => {
+  const decorated = productList.map((prod) => {
     const p = prod.toObject ? prod.toObject() : prod;
+    const basePrice = Number(p.price) || 0;
     const prodIdStr = String(p._id);
     const catIdStr = p.category ? String(p.category._id || p.category) : '';
 
-    // Find matches
-    const matches = activeDiscounts.filter(d => {
+    // Collect all candidate discounts for this product
+    const candidateDiscounts = [];
+
+    // Candidate A: Product-level discount configured directly on Product
+    if (
+      p.discountType &&
+      ['percentage', 'fixed'].includes(p.discountType) &&
+      Number(p.discountValue) > 0
+    ) {
+      let amount = 0;
+      if (p.discountType === 'percentage') {
+        const pct = Math.min(100, Number(p.discountValue));
+        amount = (basePrice * pct) / 100;
+      } else {
+        amount = Math.min(basePrice, Number(p.discountValue));
+      }
+      candidateDiscounts.push({
+        source: 'product_level',
+        discountType: p.discountType,
+        discountValue: Number(p.discountValue),
+        discountAmount: Math.max(0, amount),
+        discountName: 'Product Discount',
+        discountEndDate: null,
+        showCountdown: false,
+        priority: 0,
+      });
+    }
+
+    // Candidate B: Discount campaigns from Discount collection (product, category, selectedProducts)
+    activeDiscounts.forEach((d) => {
+      let isMatch = false;
       if (d.applyType === 'product' && String(d.product) === prodIdStr) {
-        return true;
+        isMatch = true;
+      } else if (d.applyType === 'category' && catIdStr && String(d.category) === catIdStr) {
+        isMatch = true;
+      } else if (
+        d.applyType === 'selectedProducts' &&
+        Array.isArray(d.selectedProducts) &&
+        d.selectedProducts.some((id) => String(id) === prodIdStr)
+      ) {
+        isMatch = true;
       }
-      if (d.applyType === 'category' && catIdStr && String(d.category) === catIdStr) {
-        return true;
+
+      if (isMatch) {
+        let amount = 0;
+        if (d.discountType === 'percentage') {
+          const pct = Math.min(100, Number(d.discountValue));
+          amount = (basePrice * pct) / 100;
+        } else {
+          amount = Math.min(basePrice, Number(d.discountValue));
+        }
+        candidateDiscounts.push({
+          source: 'campaign',
+          discountType: d.discountType,
+          discountValue: Number(d.discountValue),
+          discountAmount: Math.max(0, amount),
+          discountName: d.discountName,
+          discountEndDate: d.endDate,
+          showCountdown: !!d.showCountdown,
+          priority: Number(d.priority) || 0,
+        });
       }
-      if (d.applyType === 'selectedProducts' && d.selectedProducts.some(id => String(id) === prodIdStr)) {
-        return true;
-      }
-      return false;
     });
 
-    if (matches.length === 0) {
+    // If no discount candidates exist, return base price
+    if (candidateDiscounts.length === 0) {
       return {
         ...p,
-        originalPrice: p.price,
+        originalPrice: basePrice,
         discountAmount: 0,
-        finalPrice: p.price,
+        finalPrice: basePrice,
         discountType: null,
         discountValue: 0,
         discountEndDate: null,
         isDiscounted: false,
         discountName: null,
-        showCountdown: false
+        showCountdown: false,
       };
     }
 
-    // Determine highest ranking match using priority and type score rules
-    const sortedMatches = matches.map(d => {
-      let typeScore = 1; // category
-      if (d.applyType === 'product') typeScore = 3;
-      else if (d.applyType === 'selectedProducts') typeScore = 2;
+    // Sort candidates: Highest discount amount wins.
+    // If amounts are tied, higher campaign priority wins.
+    candidateDiscounts.sort((a, b) => {
+      if (b.discountAmount !== a.discountAmount) {
+        return b.discountAmount - a.discountAmount;
+      }
+      return b.priority - a.priority;
+    });
 
-      // Higher priority and match-type rank wins
-      const rank = (Number(d.priority) || 0) * 10 + typeScore;
-      return { discount: d, rank };
-    }).sort((a, b) => b.rank - a.rank);
+    const bestDiscount = candidateDiscounts[0];
+    let finalDiscountAmount = bestDiscount.discountAmount;
 
-    const bestDiscount = sortedMatches[0].discount;
+    if (finalDiscountAmount < 0) finalDiscountAmount = 0;
+    if (finalDiscountAmount > basePrice) finalDiscountAmount = basePrice;
 
-    let discountAmount = 0;
-    if (bestDiscount.discountType === 'percentage') {
-      discountAmount = (p.price * bestDiscount.discountValue) / 100;
-    } else {
-      discountAmount = bestDiscount.discountValue;
-    }
-
-    // Keep discount amount within limits
-    if (discountAmount < 0) discountAmount = 0;
-    if (discountAmount > p.price) discountAmount = p.price;
-
-    const finalPrice = Math.round(p.price - discountAmount);
+    const finalPrice = Math.round(basePrice - finalDiscountAmount);
 
     return {
       ...p,
-      originalPrice: p.price,
-      discountAmount,
+      originalPrice: basePrice,
+      discountAmount: finalDiscountAmount,
       finalPrice,
       discountType: bestDiscount.discountType,
       discountValue: bestDiscount.discountValue,
-      discountEndDate: bestDiscount.endDate,
-      isDiscounted: discountAmount > 0,
+      discountEndDate: bestDiscount.discountEndDate,
+      isDiscounted: finalDiscountAmount > 0,
       discountName: bestDiscount.discountName,
-      showCountdown: !!bestDiscount.showCountdown,
-      priority: Number(bestDiscount.priority) || 0
+      showCountdown: bestDiscount.showCountdown,
+      priority: bestDiscount.priority,
     };
   });
 
