@@ -48,12 +48,21 @@ app.use((req, res, next) => {
 });
 
 // Allowed CORS origins list
-const allowedOrigins = [
+const defaultAllowedOrigins = [
+  'https://vaultco.online',
+  'https://www.vaultco.online',
   'https://vaultco.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
-  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map((url) => url.trim().replace(/\/+$/, '')) : []),
 ];
+
+const envOrigins = [process.env.FRONTEND_URL, process.env.CLIENT_URL, process.env.CORS_ORIGIN]
+  .filter(Boolean)
+  .flatMap((urls) => urls.split(','))
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envOrigins])];
 
 // Middlewares
 app.use(
@@ -68,6 +77,8 @@ app.use(
       return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   })
 );
 
