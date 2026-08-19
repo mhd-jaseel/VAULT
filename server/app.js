@@ -33,6 +33,9 @@ import { notFoundHandler, errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
 
+// Trust reverse proxy (e.g. Render, Vercel, AWS) for accurate client IP resolution in rate limiters
+app.set('trust proxy', 1);
+
 // Configure ESM paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
