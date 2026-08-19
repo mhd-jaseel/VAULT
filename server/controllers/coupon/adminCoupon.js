@@ -3,16 +3,54 @@ import CouponUsage from '../../models/CouponUsage.js';
 import Order from '../../models/Order.js';
 import Product from '../../models/Product.js';
 import { paginateAggregate } from '../../utils/paginate.js';
+import crypto from 'crypto';
+
+/**
+ * Generates a unique, readable, uppercase alphanumeric coupon code.
+ * Example formats: VAULT10, VAULT20, VAULT50, VAULTX7K9P, SAVE25X8Q
+ */
+export const generateUniqueCouponCode = async (prefix = 'VAULT') => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // exclude confusing chars like 0, O, 1, I
+  let attempts = 0;
+  while (attempts < 10) {
+    attempts++;
+    let randomPart = '';
+    const bytes = crypto.randomBytes(5);
+    for (let i = 0; i < 5; i++) {
+      randomPart += chars[bytes[i] % chars.length];
+    }
+    const candidate = `${prefix}${randomPart}`.toUpperCase();
+    const existing = await Coupon.findOne({ couponCode: candidate });
+    if (!existing) {
+      return candidate;
+    }
+  }
+  // Fallback timestamp-based code
+  return `${prefix}${Date.now().toString(36).toUpperCase().slice(-5)}`;
+};
+
+// Generate a new unique coupon code (for Admin UI)
+export const getGeneratedCouponCode = async (req, res) => {
+  try {
+    const prefix = (req.query.prefix || 'VAULT').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'VAULT';
+    const code = await generateUniqueCouponCode(prefix);
+    res.json({ success: true, code });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 // Create Coupon
 export const createCoupon = async (req, res) => {
   try {
-    const {
+    let {
       couponCode,
+      code,
       description,
       discountType,
       discountValue,
       minimumPurchase,
+      minOrderAmount,
       maximumDiscount,
       usageLimit,
       userLimit,
@@ -26,29 +64,36 @@ export const createCoupon = async (req, res) => {
       status
     } = req.body;
 
-    // Convert code to uppercase
-    const codeUpper = String(couponCode).toUpperCase().trim();
+    let finalCode = String(couponCode || code || '').toUpperCase().trim();
 
-    // Validations
-    const existing = await Coupon.findOne({ couponCode: codeUpper, isDeleted: false });
+    // Auto-generate if not provided
+    if (!finalCode) {
+      finalCode = await generateUniqueCouponCode('VAULT');
+    }
+
+    const typeLower = String(discountType || 'percentage').toLowerCase();
+    const discountNum = Number(discountValue) || 0;
+    const minSpend = minimumPurchase !== undefined ? Number(minimumPurchase) : (minOrderAmount !== undefined ? Number(minOrderAmount) : 0);
+    const maxDiscountNum = typeLower === 'percentage' && maximumDiscount ? Number(maximumDiscount) : undefined;
+    const uLimit = Number(usageLimit) || 0;
+    const userLim = Number(userLimit) || 1;
+
+    // Check existing code in DB
+    const existing = await Coupon.findOne({ couponCode: finalCode, isDeleted: false });
     if (existing) {
       return res.status(400).json({ success: false, message: 'Coupon code already exists' });
     }
 
-    if (Number(discountValue) < 0) {
-      return res.status(400).json({ success: false, message: 'Discount value cannot be negative' });
+    if (discountNum <= 0) {
+      return res.status(400).json({ success: false, message: 'Discount value must be greater than 0' });
     }
 
-    if (discountType === 'percentage' && Number(discountValue) > 100) {
+    if (typeLower === 'percentage' && discountNum > 100) {
       return res.status(400).json({ success: false, message: 'Percentage discount cannot exceed 100%' });
     }
 
-    if (Number(minimumPurchase) < 0) {
+    if (minSpend < 0) {
       return res.status(400).json({ success: false, message: 'Minimum purchase cannot be negative' });
-    }
-
-    if (discountType === 'percentage' && (!maximumDiscount || Number(maximumDiscount) <= 0)) {
-      return res.status(400).json({ success: false, message: 'Maximum discount amount is required for percentage coupons' });
     }
 
     const start = new Date(startDate);
@@ -57,23 +102,23 @@ export const createCoupon = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Expiry date must be greater than start date' });
     }
 
-    if (Number(usageLimit) < 0) {
+    if (uLimit < 0) {
       return res.status(400).json({ success: false, message: 'Usage limit cannot be negative' });
     }
 
-    if (Number(usageLimit) > 0 && Number(userLimit) > Number(usageLimit)) {
+    if (uLimit > 0 && userLim > uLimit) {
       return res.status(400).json({ success: false, message: 'Per-user limit cannot exceed total usage limit' });
     }
 
     const coupon = new Coupon({
-      couponCode: codeUpper,
+      couponCode: finalCode,
       description,
-      discountType,
-      discountValue: Number(discountValue),
-      minimumPurchase: Number(minimumPurchase) || 0,
-      maximumDiscount: discountType === 'percentage' ? Number(maximumDiscount) : undefined,
-      usageLimit: Number(usageLimit) || 0,
-      userLimit: Number(userLimit) || 1,
+      discountType: typeLower,
+      discountValue: discountNum,
+      minimumPurchase: minSpend,
+      maximumDiscount: maxDiscountNum,
+      usageLimit: uLimit,
+      userLimit: userLim,
       startDate: start,
       expiryDate: expiry,
       applicableCategories: applicableCategories || [],
@@ -87,6 +132,9 @@ export const createCoupon = async (req, res) => {
     const saved = await coupon.save();
     res.status(201).json({ success: true, data: saved });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Coupon code already exists' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 };

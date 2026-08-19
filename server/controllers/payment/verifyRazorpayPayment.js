@@ -134,15 +134,23 @@ export const verifyRazorpayPayment = async (req, res) => {
     if (order.coupon) {
       const coupon = await Coupon.findById(order.coupon);
       if (coupon) {
-        coupon.usedCount += 1;
-        await coupon.save();
-
-        await CouponUsage.create({
-          userId: req.user._id,
-          couponId: coupon._id,
-          orderId: order._id,
-          discountAmount: order.discountAmount,
-        });
+        const updateCondition = { _id: coupon._id };
+        if (coupon.usageLimit > 0) {
+          updateCondition.usedCount = { $lt: coupon.usageLimit };
+        }
+        const updatedCoupon = await Coupon.findOneAndUpdate(
+          updateCondition,
+          { $inc: { usedCount: 1 } },
+          { new: true }
+        );
+        if (updatedCoupon) {
+          await CouponUsage.create({
+            userId: req.user._id,
+            couponId: coupon._id,
+            orderId: order._id,
+            discountAmount: order.discountAmount,
+          });
+        }
       }
     }
 

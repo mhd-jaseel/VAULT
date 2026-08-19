@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { PremiumSwal } from '../../utils/swalHelper';
-import { Plus, Edit2, Trash2, X, Tag, Check, Calendar, Percent, IndianRupee } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Tag, Check, Calendar, Percent, IndianRupee, RefreshCw, Sparkles } from 'lucide-react';
 import Pagination from '../../components/Pagination';
 
 export default function AdminCoupons() {
@@ -22,6 +22,7 @@ export default function AdminCoupons() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [generatingCode, setGeneratingCode] = useState(false);
 
   const [couponCode, setCouponCode] = useState('');
   const [description, setDescription] = useState('');
@@ -76,19 +77,44 @@ export default function AdminCoupons() {
     fetchDependencies();
   }, []);
 
-  const handleOpenAdd = () => {
+  const generateCode = async (prefix = 'VAULT') => {
+    setGeneratingCode(true);
+    try {
+      const res = await axios.get(`/admin/coupons/generate-code?prefix=${prefix}`);
+      if (res.data.success && res.data.code) {
+        setCouponCode(res.data.code);
+        return res.data.code;
+      }
+    } catch {
+      // Client-side fallback unique generator if network error
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let rand = '';
+      for (let i = 0; i < 5; i++) rand += chars.charAt(Math.floor(Math.random() * chars.length));
+      const code = `${prefix}${rand}`.toUpperCase();
+      setCouponCode(code);
+      return code;
+    } finally {
+      setGeneratingCode(false);
+    }
+  };
+
+  const handleOpenAdd = async () => {
     setIsEditing(false);
     setCurrentId(null);
-    setCouponCode('');
     setDescription('');
     setDiscountType('percentage');
-    setDiscountValue(0);
+    setDiscountValue(10);
     setMinimumPurchase(0);
     setMaximumDiscount('');
     setUsageLimit(0);
     setUserLimit(1);
-    setStartDate('');
-    setExpiryDate('');
+    
+    // Set default dates (today to +30 days)
+    const today = new Date();
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    setStartDate(today.toISOString().split('T')[0]);
+    setExpiryDate(future.toISOString().split('T')[0]);
+    
     setSelectedCategories([]);
     setSelectedProducts([]);
     setExcludedProducts([]);
@@ -96,6 +122,9 @@ export default function AdminCoupons() {
     setFreeShipping(false);
     setStatus('active');
     setIsOpen(true);
+
+    // Automatically generate clean unique code
+    await generateCode('VAULT');
   };
 
   const handleOpenEdit = (cp) => {
@@ -355,22 +384,52 @@ export default function AdminCoupons() {
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Coupon Code *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. VAULT500"
-                    className="form-input text-xs bg-black/30 border-dark-border text-white"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[9px] font-mono text-zinc-400 uppercase block">Coupon Code *</label>
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => generateCode('VAULT')}
+                        disabled={generatingCode}
+                        className="text-[10px] font-mono text-gold hover:text-yellow-300 flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Generate a new unique coupon code"
+                      >
+                        <RefreshCw size={11} className={generatingCode ? 'animate-spin' : ''} />
+                        <span>{generatingCode ? 'Generating...' : 'Regenerate'}</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      disabled={isEditing}
+                      placeholder="e.g. VAULT500"
+                      className={`form-input text-xs bg-black/30 border-dark-border text-white font-mono tracking-wider uppercase font-semibold pr-9 ${
+                        isEditing ? 'opacity-60 cursor-not-allowed' : ''
+                      }`}
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                    />
+                    {!isEditing && (
+                      <button
+                        type="button"
+                        onClick={() => generateCode('VAULT')}
+                        disabled={generatingCode}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-gold transition-colors cursor-pointer"
+                        title="Regenerate unique code"
+                      >
+                        <Sparkles size={14} className={generatingCode ? 'animate-pulse text-gold' : ''} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="text-[9px] font-mono text-zinc-400 uppercase block mb-1">Description *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Get ₹500 off on belts"
+                    placeholder="e.g. Get 10% off on all leather goods"
                     className="form-input text-xs bg-black/30 border-dark-border text-white"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}

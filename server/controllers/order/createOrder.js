@@ -77,31 +77,34 @@ export const createOrder = async (req, res) => {
       const coupon = await Coupon.findOne({ couponCode: codeUpper, isDeleted: false });
 
       if (!coupon) {
-        return res.status(404).json({ success: false, message: 'Invalid Coupon' });
+        return res.status(404).json({ success: false, message: 'Coupon code not found.' });
       }
 
       if (coupon.status === 'inactive') {
-        return res.status(400).json({ success: false, message: 'Coupon Disabled' });
+        return res.status(400).json({ success: false, message: 'This coupon is currently inactive.' });
       }
 
       const now = new Date();
       if (now < coupon.startDate) {
-        return res.status(400).json({ success: false, message: 'Coupon Not Started' });
+        return res.status(400).json({ success: false, message: 'This coupon offer has not started yet.' });
       }
       if (now > coupon.expiryDate) {
-        return res.status(400).json({ success: false, message: 'Coupon Expired' });
+        return res.status(400).json({ success: false, message: 'This coupon has expired.' });
       }
 
       if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
-        return res.status(400).json({ success: false, message: 'Coupon Usage Limit Reached' });
+        return res.status(400).json({ success: false, message: 'This coupon has reached its maximum total usage limit.' });
       }
 
       const userUsageCount = await CouponUsage.countDocuments({
         userId: req.user._id,
         couponId: coupon._id
       });
-      if (userUsageCount >= coupon.userLimit) {
-        return res.status(400).json({ success: false, message: 'Coupon Already Used' });
+      if (userUsageCount >= (coupon.userLimit || 1)) {
+        const msg = (coupon.userLimit || 1) === 1
+          ? 'Coupon has already been used.'
+          : 'You have reached the maximum allowed redemptions for this coupon.';
+        return res.status(400).json({ success: false, message: msg });
       }
 
       if (coupon.firstOrderOnly) {
@@ -110,13 +113,24 @@ export const createOrder = async (req, res) => {
           status: { $ne: 'cancelled' }
         });
         if (ordersCount > 0) {
-          return res.status(400).json({ success: false, message: 'Coupon Applicable to First Order Only' });
+          return res.status(400).json({ success: false, message: 'This coupon is valid only for your first order.' });
         }
+      }
+
+      // Business Rule: Reject coupon if any item in cart already has product/campaign discount
+      const hasDiscountedItem = orderItems.some(item => Number(item.itemDiscount || 0) > 0);
+      if (hasDiscountedItem) {
+        return res.status(400).json({
+          success: false,
+          message: 'Coupons cannot be applied to products that are already discounted.'
+        });
       }
 
       // Check applicable categories or products eligibility
       const productIdsInCart = orderItems.map(item => item.product);
-      const cartProductDetails = await Product.find({ _id: { $in: productIdsInCart } });
+      const cartProductDetails = await Product.find({ _id: { $in: productIdsInCart } })
+        .populate('category', 'name')
+        .populate('brand', 'name');
 
       let eligibleSubtotal = 0;
 
@@ -126,14 +140,15 @@ export const createOrder = async (req, res) => {
 
         if (!details) continue;
 
-        const isExcluded = coupon.excludedProducts.some(p => String(p) === prodIdStr);
+        const isExcluded = Array.isArray(coupon.excludedProducts) && coupon.excludedProducts.some(p => String(p) === prodIdStr);
         if (isExcluded) continue;
 
-        const hasProductRestriction = coupon.applicableProducts.length > 0;
-        const isApplicableProduct = coupon.applicableProducts.some(p => String(p) === prodIdStr);
+        const hasProductRestriction = Array.isArray(coupon.applicableProducts) && coupon.applicableProducts.length > 0;
+        const isApplicableProduct = hasProductRestriction && coupon.applicableProducts.some(p => String(p) === prodIdStr);
 
-        const hasCategoryRestriction = coupon.applicableCategories.length > 0;
-        const isApplicableCategory = details.category && coupon.applicableCategories.some(c => String(c) === String(details.category));
+        const hasCategoryRestriction = Array.isArray(coupon.applicableCategories) && coupon.applicableCategories.length > 0;
+        const itemCategoryId = details.category?._id ? String(details.category._id) : (details.category ? String(details.category) : '');
+        const isApplicableCategory = hasCategoryRestriction && itemCategoryId && coupon.applicableCategories.some(c => String(c) === itemCategoryId);
 
         const isEligible = 
           (!hasProductRestriction && !hasCategoryRestriction) ||
@@ -147,13 +162,13 @@ export const createOrder = async (req, res) => {
       }
 
       if (eligibleSubtotal === 0) {
-        return res.status(400).json({ success: false, message: 'Coupon Not Applicable' });
+        return res.status(400).json({ success: false, message: 'This coupon is not applicable to any items in your cart.' });
       }
 
-      if (eligibleSubtotal < coupon.minimumPurchase) {
+      if (eligibleSubtotal < (coupon.minimumPurchase || 0)) {
         return res.status(400).json({ 
           success: false, 
-          message: `Minimum Purchase Required: ₹${coupon.minimumPurchase}` 
+          message: `Minimum order amount of ₹${coupon.minimumPurchase} required to apply this coupon.` 
         });
       }
 
@@ -247,18 +262,28 @@ export const createOrder = async (req, res) => {
       console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
     }
 
-    // Log Coupon Usage
+    // Log Coupon Usage with atomic usageLimit guard
     if (couponObj) {
-      couponObj.usedCount += 1;
-      await couponObj.save();
+      const updateCondition = { _id: couponObj._id };
+      if (couponObj.usageLimit > 0) {
+        updateCondition.usedCount = { $lt: couponObj.usageLimit };
+      }
+      
+      const updatedCoupon = await Coupon.findOneAndUpdate(
+        updateCondition,
+        { $inc: { usedCount: 1 } },
+        { new: true }
+      );
 
-      const usage = new CouponUsage({
-        userId: req.user._id,
-        couponId: couponObj._id,
-        orderId: createdOrder._id,
-        discountAmount
-      });
-      await usage.save();
+      if (updatedCoupon) {
+        const usage = new CouponUsage({
+          userId: req.user._id,
+          couponId: couponObj._id,
+          orderId: createdOrder._id,
+          discountAmount
+        });
+        await usage.save();
+      }
     }
 
     res.status(201).json({ success: true, data: createdOrder });
