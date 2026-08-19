@@ -81,7 +81,7 @@ export default function Checkout() {
         if (res.data.success) {
           setUserWallet(res.data.data);
         }
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }, [user]);
 
@@ -279,21 +279,21 @@ export default function Checkout() {
     const addressData =
       addressMode === 'saved' && hasSavedAddress
         ? {
-            name: user.name,
-            phone: user.phone || '',
-            street: user.address.street,
-            city: user.address.city,
-            state: user.address.state,
-            zip: user.address.zip,
-          }
+          name: user.name,
+          phone: user.phone || '',
+          street: user.address.street,
+          city: user.address.city,
+          state: user.address.state,
+          zip: user.address.zip,
+        }
         : {
-            name: data.name,
-            phone: data.phone,
-            street: data.street,
-            city: data.city,
-            state: data.state,
-            zip: data.zip,
-          };
+          name: data.name,
+          phone: data.phone,
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zip: data.zip,
+        };
 
     setSubmitting(true);
 
@@ -573,6 +573,7 @@ export default function Checkout() {
                   <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Phone Number</label>
                   <input
                     type="tel"
+                    placeholder='Enter phone number'
                     maxLength={14}
                     className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
                     {...register('phone', {
@@ -654,9 +655,8 @@ export default function Checkout() {
             {userWallet && userWallet.balance > 0 && (
               <div
                 onClick={() => setUseWallet(!useWallet)}
-                className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all ${
-                  useWallet ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light hover:border-neutral-300'
-                }`}
+                className={`p-4 rounded-xl border flex flex-col gap-2 cursor-pointer transition-all ${useWallet ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light hover:border-neutral-300'
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <div className={`w-4 h-4 mt-0.5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${useWallet ? 'border-text-primary' : 'border-neutral-300'}`}>
@@ -684,13 +684,12 @@ export default function Checkout() {
             )}
 
             <div
-              className={`p-4 rounded-xl border flex flex-col gap-2 transition-all ${
-                (!useWallet || (userWallet && userWallet.balance < grandTotal)) ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light opacity-70'
-              }`}
+              className={`p-4 rounded-xl border flex flex-col gap-2 transition-all ${(!useWallet || (userWallet && userWallet.balance < grandTotal)) ? 'bg-neutral-50 border-neutral-300' : 'bg-white border-border-light opacity-70'
+                }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`w-4 h-4 mt-0.5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${(!useWallet || (userWallet && userWallet.balance < grandTotal)) ? 'border-text-primary' : 'border-neutral-300'}`}>
-                   {(!useWallet || (userWallet && userWallet.balance < grandTotal)) && <div className="w-2.5 h-2.5 rounded-full bg-text-primary" />}
+                  {(!useWallet || (userWallet && userWallet.balance < grandTotal)) && <div className="w-2.5 h-2.5 rounded-full bg-text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-sans font-bold text-xs uppercase tracking-wide text-text-primary flex items-center gap-2">
@@ -744,9 +743,8 @@ export default function Checkout() {
                 return (
                   <div
                     key={prodIdStr}
-                    className={`pt-3 first:pt-0 flex gap-3 items-start transition-opacity ${
-                      isLoading ? 'opacity-60' : 'opacity-100'
-                    }`}
+                    className={`pt-3 first:pt-0 flex gap-3 items-start transition-opacity ${isLoading ? 'opacity-60' : 'opacity-100'
+                      }`}
                   >
                     <div className="w-14 h-14 rounded-lg bg-neutral-50 border border-border-light overflow-hidden shrink-0 flex items-center justify-center p-1 relative">
                       {imageUrl ? (

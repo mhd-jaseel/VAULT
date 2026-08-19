@@ -12,7 +12,8 @@ import {
 
 // Update order status (Admin only — strict forward transition)
 export const updateOrderStatus = async (req, res) => {
-  const { status, note } = req.body;
+  const status = typeof req.body.status === 'string' ? req.body.status.toLowerCase().trim() : req.body.status;
+  const { note } = req.body;
 
   try {
     const order = await Order.findById(req.params.id);

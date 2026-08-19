@@ -59,6 +59,8 @@ export const validateUpdateOrderStatus = [
   body('status')
     .trim()
     .notEmpty()
-    .isIn(['PLACED', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'RETURNED'])
+    .withMessage('Status is required.')
+    .customSanitizer((val) => (typeof val === 'string' ? val.toLowerCase().trim() : val))
+    .isIn(['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'])
     .withMessage('Invalid order status.'),
 ];
