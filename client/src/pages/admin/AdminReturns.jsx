@@ -119,6 +119,10 @@ export default function AdminReturns() {
       case 'APPROVED':
       case 'REPLACEMENT_APPROVED':
         return 'bg-[#eff6ff] text-[#2563eb] border-[#bfdbfe] font-bold';
+      case 'ITEM_SHIPPED':
+        return 'bg-[#fefce8] text-[#ca8a04] border-[#fef08a] font-bold';
+      case 'PRODUCT_RECEIVED':
+        return 'bg-[#ecfdf5] text-[#059669] border-[#a7f3d0] font-bold';
       case 'REPLACEMENT_SHIPPED':
         return 'bg-[#e0e7ff] text-[#4f46e5] border-[#c7d2fe] font-bold';
       case 'WALLET_CREDITED':
@@ -174,6 +178,8 @@ export default function AdminReturns() {
             { label: 'ALL', value: '' },
             { label: 'REQUESTED', value: 'REQUESTED' },
             { label: 'APPROVED', value: 'APPROVED' },
+            { label: 'ITEM SHIPPED', value: 'ITEM_SHIPPED' },
+            { label: 'RECEIVED', value: 'PRODUCT_RECEIVED' },
             { label: 'REP APPROVED', value: 'REPLACEMENT_APPROVED' },
             { label: 'REP SHIPPED', value: 'REPLACEMENT_SHIPPED' },
             { label: 'WALLET CREDITED', value: 'WALLET_CREDITED' },
@@ -425,9 +431,21 @@ export default function AdminReturns() {
             <form onSubmit={handleStatusSubmit} className="space-y-4 text-xs font-mono">
               <div>
                 <label className="text-[10px] text-[#6b7280] uppercase font-bold block mb-1">Target Status</label>
-                <div className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs font-bold text-[#111111] uppercase">
-                  {targetStatus}
-                </div>
+                <select
+                  className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs font-bold text-[#111111] uppercase focus:bg-white focus:outline-none focus:border-[#111111]"
+                  value={targetStatus}
+                  onChange={(e) => setTargetStatus(e.target.value)}
+                  required
+                >
+                  <option value="">Select Status</option>
+                  <option value="APPROVED">APPROVED (Approve Return &amp; Show Return Address)</option>
+                  <option value="PRODUCT_RECEIVED">PRODUCT_RECEIVED (Product Arrived At Warehouse)</option>
+                  <option value="WALLET_CREDITED">WALLET_CREDITED (Process Wallet Refund)</option>
+                  <option value="REPLACEMENT_APPROVED">REPLACEMENT_APPROVED (Confirm Replacement Dispatch)</option>
+                  <option value="REPLACEMENT_SHIPPED">REPLACEMENT_SHIPPED (Replacement Out For Delivery)</option>
+                  <option value="COMPLETED">COMPLETED (Close Request)</option>
+                  <option value="REJECTED">REJECTED (Reject Return)</option>
+                </select>
               </div>
 
               {targetStatus === 'REJECTED' && (

@@ -59,6 +59,8 @@ export default function ReturnDetailsView({
     switch (status) {
       case 'REQUESTED': return 'neutral';
       case 'APPROVED': return 'info';
+      case 'ITEM_SHIPPED': return 'warning';
+      case 'PRODUCT_RECEIVED': return 'info';
       case 'REPLACEMENT_APPROVED': return 'info';
       case 'REPLACEMENT_SHIPPED': return 'highlight';
       case 'WALLET_CREDITED': return 'highlight';
@@ -94,6 +96,32 @@ export default function ReturnDetailsView({
           value={new Date(ret.createdAt).toLocaleDateString('en-IN')} 
         />
       </DrawerSection>
+
+      {/* ── Customer Return Shipment (if shipped by customer) ── */}
+      {ret.customerShipment && ret.customerShipment.shippedAt && (
+        <DrawerSection title="Customer Return Shipment">
+          <DrawerRow 
+            label="Courier" 
+            value={ret.customerShipment.courierName || 'Standard Courier'} 
+          />
+          {ret.customerShipment.trackingNumber && (
+            <DrawerRow 
+              label="Tracking Number" 
+              value={ret.customerShipment.trackingNumber} 
+            />
+          )}
+          <DrawerRow 
+            label="Shipped On" 
+            value={new Date(ret.customerShipment.shippedAt).toLocaleString('en-IN')} 
+          />
+          {ret.customerShipment.notes && (
+            <DrawerRow 
+              label="Customer Note" 
+              value={ret.customerShipment.notes} 
+            />
+          )}
+        </DrawerSection>
+      )}
 
       {/* ── Customer & Order ── */}
       <DrawerSection title="Customer & Order">
@@ -167,32 +195,50 @@ export default function ReturnDetailsView({
             >
               {ret.returnType === 'REPLACEMENT' ? 'Reject & Return Original' : 'Reject Request'}
             </button>
-            {ret.returnType === 'REPLACEMENT' ? (
-              <>
-                <button
-                  onClick={() => onActionStatus(ret, 'WALLET_CREDITED')}
-                  className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
-                >
-                  Credit ₹{ret.orderItem.totalOriginalPaid.toLocaleString('en-IN')} to Wallet
-                </button>
-                <button
-                  onClick={() => onActionStatus(ret, 'REPLACEMENT_APPROVED')}
-                  disabled={(ret.orderItem?.product?.stock ?? 0) < (ret.orderItem?.quantity || 1)}
-                  className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  title={(ret.orderItem?.product?.stock ?? 0) < (ret.orderItem?.quantity || 1) ? 'Out of stock' : ''}
-                >
-                  Confirm Replacement
-                </button>
-              </>
-            ) : (
+            <button
+              onClick={() => onActionStatus(ret, 'APPROVED')}
+              className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
+            >
+              Approve Return
+            </button>
+          </>
+        )}
+
+        {(ret.status === 'APPROVED' || ret.status === 'ITEM_SHIPPED') && (
+          <button
+            onClick={() => onActionStatus(ret, 'PRODUCT_RECEIVED')}
+            className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
+          >
+            Mark Product Received
+          </button>
+        )}
+
+        {ret.status === 'PRODUCT_RECEIVED' && (
+          ret.returnType === 'REPLACEMENT' ? (
+            <>
               <button
                 onClick={() => onActionStatus(ret, 'WALLET_CREDITED')}
-                className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
+                className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
               >
-                Approve & Credit
+                Fallback: Credit ₹{ret.orderItem.totalOriginalPaid.toLocaleString('en-IN')} to Wallet
               </button>
-            )}
-          </>
+              <button
+                onClick={() => onActionStatus(ret, 'REPLACEMENT_APPROVED')}
+                disabled={(ret.orderItem?.product?.stock ?? 0) < (ret.orderItem?.quantity || 1)}
+                className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title={(ret.orderItem?.product?.stock ?? 0) < (ret.orderItem?.quantity || 1) ? 'Out of stock' : ''}
+              >
+                Confirm Replacement Dispatch
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => onActionStatus(ret, 'WALLET_CREDITED')}
+              className="px-3.5 py-2 bg-[#064e3b] hover:bg-[#065f46] text-white rounded-xl text-[10px] font-bold uppercase transition-all cursor-pointer"
+            >
+              Process Wallet Refund (₹{ret.orderItem.totalOriginalPaid.toLocaleString('en-IN')})
+            </button>
+          )
         )}
 
         {ret.status === 'REPLACEMENT_APPROVED' && (

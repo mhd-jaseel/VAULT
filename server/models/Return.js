@@ -78,12 +78,33 @@ const returnSchema = new mongoose.Schema(
       ref: 'WalletTransaction',
     },
 
+    // ── Customer Return Shipment Details ──────────────────────────────────
+    customerShipment: {
+      courierName: {
+        type: String,
+        trim: true,
+      },
+      trackingNumber: {
+        type: String,
+        trim: true,
+      },
+      shippedAt: {
+        type: Date,
+      },
+      notes: {
+        type: String,
+        trim: true,
+      },
+    },
+
     // ── Primary Return / Cancellation Status ──────────────────────────────────────────────
     status: {
       type: String,
       enum: [
         'REQUESTED',
         'APPROVED',
+        'ITEM_SHIPPED',
+        'PRODUCT_RECEIVED',
         'REPLACEMENT_APPROVED',
         'REPLACEMENT_SHIPPED',
         'REJECTED',

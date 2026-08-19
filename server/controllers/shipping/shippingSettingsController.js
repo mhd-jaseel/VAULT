@@ -43,6 +43,14 @@ export const getAdminShippingSettings = async (req, res) => {
         shippingCharges: Number(settings.shippingCharges) || 0,
         freeShippingMinAmount: Number(settings.freeShippingMinAmount) || 0,
         handlingCharge: Number(settings.handlingCharge) || 0,
+        returnAddress: settings.returnAddress || {
+          street: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
+          city: 'Bandra Kurla Complex, Mumbai',
+          state: 'Maharashtra',
+          zip: '400051',
+          phone: '+91 98765 43210',
+          instructions: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
+        },
         campaigns,
       },
     });
@@ -51,10 +59,10 @@ export const getAdminShippingSettings = async (req, res) => {
   }
 };
 
-// PUT /api/shipping-settings/admin (Admin only: update core shipping & handling settings)
+// PUT /api/shipping-settings/admin (Admin only: update core shipping & handling settings & return address)
 export const updateAdminShippingSettings = async (req, res) => {
   try {
-    const { shippingCharges, freeShippingMinAmount, handlingCharge } = req.body;
+    const { shippingCharges, freeShippingMinAmount, handlingCharge, returnAddress } = req.body;
 
     if (shippingCharges !== undefined && (isNaN(shippingCharges) || Number(shippingCharges) < 0)) {
       return res.status(400).json({ success: false, message: 'Shipping charge must be a non-negative number.' });
@@ -74,6 +82,12 @@ export const updateAdminShippingSettings = async (req, res) => {
     if (shippingCharges !== undefined) settings.shippingCharges = Number(shippingCharges);
     if (freeShippingMinAmount !== undefined) settings.freeShippingMinAmount = Number(freeShippingMinAmount);
     if (handlingCharge !== undefined) settings.handlingCharge = Number(handlingCharge);
+    if (returnAddress && typeof returnAddress === 'object') {
+      settings.returnAddress = {
+        ...settings.returnAddress?.toObject?.() || {},
+        ...returnAddress,
+      };
+    }
 
     await settings.save();
 
@@ -84,6 +98,7 @@ export const updateAdminShippingSettings = async (req, res) => {
         shippingCharges: settings.shippingCharges,
         freeShippingMinAmount: settings.freeShippingMinAmount,
         handlingCharge: settings.handlingCharge,
+        returnAddress: settings.returnAddress,
       },
     });
   } catch (error) {

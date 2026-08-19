@@ -77,6 +77,32 @@ const settingSchema = new mongoose.Schema(
       default: 5,
       min: [1, 'Maximum cart quantity must be at least 1'],
     },
+    returnAddress: {
+      street: {
+        type: String,
+        default: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
+      },
+      city: {
+        type: String,
+        default: 'Bandra Kurla Complex, Mumbai',
+      },
+      state: {
+        type: String,
+        default: 'Maharashtra',
+      },
+      zip: {
+        type: String,
+        default: '400051',
+      },
+      phone: {
+        type: String,
+        default: '+91 98765 43210',
+      },
+      instructions: {
+        type: String,
+        default: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
+      },
+    },
   },
   { timestamps: true }
 );

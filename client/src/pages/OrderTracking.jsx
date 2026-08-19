@@ -290,7 +290,9 @@ export default function OrderTracking() {
 
                   <p className="text-[10px] text-neutral-600 font-sans">
                     {ret.status === 'REQUESTED' && 'Request submitted. Awaiting admin review.'}
-                    {ret.status === 'APPROVED' && 'Request approved.'}
+                    {ret.status === 'APPROVED' && 'Return request approved. Please view return details to ship the product.'}
+                    {ret.status === 'ITEM_SHIPPED' && 'You have marked the item as shipped. Waiting for product arrival at warehouse.'}
+                    {ret.status === 'PRODUCT_RECEIVED' && 'Product received at warehouse. Processing refund / replacement.'}
                     {ret.status === 'REPLACEMENT_APPROVED' && 'Replacement approved. Preparing for dispatch.'}
                     {ret.status === 'REPLACEMENT_SHIPPED' && 'Replacement shipped.'}
                     {ret.status === 'WALLET_CREDITED' && (ret.returnType === 'REPLACEMENT' 

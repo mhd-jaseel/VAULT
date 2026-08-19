@@ -22,6 +22,12 @@ export default function ReturnDetails() {
   const [ret, setRet] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Customer Return Shipping Form state
+  const [showShipForm, setShowShipForm] = useState(false);
+  const [courierName, setCourierName] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [shipNote, setShipNote] = useState('');
+  const [submittingShip, setSubmittingShip] = useState(false);
 
   const fetchReturn = async () => {
     try {
@@ -39,6 +45,31 @@ export default function ReturnDetails() {
   useEffect(() => {
     fetchReturn();
   }, [id]);
+
+  const handleConfirmShipped = async (e) => {
+    e.preventDefault();
+    if (!courierName.trim()) {
+      toast.warning('Please enter the courier or shipping carrier name.');
+      return;
+    }
+    setSubmittingShip(true);
+    try {
+      const res = await axios.patch(`/returns/${id}/ship`, {
+        courierName: courierName.trim(),
+        trackingNumber: trackingNumber.trim(),
+        notes: shipNote.trim(),
+      });
+      if (res.data.success) {
+        toast.success(res.data.message || 'Return shipment confirmed successfully!');
+        setShowShipForm(false);
+        fetchReturn();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit return shipment.');
+    } finally {
+      setSubmittingShip(false);
+    }
+  };
 
 
 
@@ -60,10 +91,13 @@ export default function ReturnDetails() {
   }
 
   // Define visual timelines based on returnType
+  const walletSteps = ['REQUESTED', 'APPROVED', 'ITEM_SHIPPED', 'PRODUCT_RECEIVED', 'WALLET_CREDITED', 'COMPLETED'];
+  const replacementSteps = ['REQUESTED', 'APPROVED', 'ITEM_SHIPPED', 'PRODUCT_RECEIVED', 'REPLACEMENT_APPROVED', 'REPLACEMENT_SHIPPED', 'COMPLETED'];
+
   let steps = walletSteps;
   if (ret.returnType === 'REPLACEMENT') {
     if (ret.status === 'WALLET_CREDITED') {
-      steps = ['REQUESTED', 'WALLET_CREDITED', 'COMPLETED'];
+      steps = ['REQUESTED', 'APPROVED', 'ITEM_SHIPPED', 'PRODUCT_RECEIVED', 'WALLET_CREDITED', 'COMPLETED'];
     } else if (ret.status === 'REJECTED') {
       steps = ['REQUESTED', 'REJECTED'];
     } else {
@@ -134,6 +168,130 @@ export default function ReturnDetails() {
           </div>
         )}
       </div>
+
+      {/* Return Shipping Address & Customer Shipping Action (Shown when Return is APPROVED or in transit) */}
+      {ret.status === 'APPROVED' && (
+        <div className="glass-card mb-6 border-2 border-brand-primary/30 space-y-4">
+          <div className="flex items-center gap-2 border-b border-border-light pb-3">
+            <Truck size={16} className="text-text-primary" />
+            <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary">
+              Return Shipping Address &amp; Instructions
+            </h3>
+          </div>
+
+          <div className="bg-neutral-50 p-4 rounded-xl border border-border-light space-y-3 text-xs font-mono">
+            <div>
+              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Ship Package To:</span>
+              <p className="font-bold text-text-primary text-sm mt-0.5">{ret.returnAddress?.street || 'VAULT Logistics Hub, Unit 4B, Signature Tower'}</p>
+              <p className="text-text-secondary mt-0.5">
+                {ret.returnAddress?.city || 'Bandra Kurla Complex, Mumbai'}, {ret.returnAddress?.state || 'Maharashtra'} – {ret.returnAddress?.zip || '400051'}
+              </p>
+              <p className="text-text-secondary mt-0.5">
+                Contact: <span className="font-bold text-text-primary">{ret.returnAddress?.phone || '+91 98765 43210'}</span>
+              </p>
+            </div>
+
+            {ret.returnAddress?.instructions && (
+              <div className="p-3 bg-white rounded-lg border border-border-light text-[11px] text-text-secondary font-sans leading-relaxed">
+                <strong className="font-mono uppercase text-[10px] text-text-primary block mb-0.5">Packing Note:</strong>
+                {ret.returnAddress.instructions} (Include Return ID <strong>{ret.returnId}</strong> on the parcel).
+              </div>
+            )}
+          </div>
+
+          <div className="pt-2">
+            {!showShipForm ? (
+              <button
+                type="button"
+                onClick={() => setShowShipForm(true)}
+                className="btn-gold w-full text-xs uppercase tracking-widest py-3 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Package size={14} /> I Have Shipped The Product
+              </button>
+            ) : (
+              <form onSubmit={handleConfirmShipped} className="bg-white p-4 rounded-xl border border-border-light space-y-3 text-xs font-mono">
+                <div className="flex items-center justify-between border-b border-border-light pb-2">
+                  <span className="font-bold uppercase text-text-primary text-[11px]">Submit Return Shipment Details</span>
+                  <button type="button" onClick={() => setShowShipForm(false)} className="text-text-secondary hover:text-text-primary text-[10px] uppercase cursor-pointer">Cancel</button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-text-secondary uppercase block mb-1">Courier / Carrier Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. BlueDart, Delhivery, India Post"
+                      className="form-input text-xs"
+                      value={courierName}
+                      onChange={(e) => setCourierName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-text-secondary uppercase block mb-1">Tracking Number / AWB</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 1234567890"
+                      className="form-input text-xs"
+                      value={trackingNumber}
+                      onChange={(e) => setTrackingNumber(e.target.value)}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-[10px] text-text-secondary uppercase block mb-1">Additional Note (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Shipped today via local post"
+                      className="form-input text-xs"
+                      value={shipNote}
+                      onChange={(e) => setShipNote(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submittingShip}
+                  className="btn-dark w-full text-xs uppercase tracking-widest py-2.5 mt-2 cursor-pointer disabled:opacity-50"
+                >
+                  {submittingShip ? 'Submitting...' : 'Confirm Shipment'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Customer Return Shipment Details (when in transit) */}
+      {ret.customerShipment && ret.customerShipment.shippedAt && (
+        <div className="glass-card mb-6 space-y-3">
+          <div className="flex items-center gap-2 border-b border-border-light pb-3">
+            <Truck size={15} className="text-[#16a34a]" />
+            <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary">
+              Your Return Shipment Details
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+            <div>
+              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Courier</span>
+              <p className="font-bold text-text-primary mt-0.5">{ret.customerShipment.courierName || 'Standard Courier'}</p>
+            </div>
+            <div>
+              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Tracking No.</span>
+              <p className="font-bold text-text-primary mt-0.5">{ret.customerShipment.trackingNumber || '—'}</p>
+            </div>
+            <div>
+              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Shipped Date</span>
+              <p className="font-bold text-text-primary mt-0.5">{new Date(ret.customerShipment.shippedAt).toLocaleDateString('en-IN')}</p>
+            </div>
+          </div>
+          {ret.status === 'ITEM_SHIPPED' && (
+            <p className="text-[11px] text-[#ca8a04] bg-[#fefce8] p-2.5 rounded-lg border border-[#fef08a] font-mono">
+              Waiting for package delivery at our warehouse. Once received, our team will inspect and finalize your refund / replacement.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Visual Status Timeline */}
       <div className="glass-card">

@@ -74,6 +74,8 @@ export const updateReturnStatusAdmin = async (req, res) => {
     const allowedStatuses = [
       'REQUESTED',
       'APPROVED',
+      'ITEM_SHIPPED',
+      'PRODUCT_RECEIVED',
       'REPLACEMENT_APPROVED',
       'REPLACEMENT_SHIPPED',
       'REJECTED',
@@ -118,8 +120,8 @@ export const updateReturnStatusAdmin = async (req, res) => {
 
     await returnRecord.save();
 
-    // Trigger wallet credit if settlementMethod === 'WALLET' and approved/credited
-    if (returnRecord.settlementMethod === 'WALLET' && ['APPROVED', 'WALLET_CREDITED'].includes(status)) {
+    // Trigger wallet credit if settlementMethod === 'WALLET' and wallet credited / completed
+    if (returnRecord.settlementMethod === 'WALLET' && ['WALLET_CREDITED', 'COMPLETED'].includes(status)) {
       if (returnRecord.walletCreditStatus !== 'CREDITED') {
         await creditReturnToWallet(returnRecord._id, req.user._id);
       }

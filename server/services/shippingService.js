@@ -123,6 +123,14 @@ export const getPublicShippingInfo = async () => {
     shippingCharges: Number(settings.shippingCharges) || 0,
     freeShippingMinAmount: Number(settings.freeShippingMinAmount) || 0,
     handlingCharge: Number(settings.handlingCharge) || 0,
+    returnAddress: settings.returnAddress || {
+      street: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
+      city: 'Bandra Kurla Complex, Mumbai',
+      state: 'Maharashtra',
+      zip: '400051',
+      phone: '+91 98765 43210',
+      instructions: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
+    },
     activeSpecialCampaign: activeCampaigns.length > 0 ? activeCampaigns[0] : null,
     activeCampaigns,
   };

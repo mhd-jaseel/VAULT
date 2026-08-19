@@ -34,9 +34,12 @@ export default function MyReturns() {
     const map = {
       REQUESTED: { label: 'REQUESTED', cls: 'bg-neutral-100 text-neutral-800 border-neutral-300' },
       APPROVED: { label: 'APPROVED', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
+      ITEM_SHIPPED: { label: 'ITEM SHIPPED', cls: 'bg-amber-50 text-amber-700 border-amber-300' },
+      PRODUCT_RECEIVED: { label: 'PRODUCT RECEIVED', cls: 'bg-blue-50 text-blue-700 border-blue-300' },
       REJECTED: { label: 'REJECTED', cls: 'bg-red-50 text-red-600 border-red-200' },
       REPLACEMENT_APPROVED: { label: 'REPLACEMENT APPROVED', cls: 'bg-emerald-50 text-emerald-700 border-emerald-300' },
       REPLACEMENT_SHIPPED: { label: 'REPLACEMENT SHIPPED', cls: 'bg-blue-50 text-blue-700 border-blue-300' },
+      WALLET_CREDITED: { label: 'WALLET CREDITED', cls: 'bg-purple-50 text-purple-700 border-purple-300' },
       COMPLETED: { label: 'COMPLETED', cls: 'bg-emerald-100 text-emerald-800 border-emerald-400 font-bold' },
       CANCELLED: { label: 'CANCELLED', cls: 'bg-neutral-100 text-neutral-500 border-neutral-200' },
     };

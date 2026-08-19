@@ -3,6 +3,7 @@ import {
   createReturnRequest,
   getMyReturns,
   getReturnById,
+  markItemShippedCustomer,
   getAllReturnsAdmin,
   updateReturnStatusAdmin,
 } from '../controllers/return/index.js';
@@ -15,6 +16,7 @@ const router = express.Router();
 router.post('/', protect, upload.array('evidenceImages', 4), createReturnRequest);
 router.get('/my-returns', protect, getMyReturns);
 router.get('/:id', protect, getReturnById);
+router.patch('/:id/ship', protect, markItemShippedCustomer);
 
 // ── Admin Routes ───────────────────────────────────────────────────────────
 router.get('/admin/all', protect, isAdmin, getAllReturnsAdmin);
