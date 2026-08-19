@@ -96,6 +96,29 @@ export const updateReturnStatusAdmin = async (req, res) => {
       returnRecord.rejectionReason = String(rejectionReason).slice(0, 500);
     }
 
+    // Capture Address Snapshot on APPROVED
+    if (status === 'APPROVED' && currentStatus !== 'APPROVED') {
+      const Setting = (await import('../../models/Setting.js')).default;
+      const settings = await Setting.findOne();
+      const addr = settings?.returnAddress || {};
+      returnRecord.returnShippingAddressSnapshot = {
+        recipientName: addr.recipientName || 'VAULT Returns Department',
+        addressLine1: addr.addressLine1 || 'Unit 4B, Signature Tower',
+        addressLine2: addr.addressLine2 || 'G-Block, BKC Road',
+        city: addr.city || 'Mumbai',
+        district: addr.district || 'Mumbai Suburban',
+        state: addr.state || 'Maharashtra',
+        pinCode: addr.pinCode || '400051',
+        phone: addr.phone || '+91 98765 43210',
+        whatsapp: addr.whatsapp || '+91 98765 43210',
+        instructions: addr.instructions || 'Pack the product securely in its original packaging with all tags attached. Please write the Return Reference ID clearly on top of the outer shipping box.',
+      };
+    }
+
+    if (status === 'PRODUCT_RECEIVED' && !returnRecord.productReceivedAt) {
+      returnRecord.productReceivedAt = new Date();
+    }
+
     // Atomic Stock Validation and Deduction for Replacement
     if (status === 'REPLACEMENT_APPROVED' && currentStatus !== 'REPLACEMENT_APPROVED') {
       const repProduct = await Product.findById(returnRecord.orderItem.product);

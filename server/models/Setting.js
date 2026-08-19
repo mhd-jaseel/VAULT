@@ -78,29 +78,55 @@ const settingSchema = new mongoose.Schema(
       min: [1, 'Maximum cart quantity must be at least 1'],
     },
     returnAddress: {
-      street: {
+      recipientName: {
         type: String,
-        default: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
+        default: 'VAULT Returns Department',
+        trim: true,
+      },
+      addressLine1: {
+        type: String,
+        default: 'Unit 4B, Signature Tower',
+        trim: true,
+      },
+      addressLine2: {
+        type: String,
+        default: 'G-Block, BKC Road',
+        trim: true,
       },
       city: {
         type: String,
-        default: 'Bandra Kurla Complex, Mumbai',
+        default: 'Mumbai',
+        trim: true,
+      },
+      district: {
+        type: String,
+        default: 'Mumbai Suburban',
+        trim: true,
       },
       state: {
         type: String,
         default: 'Maharashtra',
+        trim: true,
       },
-      zip: {
+      pinCode: {
         type: String,
         default: '400051',
+        trim: true,
       },
       phone: {
         type: String,
         default: '+91 98765 43210',
+        trim: true,
+      },
+      whatsapp: {
+        type: String,
+        default: '+91 98765 43210',
+        trim: true,
       },
       instructions: {
         type: String,
-        default: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
+        default: 'Pack the product securely in its original packaging with all tags attached. Please write the Return Reference ID clearly on top of the outer shipping box.',
+        trim: true,
       },
     },
   },

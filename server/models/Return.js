@@ -96,6 +96,26 @@ const returnSchema = new mongoose.Schema(
         trim: true,
       },
     },
+    customerShippedAt: {
+      type: Date,
+    },
+    productReceivedAt: {
+      type: Date,
+    },
+
+    // ── Return Shipping Address Snapshot (Captured when Approved) ───────────
+    returnShippingAddressSnapshot: {
+      recipientName: { type: String, trim: true },
+      addressLine1: { type: String, trim: true },
+      addressLine2: { type: String, trim: true },
+      city: { type: String, trim: true },
+      district: { type: String, trim: true },
+      state: { type: String, trim: true },
+      pinCode: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      whatsapp: { type: String, trim: true },
+      instructions: { type: String, trim: true },
+    },
 
     // ── Primary Return / Cancellation Status ──────────────────────────────────────────────
     status: {

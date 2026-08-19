@@ -40,17 +40,25 @@ export const getReturnById = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorized.' });
     }
 
-    // Attach current return address from Settings
-    const Setting = (await import('../../models/Setting.js')).default;
-    const settings = await Setting.findOne();
-    const returnAddress = settings?.returnAddress || {
-      street: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
-      city: 'Bandra Kurla Complex, Mumbai',
-      state: 'Maharashtra',
-      zip: '400051',
-      phone: '+91 98765 43210',
-      instructions: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
-    };
+    // Prefer saved snapshot on returnRecord, fallback gracefully to current Settings
+    let returnAddress = returnRecord.returnShippingAddressSnapshot;
+    if (!returnAddress || !returnAddress.addressLine1) {
+      const Setting = (await import('../../models/Setting.js')).default;
+      const settings = await Setting.findOne();
+      const addr = settings?.returnAddress || {};
+      returnAddress = {
+        recipientName: addr.recipientName || 'VAULT Returns Department',
+        addressLine1: addr.addressLine1 || addr.street || 'Unit 4B, Signature Tower',
+        addressLine2: addr.addressLine2 || '',
+        city: addr.city || 'Mumbai',
+        district: addr.district || 'Mumbai Suburban',
+        state: addr.state || 'Maharashtra',
+        pinCode: addr.pinCode || addr.zip || '400051',
+        phone: addr.phone || '+91 98765 43210',
+        whatsapp: addr.whatsapp || '+91 98765 43210',
+        instructions: addr.instructions || 'Pack the product securely in its original packaging with all tags attached. Please write the Return Reference ID clearly on top of the outer shipping box.',
+      };
+    }
 
     const returnObj = returnRecord.toObject ? returnRecord.toObject() : { ...returnRecord };
     returnObj.returnAddress = returnAddress;
@@ -82,12 +90,14 @@ export const markItemShippedCustomer = async (req, res) => {
       });
     }
 
+    const now = new Date();
     returnRecord.customerShipment = {
       courierName: courierName ? courierName.trim() : 'Standard Courier',
       trackingNumber: trackingNumber ? trackingNumber.trim() : '',
       notes: notes ? notes.trim() : '',
-      shippedAt: new Date(),
+      shippedAt: now,
     };
+    returnRecord.customerShippedAt = now;
 
     returnRecord.status = 'ITEM_SHIPPED';
     returnRecord.timeline.push({

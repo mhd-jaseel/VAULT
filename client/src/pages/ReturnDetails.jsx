@@ -179,22 +179,47 @@ export default function ReturnDetails() {
             </h3>
           </div>
 
-          <div className="bg-neutral-50 p-4 rounded-xl border border-border-light space-y-3 text-xs font-mono">
-            <div>
-              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Ship Package To:</span>
-              <p className="font-bold text-text-primary text-sm mt-0.5">{ret.returnAddress?.street || 'VAULT Logistics Hub, Unit 4B, Signature Tower'}</p>
-              <p className="text-text-secondary mt-0.5">
-                {ret.returnAddress?.city || 'Bandra Kurla Complex, Mumbai'}, {ret.returnAddress?.state || 'Maharashtra'} – {ret.returnAddress?.zip || '400051'}
+          <div className="bg-neutral-50 p-5 rounded-xl border border-border-light space-y-3 font-mono">
+            <div className="border-b border-border-light/70 pb-3">
+              <span className="text-[9px] text-[#ca8a04] uppercase font-bold tracking-widest block mb-1">
+                RETURN APPROVED — PLEASE SEND PRODUCT TO:
+              </span>
+              <p className="font-extrabold text-text-primary text-sm uppercase">
+                {ret.returnAddress?.recipientName || 'VAULT Returns Department'}
               </p>
-              <p className="text-text-secondary mt-0.5">
-                Contact: <span className="font-bold text-text-primary">{ret.returnAddress?.phone || '+91 98765 43210'}</span>
+              <p className="text-xs text-text-primary mt-1">
+                {ret.returnAddress?.addressLine1 || ret.returnAddress?.street || 'Unit 4B, Signature Tower'}
+              </p>
+              {ret.returnAddress?.addressLine2 && (
+                <p className="text-xs text-text-secondary">
+                  {ret.returnAddress.addressLine2}
+                </p>
+              )}
+              <p className="text-xs text-text-primary mt-0.5">
+                {[ret.returnAddress?.city, ret.returnAddress?.district].filter(Boolean).join(', ')}
+              </p>
+              <p className="text-xs text-text-primary font-bold mt-0.5">
+                {[ret.returnAddress?.state, (ret.returnAddress?.pinCode || ret.returnAddress?.zip)].filter(Boolean).join(' – ')}
               </p>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1">
+              {ret.returnAddress?.phone && (
+                <p className="text-text-secondary">
+                  Phone: <span className="font-bold text-text-primary">{ret.returnAddress.phone}</span>
+                </p>
+              )}
+              {ret.returnAddress?.whatsapp && (
+                <p className="text-text-secondary">
+                  WhatsApp: <span className="font-bold text-text-primary">{ret.returnAddress.whatsapp}</span>
+                </p>
+              )}
+            </div>
+
             {ret.returnAddress?.instructions && (
-              <div className="p-3 bg-white rounded-lg border border-border-light text-[11px] text-text-secondary font-sans leading-relaxed">
-                <strong className="font-mono uppercase text-[10px] text-text-primary block mb-0.5">Packing Note:</strong>
-                {ret.returnAddress.instructions} (Include Return ID <strong>{ret.returnId}</strong> on the parcel).
+              <div className="p-3 bg-white rounded-lg border border-border-light text-[11px] text-text-secondary font-sans leading-relaxed mt-2">
+                <strong className="font-mono uppercase text-[10px] text-text-primary block mb-0.5">Return Instructions:</strong>
+                {ret.returnAddress.instructions}
               </div>
             )}
           </div>
@@ -266,14 +291,14 @@ export default function ReturnDetails() {
       {ret.customerShipment && ret.customerShipment.shippedAt && (
         <div className="glass-card mb-6 space-y-3">
           <div className="flex items-center gap-2 border-b border-border-light pb-3">
-            <Truck size={15} className="text-[#16a34a]" />
+            <CheckCircle2 size={16} className="text-[#16a34a]" />
             <h3 className="font-mono font-bold text-xs uppercase tracking-wider text-text-primary">
-              Your Return Shipment Details
+              PRODUCT SHIPPED
             </h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
             <div>
-              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Courier</span>
+              <span className="text-[9px] text-text-secondary uppercase tracking-wider block">Courier / Carrier</span>
               <p className="font-bold text-text-primary mt-0.5">{ret.customerShipment.courierName || 'Standard Courier'}</p>
             </div>
             <div>
@@ -286,8 +311,9 @@ export default function ReturnDetails() {
             </div>
           </div>
           {ret.status === 'ITEM_SHIPPED' && (
-            <p className="text-[11px] text-[#ca8a04] bg-[#fefce8] p-2.5 rounded-lg border border-[#fef08a] font-mono">
-              Waiting for package delivery at our warehouse. Once received, our team will inspect and finalize your refund / replacement.
+            <p className="text-[11px] text-[#ca8a04] bg-[#fefce8] p-3 rounded-lg border border-[#fef08a] font-mono leading-relaxed">
+              Your returned product has been shipped.<br />
+              <strong>Waiting for Vault.Co to receive the product.</strong>
             </p>
           )}
         </div>

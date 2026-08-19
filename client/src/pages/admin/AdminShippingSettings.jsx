@@ -24,12 +24,16 @@ export default function AdminShippingSettings() {
   const [freeShippingMinAmount, setFreeShippingMinAmount] = useState(1500);
   const [handlingCharge, setHandlingCharge] = useState(0);
   const [returnAddress, setReturnAddress] = useState({
-    street: 'VAULT Logistics Hub, Unit 4B, Signature Tower',
-    city: 'Bandra Kurla Complex, Mumbai',
+    recipientName: 'VAULT Returns Department',
+    addressLine1: 'Unit 4B, Signature Tower',
+    addressLine2: 'G-Block, BKC Road',
+    city: 'Mumbai',
+    district: 'Mumbai Suburban',
     state: 'Maharashtra',
-    zip: '400051',
+    pinCode: '400051',
     phone: '+91 98765 43210',
-    instructions: 'Pack the product securely in original packaging with tags and reference ID written on the box.',
+    whatsapp: '+91 98765 43210',
+    instructions: 'Pack the product securely in its original packaging with all tags attached. Please write the Return Reference ID clearly on top of the outer shipping box.',
   });
 
   // Special Shipping Campaigns State
@@ -304,38 +308,82 @@ export default function AdminShippingSettings() {
               <div className="pt-4 border-t border-[#e5e5e5] space-y-4">
                 <div>
                   <h3 className="font-sans font-bold text-xs uppercase text-[#111111] tracking-wide mb-0.5">
-                    Customer Return Shipping Address
+                    RETURN SHIPPING ADDRESS
                   </h3>
                   <p className="text-[11px] text-[#6b7280] font-mono">
-                    This official address and packaging instructions are shown to customers when their return request is approved.
+                    This official warehouse address and packaging instructions are shown to customers when their return request is approved.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
-                      Warehouse / Hub Street Address
+                      Store / Recipient Name
                     </label>
                     <input
                       type="text"
                       className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
-                      value={returnAddress.street || ''}
-                      onChange={(e) => setReturnAddress({ ...returnAddress, street: e.target.value })}
+                      value={returnAddress.recipientName || ''}
+                      onChange={(e) => setReturnAddress({ ...returnAddress, recipientName: e.target.value })}
+                      placeholder="e.g. VAULT Returns Department"
                       required
                     />
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
-                      City & Area
+                      Address Line 1
                     </label>
                     <input
                       type="text"
                       className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
-                      value={returnAddress.city || ''}
-                      onChange={(e) => setReturnAddress({ ...returnAddress, city: e.target.value })}
+                      value={returnAddress.addressLine1 || ''}
+                      onChange={(e) => setReturnAddress({ ...returnAddress, addressLine1: e.target.value })}
+                      placeholder="e.g. Unit 4B, Signature Tower"
                       required
                     />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
+                      Address Line 2 (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
+                      value={returnAddress.addressLine2 || ''}
+                      onChange={(e) => setReturnAddress({ ...returnAddress, addressLine2: e.target.value })}
+                      placeholder="e.g. G-Block, BKC Road"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
+                        City
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
+                        value={returnAddress.city || ''}
+                        onChange={(e) => setReturnAddress({ ...returnAddress, city: e.target.value })}
+                        placeholder="e.g. Mumbai"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
+                        District
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
+                        value={returnAddress.district || ''}
+                        onChange={(e) => setReturnAddress({ ...returnAddress, district: e.target.value })}
+                        placeholder="e.g. Mumbai Suburban"
+                        required
+                      />
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -348,6 +396,7 @@ export default function AdminShippingSettings() {
                         className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
                         value={returnAddress.state || ''}
                         onChange={(e) => setReturnAddress({ ...returnAddress, state: e.target.value })}
+                        placeholder="e.g. Maharashtra"
                         required
                       />
                     </div>
@@ -358,34 +407,52 @@ export default function AdminShippingSettings() {
                       <input
                         type="text"
                         className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
-                        value={returnAddress.zip || ''}
-                        onChange={(e) => setReturnAddress({ ...returnAddress, zip: e.target.value })}
+                        value={returnAddress.pinCode || ''}
+                        onChange={(e) => setReturnAddress({ ...returnAddress, pinCode: e.target.value })}
+                        placeholder="e.g. 400051"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
-                      Hub Contact Phone
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
-                      value={returnAddress.phone || ''}
-                      onChange={(e) => setReturnAddress({ ...returnAddress, phone: e.target.value })}
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
+                        Contact Number
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
+                        value={returnAddress.phone || ''}
+                        onChange={(e) => setReturnAddress({ ...returnAddress, phone: e.target.value })}
+                        placeholder="e.g. +91 98765 43210"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
+                        WhatsApp Number
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
+                        value={returnAddress.whatsapp || ''}
+                        onChange={(e) => setReturnAddress({ ...returnAddress, whatsapp: e.target.value })}
+                        placeholder="e.g. +91 98765 43210"
+                      />
+                    </div>
                   </div>
 
                   <div className="md:col-span-2 space-y-1">
                     <label className="text-[10px] font-mono text-[#374151] uppercase font-bold block">
-                      Packaging & Dispatch Instructions for Customer
+                      Optional Return Instructions
                     </label>
                     <textarea
                       rows={2}
                       className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3.5 py-2 text-xs font-mono text-[#111111] focus:bg-white focus:outline-none focus:border-[#111111]"
                       value={returnAddress.instructions || ''}
                       onChange={(e) => setReturnAddress({ ...returnAddress, instructions: e.target.value })}
+                      placeholder="e.g. Pack securely in original box with tags attached..."
                     />
                   </div>
                 </div>
