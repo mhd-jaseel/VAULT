@@ -573,7 +573,6 @@ export default function Checkout() {
                   <label className="text-[9px] font-mono text-text-secondary uppercase tracking-wider block mb-1">Phone Number</label>
                   <input
                     type="tel"
-                    placeholder="10-digit mobile number"
                     maxLength={14}
                     className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
                     {...register('phone', {
