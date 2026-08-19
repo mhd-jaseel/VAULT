@@ -4,6 +4,7 @@ import {
   getProductById,
   getRelatedProducts,
   getDiscountedProducts,
+  validateCartItem,
   createProduct,
   updateProduct,
   deleteProduct,
