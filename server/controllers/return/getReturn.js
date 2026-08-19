@@ -73,39 +73,54 @@ export const getReturnById = async (req, res) => {
 export const markItemShippedCustomer = async (req, res) => {
   try {
     const { courierName, trackingNumber, notes } = req.body;
-    const returnRecord = await Return.findById(req.params.id);
+    const now = new Date();
+    const courier = courierName ? courierName.trim() : 'Standard Courier';
+    const tracking = trackingNumber ? trackingNumber.trim() : '';
+    const note = notes ? notes.trim() : '';
+
+    // Atomic update: only transition if current status is strictly 'APPROVED'
+    const returnRecord = await Return.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user: req.user._id,
+        status: 'APPROVED',
+      },
+      {
+        $set: {
+          status: 'ITEM_SHIPPED',
+          customerShippedAt: now,
+          customerShipment: {
+            courierName: courier,
+            trackingNumber: tracking,
+            notes: note,
+            shippedAt: now,
+          },
+        },
+        $push: {
+          timeline: {
+            status: 'ITEM_SHIPPED',
+            timestamp: now,
+            note: `Customer confirmed product shipment via ${courier}${tracking ? ` (Tracking: ${tracking})` : ''}.`,
+          },
+        },
+      },
+      { new: true }
+    );
 
     if (!returnRecord) {
-      return res.status(404).json({ success: false, message: 'Return record not found.' });
-    }
-
-    if (returnRecord.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Not authorized.' });
-    }
-
-    if (returnRecord.status !== 'APPROVED') {
+      // Find return without status condition to return accurate message
+      const existing = await Return.findById(req.params.id);
+      if (!existing) {
+        return res.status(404).json({ success: false, message: 'Return record not found.' });
+      }
+      if (existing.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Not authorized.' });
+      }
       return res.status(400).json({
         success: false,
-        message: `Product shipping can only be submitted when return is APPROVED. Current status is ${returnRecord.status}.`,
+        message: `Product shipping cannot be submitted. Current status is ${existing.status}.`,
       });
     }
-
-    const now = new Date();
-    returnRecord.customerShipment = {
-      courierName: courierName ? courierName.trim() : 'Standard Courier',
-      trackingNumber: trackingNumber ? trackingNumber.trim() : '',
-      notes: notes ? notes.trim() : '',
-      shippedAt: now,
-    };
-    returnRecord.customerShippedAt = now;
-
-    returnRecord.status = 'ITEM_SHIPPED';
-    returnRecord.timeline.push({
-      status: 'ITEM_SHIPPED',
-      note: `Customer confirmed product shipment via ${courierName || 'Courier'}${trackingNumber ? ` (Tracking: ${trackingNumber})` : ''}.`,
-    });
-
-    await returnRecord.save();
 
     res.json({
       success: true,
