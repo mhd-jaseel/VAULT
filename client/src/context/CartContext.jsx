@@ -125,7 +125,7 @@ export const CartProvider = ({ children }) => {
 
     if (targetQty <= 0) {
       removeFromCart(prodIdStr);
-      return;
+      return { success: true, removed: true };
     }
 
     try {
@@ -141,18 +141,27 @@ export const CartProvider = ({ children }) => {
           if (String(item.product) === prodIdStr) {
             return {
               ...item,
+              name: validatedProduct.name || item.name,
               price: unitPrice,
+              originalPrice: validatedProduct.originalPrice || validatedProduct.price,
+              finalPrice: validatedProduct.finalPrice || unitPrice,
+              isDiscounted: !!validatedProduct.isDiscounted,
+              discountAmount: validatedProduct.discountAmount || 0,
               quantity: targetQty,
               stock: validatedProduct.stock,
+              image: validatedProduct.images?.[0] || item.image || '',
             };
           }
           return item;
         });
         saveCart(updatedCart);
+        return { success: true, quantity: targetQty };
       }
+      return { success: false };
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Maximum quantity reached for this product.';
       toast.error(errMsg);
+      return { success: false, message: errMsg };
     }
   };
 
