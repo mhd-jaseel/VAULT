@@ -941,9 +941,21 @@ export default function Checkout() {
               )}
             </button>
 
-            <p className="text-[8px] text-text-secondary font-mono text-center">
-              You will be redirected to Razorpay's secure checkout
-            </p>
+            <div className="text-center space-y-1.5 mt-2">
+              <p className="text-[8px] text-text-secondary font-mono">
+                You will be redirected to Razorpay's secure checkout
+              </p>
+              <p className="text-[9px] text-neutral-500 font-sans leading-normal">
+                By placing your order, you agree to our{' '}
+                <Link to="/terms" target="_blank" className="text-neutral-900 underline font-medium hover:text-amber-600">
+                  Terms of Service
+                </Link>{' '}
+                and acknowledge our{' '}
+                <Link to="/privacy" target="_blank" className="text-neutral-900 underline font-medium hover:text-amber-600">
+                  Privacy Policy
+                </Link>.
+              </p>
+            </div>
           </div>
         </div>
       </form>

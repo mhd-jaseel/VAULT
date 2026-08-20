@@ -1,13 +1,26 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { setDocumentSEO } from '../utils/seoHelper';
-import { ShieldCheck, Lock, Eye, Database, Server, RefreshCw, ArrowLeft, Mail } from 'lucide-react';
+import { 
+  ShieldCheck, 
+  Lock, 
+  Eye, 
+  Database, 
+  Server, 
+  RefreshCw, 
+  ArrowLeft, 
+  Mail, 
+  UserCheck, 
+  FileLock,
+  Globe,
+  Ban
+} from 'lucide-react';
 
 export default function PrivacyPolicy() {
   useEffect(() => {
     setDocumentSEO({
       title: 'Privacy Policy | Vault.Co',
-      description: 'Read the Vault.Co privacy policy to understand how customer information is collected, used and protected.',
+      description: 'Read the official Vault.Co Privacy Policy outlining our data protection practices under India\'s DPDPA 2023, data minimization, and payment security.',
       canonicalPath: '/privacy',
       breadcrumbList: [
         { name: 'Home', url: '/' },
@@ -17,174 +30,314 @@ export default function PrivacyPolicy() {
   }, []);
 
   return (
-    <div className="bg-white min-h-screen py-10 md:py-16 px-4 sm:px-6 md:px-12 max-w-4xl mx-auto w-full text-neutral-800 antialiased">
-      {/* Back Link */}
-      <div className="mb-6">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-500 hover:text-neutral-900 transition-colors uppercase tracking-wider"
-        >
-          <ArrowLeft size={13} /> Back to Store
-        </Link>
-      </div>
-
-      {/* Header Banner */}
-      <div className="border-b border-neutral-200 pb-8 mb-10">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-600 mb-3">
-          <Lock size={12} /> DATA PROTECTION &amp; PRIVACY
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold font-sans uppercase tracking-tight text-neutral-900 mb-3">
-          Privacy Policy
-        </h1>
-        <p className="text-xs font-mono text-neutral-500">
-          Last Updated: August 2026 · Effective Date: August 2026
-        </p>
-      </div>
-
-      {/* Main Content Body */}
-      <div className="space-y-8 text-xs sm:text-sm text-neutral-700 font-sans leading-relaxed">
+    <div className="bg-[#fafafa] min-h-screen py-10 md:py-16 px-4 sm:px-6 md:px-12 w-full text-neutral-800 antialiased font-sans">
+      <div className="max-w-4xl mx-auto">
         
-        {/* Section 1 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            1. Introduction &amp; Commitment to Privacy
-          </h2>
-          <p>
-            At <strong>Vault.Co</strong>, we take the security and privacy of your personal data seriously. This Privacy Policy describes how we collect, handle, store, and protect your information when you visit <strong>https://vaultco.online</strong>, create a customer account, browse our collections, or purchase products.
-          </p>
-          <p>
-            This policy aligns with applicable data protection principles, including India's <em>Digital Personal Data Protection Act, 2023</em> (DPDPA) and notified Data Protection Rules.
-          </p>
-        </section>
+        {/* Navigation Breadcrumb */}
+        <div className="mb-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs font-mono text-neutral-500 hover:text-neutral-900 transition-colors uppercase tracking-wider"
+          >
+            <ArrowLeft size={13} /> Back to Store
+          </Link>
+        </div>
 
-        {/* Section 2 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            2. Personal Data We Collect
-          </h2>
-          <p>
-            We adhere to data minimization principles and collect only information necessary to provide our luxury e-commerce services:
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-              <h3 className="font-bold text-neutral-900 font-mono text-xs uppercase mb-1.5">A. Account &amp; Identity Data</h3>
-              <p className="text-neutral-600 text-xs">
-                Name, email address, contact phone number, and encrypted password credentials (or Google profile name, email, and Google ID token if signing in with Google OAuth).
-              </p>
-            </div>
-
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-              <h3 className="font-bold text-neutral-900 font-mono text-xs uppercase mb-1.5">B. Delivery &amp; Order Data</h3>
-              <p className="text-neutral-600 text-xs">
-                Shipping street address, city, state, postal PIN code, country, recipient contact numbers, ordered item lines, quantities, and order status timelines.
-              </p>
-            </div>
-
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-              <h3 className="font-bold text-neutral-900 font-mono text-xs uppercase mb-1.5">C. Financial &amp; Wallet Ledger Data</h3>
-              <p className="text-neutral-600 text-xs">
-                Payment gateway transaction references (Razorpay order ID, payment ID), Vault Wallet store credit balance, credit/debit transaction ledger logs, and refund references.
-              </p>
-            </div>
-
-            <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200">
-              <h3 className="font-bold text-neutral-900 font-mono text-xs uppercase mb-1.5">D. User Interactions &amp; Reviews</h3>
-              <p className="text-neutral-600 text-xs">
-                Wishlist selections, shopping cart items, submitted ratings, reviews, verified buyer status, and return/replacement requests with evidence images.
-              </p>
-            </div>
+        {/* Header Hero Card */}
+        <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 sm:p-10 shadow-xs mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-neutral-700 mb-3 border border-neutral-200/60">
+            <Lock size={12} /> DATA FIDUCIARY &amp; PRIVACY
           </div>
-        </section>
-
-        {/* Section 3 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            3. How We Use Your Information
-          </h2>
-          <p>We process your personal data strictly for legitimate operational purposes:</p>
-          <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
-            <li><strong>Fulfillment &amp; Delivery:</strong> To process orders, verify stock, calculate shipping, route packages, and provide tracking updates.</li>
-            <li><strong>Payment &amp; Wallet Management:</strong> To securely confirm payments, manage your Vault Store Credit balance, and issue instant credits for cancellations/returns.</li>
-            <li><strong>Account Authentication &amp; Security:</strong> To authenticate account sessions via secure JWT cookies, prevent credential abuse, and enforce role-based access.</li>
-            <li><strong>Customer Service &amp; Dispute Resolution:</strong> To respond to inquiries, process returns, and investigate transaction discrepancies.</li>
-          </ul>
-        </section>
-
-        {/* Section 4 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            4. Payment Information Privacy &amp; Third-Party Processing
-          </h2>
-          <p>
-            All electronic payment processing is handled through our integrated payment partner, <strong>Razorpay</strong>.
-          </p>
-          <div className="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 text-neutral-800 text-xs">
-            <strong>Payment Security Note:</strong> Vault.Co does NOT collect, handle, or store raw credit/debit card numbers, CVVs, expiry dates, net banking passwords, or UPI PINs on its servers. When you pay, you enter credentials directly into Razorpay's encrypted checkout interface. Vault.Co receives only cryptographic transaction identifiers, payment status confirmations, and captured amounts.
+          <h1 className="text-2xl sm:text-4xl font-display font-extrabold uppercase tracking-tight text-neutral-900 mb-3">
+            Privacy Policy
+          </h1>
+          <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-mono text-neutral-500 pt-1 border-t border-neutral-100 mt-4">
+            <span><strong>Effective Date:</strong> August 2026</span>
+            <span>•</span>
+            <span><strong>Last Updated:</strong> August 2026</span>
+            <span>•</span>
+            <span><strong>Regulatory Framework:</strong> Digital Personal Data Protection Act, 2023 (DPDPA)</span>
           </div>
-        </section>
+        </div>
 
-        {/* Section 5 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            5. Cookies, Sessions &amp; Local Storage
-          </h2>
-          <p>We utilize essential storage technologies to ensure seamless navigation:</p>
-          <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
-            <li><strong>HTTP-Only Authentication Cookies:</strong> Secure cookies used to store encrypted session tokens (`token`), shielding authentication states from cross-site scripting (XSS).</li>
-            <li><strong>Local Storage:</strong> Used strictly for shopping cart persistence, local UI theme preferences, and guest wishlist states.</li>
-            <li><strong>No Invasive Advertising Trackers:</strong> Vault.Co does not use third-party cross-site tracking cookies to sell your data to third-party ad networks.</li>
-          </ul>
-        </section>
+        {/* Content Body */}
+        <div className="bg-white border border-neutral-200/80 rounded-3xl p-6 sm:p-10 shadow-xs space-y-10 text-xs sm:text-sm text-neutral-700 leading-relaxed">
 
-        {/* Section 6 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            6. Third-Party Service Providers
-          </h2>
-          <p>We share data only with verified technical partners necessary for service operation:</p>
-          <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
-            <li><strong>Razorpay:</strong> Payment gateway facilitation and refund disbursement.</li>
-            <li><strong>Google Identity Services (OAuth 2.0):</strong> Optional Single Sign-On authentication for customer convenience.</li>
-            <li><strong>Courier &amp; Logistics Partners:</strong> Delivery partners receiving your name, delivery address, and phone number for parcel fulfillment.</li>
-            <li><strong>Cloud Infrastructure &amp; Database:</strong> Secure MongoDB cloud instances for encrypted database storage.</li>
-          </ul>
-        </section>
+          {/* 1. Introduction & Data Fiduciary */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                1
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Introduction &amp; Data Fiduciary Overview
+              </h2>
+            </div>
+            <p>
+              At <strong>Vault.Co</strong> (referred to herein as "Vault.Co", "we", "us", or "our"), we respect your privacy and are committed to protecting the personal data of our users ("Data Principals"). This Privacy Policy describes how we collect, process, store, and safeguard your personal information when you visit <strong className="text-neutral-900">https://vaultco.online</strong> (the "Website"), create an account, or order products.
+            </p>
+            <p>
+              Vault.Co acts as a <strong>Data Fiduciary</strong> in accordance with India's <em>Digital Personal Data Protection Act, 2023</em> (DPDPA), the <em>Digital Personal Data Protection Rules, 2025</em>, and the <em>Information Technology Act, 2000</em>.
+            </p>
+          </section>
 
-        {/* Section 7 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            7. Data Security &amp; Retention
-          </h2>
-          <p>
-            We implement comprehensive technical and organizational safeguards, including SSL/TLS encryption in transit, strict HTTP security headers (`nosniff`, `X-Frame-Options: DENY`), database query sanitization, atomic inventory locking, and rate limiting against brute-force attacks.
-          </p>
-          <p>
-            Personal data is retained as long as your account remains active or as required by applicable tax, accounting, and consumer protection laws (e.g. retaining financial invoice records for legal audits).
-          </p>
-        </section>
+          {/* 2. Personal Data We Collect */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                2
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Personal Data We Collect (Data Minimization)
+              </h2>
+            </div>
+            <p>
+              We practice strict data minimization and collect only the personal information essential to facilitate customer orders and secure store experiences:
+            </p>
 
-        {/* Section 8 */}
-        <section className="space-y-3">
-          <h2 className="text-base sm:text-lg font-bold font-sans uppercase tracking-wide text-neutral-900">
-            8. Your Data Rights &amp; Grievance Redressal
-          </h2>
-          <p>Under applicable data privacy regulations, you have the right to:</p>
-          <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
-            <li>Access and review personal information held about you in your Vault Profile.</li>
-            <li>Request correction or updating of outdated address and contact details.</li>
-            <li>Request closure and deletion of your Vault Account, subject to statutory retention obligations.</li>
-            <li>Withdraw consent for optional communications.</li>
-          </ul>
-          <p className="pt-2">
-            To exercise your rights or file a privacy grievance, please reach out to our appointed Grievance Officer:
-          </p>
-          <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200 font-mono text-xs space-y-1 mt-2">
-            <p><strong>Grievance Officer:</strong> [GRIEVANCE OFFICER NAME / PRIVACY DESK]</p>
-            <p><strong>Entity Name:</strong> [LEGAL BUSINESS NAME] (Operating as Vault.Co)</p>
-            <p><strong>Official Email:</strong> [GRIEVANCE EMAIL] / privacy@vault.com</p>
-            <p><strong>Address:</strong> [BUSINESS ADDRESS], Mumbai, Maharashtra, India</p>
-          </div>
-        </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+                <h3 className="font-mono text-xs font-bold uppercase text-neutral-900">A. Account &amp; Identity Details</h3>
+                <p className="text-xs text-neutral-600">
+                  Full name, email address, contact phone number, and bcrypt-hashed password credentials. If using Google OAuth Single Sign-On, we receive your Google account name, verified email, and Google ID token.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+                <h3 className="font-mono text-xs font-bold uppercase text-neutral-900">B. Shipping &amp; Address Book</h3>
+                <p className="text-xs text-neutral-600">
+                  Delivery recipient name, street address, flat/apartment, city, state, postal PIN code, country, and recipient contact phone numbers for parcel delivery.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+                <h3 className="font-mono text-xs font-bold uppercase text-neutral-900">C. Orders &amp; Transaction Ledgers</h3>
+                <p className="text-xs text-neutral-600">
+                  Item lines purchased, quantities, pricing snapshots, order IDs, delivery tracking status milestones, coupon codes applied, and Vault Wallet credit/debit transaction history.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200/80 space-y-1.5">
+                <h3 className="font-mono text-xs font-bold uppercase text-neutral-900">D. User Reviews &amp; Return Evidence</h3>
+                <p className="text-xs text-neutral-600">
+                  Product ratings (1–5 stars), customer reviews, wishlist items, return/replacement reasons, and user-uploaded condition photographs stored securely on Cloudinary.
+                </p>
+              </div>
+            </div>
+
+            {/* Explicit Notice of What is NOT Collected */}
+            <div className="p-4 rounded-2xl bg-neutral-900 text-white space-y-2">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-amber-400">
+                <Ban size={14} /> Explicit Confirmation: What We Do NOT Collect
+              </div>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                Vault.Co does <strong>NOT</strong> collect, request, or store your GPS location data, biometric data, phone contacts, microphone or camera access, or browsing activity across third-party websites.
+              </p>
+            </div>
+          </section>
+
+          {/* 3. Payment Data Security & Razorpay */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                3
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Payment Information &amp; Payment Gateway Security
+              </h2>
+            </div>
+            <p>
+              All online transactions are securely tokenized and processed via <strong>Razorpay</strong>:
+            </p>
+            <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+              <h3 className="font-mono text-xs font-bold uppercase text-neutral-900 flex items-center gap-2">
+                <ShieldCheck size={14} className="text-amber-600" /> Zero Raw Financial Data Stored
+              </h3>
+              <p className="text-xs text-neutral-700 leading-relaxed">
+                Vault.Co servers <strong>never collect, process, or store raw credit/debit card numbers, CVVs, card expiry dates, bank passwords, or UPI PINs</strong>. All payment credential entry occurs directly inside Razorpay’s PCI-DSS compliant checkout frame. Vault.Co receives only cryptographic transaction identifiers (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_order_id</code>, <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_payment_id</code>) and captured status confirmations.
+              </p>
+            </div>
+          </section>
+
+          {/* 4. Purpose of Data Processing */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                4
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Purposes for Processing Personal Data
+              </h2>
+            </div>
+            <p>We process your personal information strictly for legitimate e-commerce operations:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
+              <li><strong>Order Fulfillment &amp; Logistics:</strong> Processing orders, verifying stock, calculating shipping fees, and routing packages with courier partners.</li>
+              <li><strong>Vault Wallet Store Credit:</strong> Maintaining ledger balance, calculating coupon discounts, and crediting refunds for cancellations and returns.</li>
+              <li><strong>Account Authentication &amp; Security:</strong> Authenticating customer logins via secure JWT session cookies and Google OAuth.</li>
+              <li><strong>Transactional Notifications:</strong> Sending order confirmations, OTP verification emails, and live delivery milestone tracking.</li>
+              <li><strong>Return Verification:</strong> Evaluating customer-submitted photographic evidence and processing 3-day return or replacement requests.</li>
+              <li><strong>Fraud Prevention:</strong> Detecting fraudulent transactions, duplicate payment attempts, and suspicious account activities.</li>
+            </ul>
+          </section>
+
+          {/* 5. Cookies & Local Storage */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                5
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Cookies, Sessions &amp; Storage Technologies
+              </h2>
+            </div>
+            <p>We utilize essential browser storage mechanisms solely to enable website functionality:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
+              <li><strong>HTTP-Only Authentication Cookies:</strong> Secure, encrypted cookies (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">token</code>) used to authenticate user sessions while mitigating cross-site scripting (XSS) risks.</li>
+              <li><strong>Local Storage:</strong> Used strictly for shopping cart persistence, guest wishlist caching, and client UI state preferences.</li>
+              <li><strong>No Cross-Site Ad Tracking:</strong> We do not deploy third-party advertising tracking cookies or behavioral profile aggregators.</li>
+            </ul>
+          </section>
+
+          {/* 6. Third-Party Service Integrations */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                6
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Third-Party Technical Processors
+              </h2>
+            </div>
+            <p>We share necessary data solely with verified technical partners for operational processing:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">Razorpay</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Payment gateway facilitation, UPI/card processing, and refunds.</p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">Google Identity Services</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Optional OAuth 2.0 Single Sign-On customer authentication.</p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">Cloudinary</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Encrypted cloud media hosting for products, user avatars, and return proof images.</p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">Courier Partners</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Shipping carrier receiving customer name, address, and phone number for parcel transit.</p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">MongoDB Atlas</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Encrypted cloud database storage for user profiles, catalog data, and orders.</p>
+              </div>
+              <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200">
+                <span className="font-mono text-xs font-bold text-neutral-900 uppercase block">Render &amp; Vercel</span>
+                <p className="text-[11px] text-neutral-600 mt-0.5">Authoritative backend API hosting (Render) and frontend CDN infrastructure (Vercel).</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 7. Data Security & Retention */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                7
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Data Security Measures &amp; Retention
+              </h2>
+            </div>
+            <p>
+              We implement reasonable technical and organizational measures designed to protect your personal data, including TLS 1.3 encryption in transit, bcrypt password hashing with salt rounds, HMAC-SHA256 signature verification for payment payloads, parameterized database queries, and server-level rate limiting.
+            </p>
+            <p>
+              Personal data is retained for the duration of your active account. Transactional order and invoice records are preserved for statutory retention periods mandated under Indian taxation and corporate accounting regulations.
+            </p>
+          </section>
+
+          {/* 8. Data Principal Rights (DPDPA 2023) */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                8
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Your Rights as a Data Principal
+              </h2>
+            </div>
+            <p>Under the <em>Digital Personal Data Protection Act, 2023</em>, you possess the following rights:</p>
+            <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
+              <li><strong>Right to Access:</strong> View and review personal details stored in your Vault Profile and Order History.</li>
+              <li><strong>Right to Correction &amp; Updating:</strong> Modify, update, or correct inaccurate delivery addresses or profile information.</li>
+              <li><strong>Right to Erasure / Deletion:</strong> Request deletion of your account and personal data, subject to legal and financial audit retention requirements.</li>
+              <li><strong>Right of Grievance Redressal:</strong> Submit inquiries or grievances to our appointed Grievance Officer.</li>
+            </ul>
+          </section>
+
+          {/* 9. Children's Privacy */}
+          <section className="space-y-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                9
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Children's Privacy
+              </h2>
+            </div>
+            <p>
+              Vault.Co does not knowingly solicit or collect personal data from individuals under the age of 18 without parental consent. If we discover that personal data of a minor has been collected without parental consent, we take prompt steps to remove such information.
+            </p>
+          </section>
+
+          {/* 10. Grievance Officer & Contact */}
+          <section className="space-y-4 pt-6 border-t border-neutral-200">
+            <div className="flex items-center gap-2.5">
+              <span className="w-6 h-6 rounded-full bg-neutral-900 text-white font-mono text-xs font-bold flex items-center justify-center flex-shrink-0">
+                10
+              </span>
+              <h2 className="text-base sm:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                Grievance Redressal &amp; Privacy Desk
+              </h2>
+            </div>
+            <p>
+              To exercise your data principal rights or lodge a privacy-related grievance under the DPDPA 2023 and Information Technology rules, please contact:
+            </p>
+
+            <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 sm:p-6 font-mono text-xs space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Data Fiduciary</span>
+                  <p className="font-bold text-neutral-900">Vault.Co</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Legal Entity Name</span>
+                  <p className="font-bold text-neutral-900">[LEGAL BUSINESS NAME — CONFIRM]</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Registered Address</span>
+                  <p className="font-bold text-neutral-900">[REGISTERED BUSINESS ADDRESS — CONFIRM], Mumbai, Maharashtra, India</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Privacy &amp; Support Email</span>
+                  <p className="font-bold text-neutral-900">
+                    <a href="mailto:vault.co.6235@gmail.com" className="underline hover:text-amber-600">vault.co.6235@gmail.com</a>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Support Contact</span>
+                  <p className="font-bold text-neutral-900">
+                    <a href="tel:+916235623868" className="underline hover:text-amber-600">+91 62356 23868</a>
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Grievance Officer</span>
+                  <p className="font-bold text-neutral-900">[GRIEVANCE OFFICER NAME — CONFIRM]</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
 
       </div>
     </div>
