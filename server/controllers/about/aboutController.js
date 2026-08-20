@@ -76,6 +76,7 @@ export const DEFAULT_ABOUT_DATA = {
     isActive: false, // Inactive by default until admin enables or customizes
   },
   additionalSections: [],
+  heroImage: '',
 };
 
 // Helper: Safely delete old image (Cloudinary or legacy)
@@ -111,6 +112,44 @@ export const getAboutPageContent = async (req, res) => {
 };
 
 /**
+ * PUT /api/about/admin/hero
+ * Protected (Admin): Upload, replace, or remove the About Hero Image
+ */
+export const updateHeroImage = async (req, res) => {
+  try {
+    let about = await AboutPage.findOne();
+    if (!about) {
+      about = new AboutPage(DEFAULT_ABOUT_DATA);
+    }
+
+    const { removeImage } = req.body;
+
+    if (req.file) {
+      const oldImage = about.heroImage;
+      about.heroImage = await uploadToCloudinary(req.file.path || req.file.filename, 'vault/about');
+      if (oldImage && oldImage !== about.heroImage) {
+        await safeDeleteFile(oldImage);
+      }
+    } else if (removeImage === 'true' || removeImage === true) {
+      if (about.heroImage) {
+        await safeDeleteFile(about.heroImage);
+      }
+      about.heroImage = '';
+    }
+
+    await about.save();
+
+    res.json({
+      success: true,
+      message: 'About hero image updated successfully.',
+      data: { heroImage: about.heroImage },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
  * PUT /api/about/admin
  * Protected (Admin): Update overall about page content (Hero, Story, Values)
  */
@@ -121,8 +160,9 @@ export const updateAboutPageContent = async (req, res) => {
       about = new AboutPage(DEFAULT_ABOUT_DATA);
     }
 
-    const { hero, story, values } = req.body;
+    const { hero, story, values, heroImage } = req.body;
 
+    if (heroImage !== undefined) about.heroImage = heroImage;
     if (hero) about.hero = { ...about.hero, ...hero };
     if (story) about.story = { ...about.story, ...story };
     if (values) about.values = { ...about.values, ...values };

@@ -482,7 +482,7 @@ export default function Home() {
                   : `Free delivery above ₹${(settings?.freeShippingMinAmount || 1500).toLocaleString('en-IN')}` 
               },
               { Icon: ShieldCheck, title: 'Authentic Products', desc: '100% genuine guarantees' },
-              { Icon: RefreshCw, title: 'Easy Returns', desc: '7-day hassle free options' },
+              { Icon: RefreshCw, title: 'Easy Returns', desc: '3-day hassle free returns' },
             ].map(({ Icon, title, desc }) => (
               <div key={title} className="flex items-center sm:flex-col lg:flex-row gap-4 sm:gap-2 lg:gap-4 text-left sm:text-center lg:text-left justify-start sm:justify-center items-center">
                 <div className="p-3 rounded-full bg-neutral-100 text-[#111111] flex items-center justify-center">

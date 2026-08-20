@@ -6,6 +6,7 @@ import {
   markItemShippedCustomer,
   getAllReturnsAdmin,
   updateReturnStatusAdmin,
+  processReplacementShipAdmin,
 } from '../controllers/return/index.js';
 import { protect, isAdmin } from '../middleware/auth.js';
 import upload from '../middleware/upload.js';
@@ -21,5 +22,6 @@ router.patch('/:id/ship', protect, markItemShippedCustomer);
 // ── Admin Routes ───────────────────────────────────────────────────────────
 router.get('/admin/all', protect, isAdmin, getAllReturnsAdmin);
 router.patch('/admin/:id/status', protect, isAdmin, updateReturnStatusAdmin);
+router.patch('/admin/:id/replacement-ship', protect, isAdmin, processReplacementShipAdmin);
 
 export default router;

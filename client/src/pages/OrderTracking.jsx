@@ -180,8 +180,11 @@ export default function OrderTracking() {
         {order.items.map((item) => {
           const isDelivered = order.status === 'delivered';
           const isPrePacked = ['pending', 'confirmed', 'processing'].includes(order.status) && !['packed', 'shipped', 'delivered', 'cancelled'].includes(order.status);
-          const deliveredTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.updatedAt).getTime();
-          const isWithin3Days = isDelivered && Date.now() - deliveredTime <= 3 * 24 * 60 * 60 * 1000;
+          const hasDeliveredDate = isDelivered && !!order.deliveredAt;
+          const deliveredTime = hasDeliveredDate ? new Date(order.deliveredAt).getTime() : 0;
+          const returnDeadline = hasDeliveredDate ? deliveredTime + 3 * 24 * 60 * 60 * 1000 : 0;
+          const isWithin3Days = hasDeliveredDate && Date.now() <= returnDeadline;
+          const daysRemaining = isWithin3Days ? Math.max(1, Math.ceil((returnDeadline - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
           const ret = item.returnRecord;
           const itemStatus = item.status || 'ACTIVE';
 
@@ -207,10 +210,29 @@ export default function OrderTracking() {
                       <span className="ml-1 text-text-primary font-bold">(Paid: ₹{item.linePaidAmount.toLocaleString('en-IN')})</span>
                     )}
                   </p>
+
+                  {/* Return Window Indicator */}
+                  {isDelivered && !ret && itemStatus === 'ACTIVE' && hasDeliveredDate && (
+                    <div className="pt-1">
+                      {isWithin3Days ? (
+                        <p className="text-[10px] text-emerald-700 flex items-center gap-1 font-medium">
+                          <RotateCcw size={11} /> Return eligible until{' '}
+                          <strong className="underline">
+                            {new Date(returnDeadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </strong>{' '}
+                          ({daysRemaining} day{daysRemaining === 1 ? '' : 's'} remaining)
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-neutral-500 italic flex items-center gap-1">
+                          <RotateCcw size={11} className="text-neutral-400" /> Return window expired (3 days from delivery passed)
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Item Actions */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {isDelivered && itemStatus === 'ACTIVE' && (
                     orderReviewsMap[item.product?._id || item.product]?.hasReviewed ? (
                       <div className="flex items-center gap-1.5">
@@ -261,10 +283,16 @@ export default function OrderTracking() {
                         }}
                         className="btn-gold !py-1.5 !px-3 text-[9px] uppercase tracking-wider font-bold flex items-center gap-1 cursor-pointer"
                       >
-                        <RotateCcw size={10} /> Return
+                        <RotateCcw size={10} /> Request Return
                       </button>
                     ) : isDelivered ? (
-                      <span className="text-[9px] text-text-secondary italic">Return window closed</span>
+                      <button
+                        disabled
+                        className="px-3 py-1.5 rounded-lg bg-neutral-100 text-neutral-400 border border-neutral-200 font-mono text-[9px] font-bold uppercase tracking-wider cursor-not-allowed"
+                        title="Returns can only be requested within 3 days of delivery."
+                      >
+                        Return Window Closed
+                      </button>
                     ) : null
                   ) : (
                     <Link

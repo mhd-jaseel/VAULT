@@ -4,19 +4,10 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import {
   RotateCcw,
-  Eye,
-  X,
-  Check,
-  FileText,
-  User,
-  ShoppingBag,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
   RefreshCw,
   Search,
-  Filter,
-  DollarSign,
+  CheckCircle2,
+  Clock,
   Package,
 } from 'lucide-react';
 import Pagination from '../../components/Pagination';
@@ -33,20 +24,12 @@ export default function AdminReturns() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Quick View Drawer state
+  // Return Management Drawer state
   const [drawer, setDrawer] = useState({ isOpen: false, entityId: null });
 
   const closeDrawer = () => {
     setDrawer({ isOpen: false, entityId: null });
   };
-
-  // Status Action Modal States
-  const [selectedReturn, setSelectedReturn] = useState(null);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [targetStatus, setTargetStatus] = useState('');
-  const [statusNote, setStatusNote] = useState('');
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [submittingStatus, setSubmittingStatus] = useState(false);
 
   const fetchReturns = async () => {
     setLoading(true);
@@ -71,45 +54,9 @@ export default function AdminReturns() {
     fetchReturns();
   }, [page, statusFilter]);
 
-  // Open Return Details Drawer
+  // Open Return Management Drawer
   const handleOpenDetailModal = (ret) => {
     setDrawer({ isOpen: true, entityId: ret._id });
-  };
-
-  // Open Status Update Modal
-  const handleOpenStatusModal = (ret, newStat) => {
-    setSelectedReturn(ret);
-    setTargetStatus(newStat);
-    setStatusNote('');
-    setRejectionReason('');
-    setStatusModalOpen(true);
-  };
-
-  const handleStatusSubmit = async (e) => {
-    e.preventDefault();
-    setSubmittingStatus(true);
-    try {
-      const res = await axios.patch(`/returns/admin/${selectedReturn._id}/status`, {
-        status: targetStatus,
-        note: statusNote,
-        rejectionReason: targetStatus === 'REJECTED' ? rejectionReason : undefined,
-      });
-
-      if (res.data.success) {
-        toast.success(`Return status updated to ${targetStatus}`);
-        setStatusModalOpen(false);
-        // We do not need to manually update viewingReturn because the drawer component re-fetches or we could just close the drawer or trigger a refresh in the drawer if needed, but for now just fetching returns updates the table.
-        // Or if we want to immediately reflect, we could pass a refresh flag, but React Query is best for that.
-        // For now, close drawer when status changes, or let the user close it. 
-        // We'll close the drawer to force them back to the updated list.
-        closeDrawer();
-        fetchReturns();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Error updating status');
-    } finally {
-      setSubmittingStatus(false);
-    }
   };
 
   const getStatusBadgeStyle = (status) => {
@@ -158,7 +105,7 @@ export default function AdminReturns() {
             RETURNS &amp; CANCELLATIONS
           </h1>
           <p className="text-xs text-[#6b7280] font-mono mt-1">
-            Review return &amp; cancellation requests, process manual refunds, and credit Vault Wallet balances.
+            Manage return workflows, verify warehouse receipts, execute wallet refunds, and dispatch replacements.
           </p>
         </div>
 
@@ -307,8 +254,8 @@ export default function AdminReturns() {
                       </td>
                       <td className="p-3 text-right">
                         <button
-                          onClick={() => handleOpenStatusModal(ret)}
-                          className="px-2.5 py-1 bg-white border border-[#e5e5e5] hover:bg-[#f9fafb] rounded-lg text-[#111111] cursor-pointer inline-flex items-center gap-1 text-[10px] font-bold uppercase shadow-xs"
+                          onClick={() => handleOpenDetailModal(ret)}
+                          className="px-3 py-1 bg-[#111111] hover:bg-black text-white rounded-lg cursor-pointer inline-flex items-center gap-1 text-[10px] font-mono font-bold uppercase shadow-xs transition-all"
                         >
                           Manage
                         </button>
@@ -371,18 +318,12 @@ export default function AdminReturns() {
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-[#e5e5e5] flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleOpenDetailModal(ret)}
-                      className="px-3 py-1.5 bg-[#f9fafb] hover:bg-[#f3f4f6] text-[#111111] border border-[#e5e5e5] rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
+                      className="w-full py-2 bg-[#111111] hover:bg-black text-white rounded-xl text-xs font-mono font-bold uppercase tracking-wider cursor-pointer text-center shadow-xs transition-all"
                     >
-                      Quick View
-                    </button>
-                    <button
-                      onClick={() => handleOpenStatusModal(ret)}
-                      className="px-3 py-1.5 btn-gold rounded-xl text-[10px] font-mono font-bold uppercase tracking-wider cursor-pointer"
-                    >
-                      Manage Status
+                      Manage Return
                     </button>
                   </div>
                 </div>
@@ -400,99 +341,22 @@ export default function AdminReturns() {
         loading={loading}
       />
 
-      {/* REUSABLE DETAILS DRAWER */}
+      {/* REUSABLE DETAILS & RETURN MANAGEMENT DRAWER */}
       <AdminDetailsDrawer
         isOpen={drawer.isOpen}
         onClose={closeDrawer}
-        title="Return Details"
-        subtitle="Quick View"
+        title="Return Management"
+        subtitle="Review and process return workflow"
       >
         {drawer.isOpen && (
           <ReturnDetailsView 
             returnId={drawer.entityId} 
-            onActionStatus={handleOpenStatusModal}
+            onStatusUpdated={() => {
+              fetchReturns();
+            }}
           />
         )}
       </AdminDetailsDrawer>
-
-      {/* STATUS ACTION MODAL */}
-      {statusModalOpen && selectedReturn && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="bg-white border border-[#e5e5e5] rounded-2xl p-6 max-w-md w-full space-y-4 shadow-xl font-mono text-[#111111]">
-            <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-              <h3 className="font-sans font-bold text-sm uppercase text-[#111111]">
-                Update Return Status
-              </h3>
-              <button onClick={() => setStatusModalOpen(false)} className="text-[#6b7280] hover:text-[#111111]">
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleStatusSubmit} className="space-y-4 text-xs font-mono">
-              <div>
-                <label className="text-[10px] text-[#6b7280] uppercase font-bold block mb-1">Target Status</label>
-                <select
-                  className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs font-bold text-[#111111] uppercase focus:bg-white focus:outline-none focus:border-[#111111]"
-                  value={targetStatus}
-                  onChange={(e) => setTargetStatus(e.target.value)}
-                  required
-                >
-                  <option value="">Select Status</option>
-                  <option value="APPROVED">APPROVED (Approve Return &amp; Show Return Address)</option>
-                  <option value="PRODUCT_RECEIVED">PRODUCT_RECEIVED (Product Arrived At Warehouse)</option>
-                  <option value="WALLET_CREDITED">WALLET_CREDITED (Process Wallet Refund)</option>
-                  <option value="REPLACEMENT_APPROVED">REPLACEMENT_APPROVED (Confirm Replacement Dispatch)</option>
-                  <option value="REPLACEMENT_SHIPPED">REPLACEMENT_SHIPPED (Replacement Out For Delivery)</option>
-                  <option value="COMPLETED">COMPLETED (Close Request)</option>
-                  <option value="REJECTED">REJECTED (Reject Return)</option>
-                </select>
-              </div>
-
-              {targetStatus === 'REJECTED' && (
-                <div>
-                  <label className="text-[10px] text-[#6b7280] uppercase font-bold block mb-1">Rejection Reason</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Provide reason for rejection..."
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#111111]"
-                    value={rejectionReason}
-                    onChange={(e) => setRejectionReason(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="text-[10px] text-[#6b7280] uppercase font-bold block mb-1">Audit Note</label>
-                <input
-                  type="text"
-                  placeholder="Optional admin note..."
-                  className="w-full bg-white border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#111111]"
-                  value={statusNote}
-                  onChange={(e) => setStatusNote(e.target.value)}
-                />
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-3 border-t border-[#e5e5e5]">
-                <button
-                  type="button"
-                  onClick={() => setStatusModalOpen(false)}
-                  className="px-4 py-2 text-xs text-[#6b7280] hover:text-[#111111] font-bold uppercase"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingStatus}
-                  className="bg-[#111111] hover:bg-black text-white px-5 py-2 rounded-xl text-xs font-bold uppercase transition-all"
-                >
-                  {submittingStatus ? 'Saving...' : 'Confirm Status'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

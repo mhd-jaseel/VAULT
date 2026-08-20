@@ -17,4 +17,4 @@ Disallow: /login
 Disallow: /blocked
 Disallow: /api/
 
-Sitemap: https://vault.co/sitemap.xml
+Sitemap: https://vaultco.online/sitemap.xml

@@ -117,16 +117,7 @@ export const createOrder = async (req, res) => {
         }
       }
 
-      // Business Rule: Reject coupon if any item in cart already has product/campaign discount
-      const hasDiscountedItem = orderItems.some(item => Number(item.itemDiscount || 0) > 0);
-      if (hasDiscountedItem) {
-        return res.status(400).json({
-          success: false,
-          message: 'Coupons cannot be applied to products that are already discounted.'
-        });
-      }
-
-      // Check applicable categories or products eligibility
+      // Check applicable categories, products eligibility, and exclude already-discounted products
       const productIdsInCart = orderItems.map(item => item.product);
       const cartProductDetails = await Product.find({ _id: { $in: productIdsInCart } })
         .populate('category', 'name')
@@ -135,6 +126,12 @@ export const createOrder = async (req, res) => {
       let eligibleSubtotal = 0;
 
       for (const item of orderItems) {
+        // Business Rule: Discounted items cannot receive coupon discounts
+        if (Number(item.itemDiscount || 0) > 0) {
+          item.isCouponEligible = false;
+          continue;
+        }
+
         const prodIdStr = String(item.product);
         const details = cartProductDetails.find(p => String(p._id) === prodIdStr);
 
@@ -162,7 +159,13 @@ export const createOrder = async (req, res) => {
       }
 
       if (eligibleSubtotal === 0) {
-        return res.status(400).json({ success: false, message: 'This coupon is not applicable to any items in your cart.' });
+        const hasDiscounted = orderItems.some(i => Number(i.itemDiscount || 0) > 0);
+        return res.status(400).json({ 
+          success: false, 
+          message: hasDiscounted 
+            ? 'Coupons cannot be applied to products that are already discounted.' 
+            : 'This coupon is not applicable to any items in your cart.' 
+        });
       }
 
       if (eligibleSubtotal < (coupon.minimumPurchase || 0)) {
@@ -185,7 +188,7 @@ export const createOrder = async (req, res) => {
         discountAmount = totalAmount;
       }
 
-      // Allocate coupon discount proportionally across eligible items
+      // Allocate coupon discount proportionally across eligible non-discounted items
       let allocatedTotal = 0;
       const eligibleItems = orderItems.filter(i => i.isCouponEligible);
       
@@ -208,7 +211,7 @@ export const createOrder = async (req, res) => {
     orderItems.forEach(item => {
       delete item.isCouponEligible;
       const lineGross = item.price * item.quantity;
-      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.itemDiscount || 0) - (item.allocatedCouponDiscount || 0)) * 100) / 100);
+      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.allocatedCouponDiscount || 0)) * 100) / 100);
       item.unitPaidAmount = Math.round((item.linePaidAmount / item.quantity) * 100) / 100;
     });
 

@@ -66,34 +66,32 @@ export const applyCoupon = async (req, res) => {
       }
     }
 
-    // 7. Check whether any product in the cart already has an active discount
-    // Business Rule: Coupons cannot be applied to products that are already discounted.
+    // 7. Check whether products in the cart have active discounts
+    // Business Rule: Discounted products cannot receive coupon discounts.
+    // In mixed carts, the coupon applies ONLY to eligible non-discounted products.
     const productIdsInCart = items.map(item => item.product._id || item.product);
     const cartProductDetails = await Product.find({ _id: { $in: productIdsInCart } })
       .populate('category', 'name')
       .populate('brand', 'name');
 
     const decoratedProducts = await calculateProductDiscounts(cartProductDetails);
-    const hasDiscountedItem = Array.isArray(decoratedProducts)
-      ? decoratedProducts.some(p => p && p.isDiscounted)
-      : (decoratedProducts && decoratedProducts.isDiscounted);
+    const decoratedList = Array.isArray(decoratedProducts) ? decoratedProducts : [decoratedProducts];
 
-    if (hasDiscountedItem) {
-      return res.status(400).json({
-        success: false,
-        message: 'Coupons cannot be applied to products that are already discounted.'
-      });
-    }
-
-    // 8. Applicable products & categories subtotal calculation
+    // 8. Applicable products & categories subtotal calculation (excluding discounted items)
     let eligibleSubtotal = 0;
     let hasEligibleItem = false;
 
     for (const item of items) {
       const prodIdStr = String(item.product._id || item.product);
       const details = cartProductDetails.find(p => String(p._id) === prodIdStr);
+      const decorated = decoratedList.find(p => String(p._id) === prodIdStr);
 
       if (!details) continue;
+
+      // Exclude already discounted items from coupon benefits
+      if (decorated && decorated.isDiscounted) {
+        continue;
+      }
 
       // Check excluded products
       const isExcluded = Array.isArray(coupon.excludedProducts) && coupon.excludedProducts.some(p => String(p) === prodIdStr);
@@ -114,13 +112,20 @@ export const applyCoupon = async (req, res) => {
         (hasCategoryRestriction && isApplicableCategory);
 
       if (isEligible) {
-        eligibleSubtotal += Number(item.price) * Number(item.quantity);
+        const itemPrice = decorated ? decorated.finalPrice : Number(item.price);
+        eligibleSubtotal += Number(itemPrice) * Number(item.quantity);
         hasEligibleItem = true;
       }
     }
 
     if (!hasEligibleItem) {
-      return res.status(400).json({ success: false, message: 'This coupon is not applicable to any items in your cart.' });
+      const anyDiscounted = decoratedList.some(p => p && p.isDiscounted);
+      return res.status(400).json({ 
+        success: false, 
+        message: anyDiscounted
+          ? 'Coupons cannot be applied to products that are already discounted.'
+          : 'This coupon is not applicable to any items in your cart.' 
+      });
     }
 
     // Check minimum purchase restriction

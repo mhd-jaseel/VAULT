@@ -110,6 +110,41 @@ export default function OrderDetailsView({ orderId }) {
           label="Date Placed" 
           value={new Date(order.createdAt).toLocaleString()} 
         />
+        {order.status === 'delivered' && (
+          <>
+            <DrawerRow 
+              label="Delivered At" 
+              value={order.deliveredAt ? new Date(order.deliveredAt).toLocaleString() : 'N/A'} 
+            />
+            <DrawerRow 
+              label="Return Window" 
+              valueNode={
+                (() => {
+                  if (!order.deliveredAt) {
+                    return (
+                      <span className="text-[9px] font-bold uppercase text-[#dc2626] bg-[#fef2f2] border border-[#fecaca] px-2 py-0.5 rounded-full inline-block">
+                        MISSING DELIVERY DATE
+                      </span>
+                    );
+                  }
+                  const deadline = new Date(order.deliveredAt).getTime() + 3 * 24 * 60 * 60 * 1000;
+                  const isOpen = Date.now() <= deadline;
+                  return (
+                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border inline-block ${
+                      isOpen 
+                        ? 'text-[#16a34a] bg-[#f0fdf4] border-[#bbf7d0]' 
+                        : 'text-[#6b7280] bg-[#f3f4f6] border-[#e5e5e5]'
+                    }`}>
+                      {isOpen 
+                        ? `OPEN (Until ${new Date(deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})` 
+                        : `EXPIRED (Closed ${new Date(deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })})`}
+                    </span>
+                  );
+                })()
+              } 
+            />
+          </>
+        )}
       </DrawerSection>
 
       {/* ── Cancellation & Manual Refund Details (if applicable) ── */}

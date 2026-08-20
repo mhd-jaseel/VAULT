@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getAboutPageContent,
   updateAboutPageContent,
+  updateHeroImage,
   updateFounder,
   updateCoFounder,
   addAdditionalSection,
@@ -20,6 +21,7 @@ router.get('/', getAboutPageContent);
 
 // ── Admin Protected Routes ───────────────────────────────────────────────────
 router.put('/admin', protect, isAdmin, updateAboutPageContent);
+router.put('/admin/hero', protect, isAdmin, upload.single('image'), updateHeroImage);
 router.put('/admin/founder', protect, isAdmin, upload.single('image'), updateFounder);
 router.put('/admin/co-founder', protect, isAdmin, upload.single('image'), updateCoFounder);
 

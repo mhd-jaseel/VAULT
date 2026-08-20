@@ -22,12 +22,17 @@ import { PremiumSwal } from '../../utils/swalHelper';
 import { resolveImage } from '../../utils/imageHelper';
 
 export default function AdminAbout() {
-  const [activeTab, setActiveTab] = useState('founder'); // 'founder', 'co-founder', 'story', 'sections'
+  const [activeTab, setActiveTab] = useState('hero'); // 'hero', 'founder', 'co-founder', 'story', 'sections'
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   // About data state
   const [aboutData, setAboutData] = useState(null);
+
+  // Hero Image state
+  const [heroImageFile, setHeroImageFile] = useState(null);
+  const [heroImagePreview, setHeroImagePreview] = useState('');
+  const [heroImageRemoved, setHeroImageRemoved] = useState(false);
 
   // Founder Form state
   const [founderForm, setFounderForm] = useState({
@@ -53,12 +58,8 @@ export default function AdminAbout() {
   const [coFounderImageFile, setCoFounderImageFile] = useState(null);
   const [coFounderImagePreview, setCoFounderImagePreview] = useState('');
 
-  // Story & Hero Form state
+  // Story Form state
   const [storyForm, setStoryForm] = useState({
-    heroEstablished: '',
-    heroTitle1: '',
-    heroHighlight: '',
-    heroSubtitle: '',
     storyTagline: '',
     storyHeading: '',
     storyParagraphs: '',
@@ -84,6 +85,11 @@ export default function AdminAbout() {
       if (res.data.success && res.data.data) {
         const d = res.data.data;
         setAboutData(d);
+
+        // Populate Hero Image
+        setHeroImagePreview(d.heroImage ? resolveImage(d.heroImage) : '');
+        setHeroImageFile(null);
+        setHeroImageRemoved(false);
 
         // Populate Founder Form
         if (d.founder) {
@@ -115,12 +121,8 @@ export default function AdminAbout() {
           );
         }
 
-        // Populate Story & Hero
+        // Populate Story
         setStoryForm({
-          heroEstablished: d.hero?.establishedYear || '',
-          heroTitle1: d.hero?.titlePart1 || '',
-          heroHighlight: d.hero?.titleHighlight || '',
-          heroSubtitle: d.hero?.subtitle || '',
           storyTagline: d.story?.tagline || '',
           storyHeading: d.story?.heading || '',
           storyParagraphs: (d.story?.paragraphs || []).join('\n\n'),
@@ -137,6 +139,57 @@ export default function AdminAbout() {
   useEffect(() => {
     fetchAboutData();
   }, []);
+
+  // Save / Upload / Remove Hero Image
+  const handleSaveHeroImage = async (e) => {
+    e.preventDefault();
+    if (!heroImageFile && !heroImageRemoved) {
+      toast.info('No changes to save for hero image.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      if (heroImageFile) {
+        formData.append('image', heroImageFile);
+      }
+      if (heroImageRemoved) {
+        formData.append('removeImage', 'true');
+      }
+
+      const res = await axios.put('/about/admin/hero', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (res.data.success) {
+        toast.success(heroImageRemoved ? 'Hero image removed successfully!' : 'About hero image uploaded & saved!');
+        fetchAboutData();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update hero image');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Remove Hero Image confirmation
+  const handleRemoveHeroImage = async () => {
+    const result = await PremiumSwal.fire({
+      title: 'Remove Hero Image?',
+      text: 'The customer About page will display without a hero image banner.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, remove',
+      cancelButtonText: 'Cancel',
+    });
+
+    if (result.isConfirmed) {
+      setHeroImageFile(null);
+      setHeroImagePreview('');
+      setHeroImageRemoved(true);
+    }
+  };
 
   // Save Founder info & image
   const handleSaveFounder = async (e) => {
@@ -331,9 +384,10 @@ export default function AdminAbout() {
       {/* Tabs */}
       <div className="flex border-b border-[#e5e5e5] gap-2 md:gap-6 overflow-x-auto font-mono text-xs font-bold">
         {[
+          { id: 'hero', label: 'ABOUT HERO IMAGE', icon: ImageIcon },
           { id: 'founder', label: 'FOUNDER SECTION', icon: User },
           { id: 'co-founder', label: 'CO-FOUNDER SECTION', icon: Users },
-          { id: 'story', label: 'HERO & STORY NARRATIVE', icon: FileText },
+          { id: 'story', label: 'BRAND NARRATIVE', icon: FileText },
           { id: 'sections', label: 'ADDITIONAL SECTIONS', icon: Layers },
         ].map((tab) => {
           const Icon = tab.icon;
@@ -362,6 +416,124 @@ export default function AdminAbout() {
         </div>
       ) : (
         <>
+          {/* ── 0. HERO IMAGE TAB ── */}
+          {activeTab === 'hero' && (
+            <form onSubmit={handleSaveHeroImage} className="space-y-6">
+              <div className="bg-white border border-[#e5e5e5] rounded-2xl p-6 space-y-5 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#e5e5e5] gap-2">
+                  <div>
+                    <h3 className="font-bold text-sm uppercase tracking-wider text-[#111111] flex items-center gap-2">
+                      <ImageIcon size={16} className="text-[#d97706]" /> About Hero Image
+                    </h3>
+                    <p className="text-xs text-[#6b7280] font-mono mt-0.5">
+                      Configure an image-only banner for the customer About page. If no image is set, the hero section is completely hidden.
+                    </p>
+                  </div>
+                  {heroImagePreview && !heroImageRemoved && (
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto">
+                      HERO BANNER ACTIVE
+                    </span>
+                  )}
+                </div>
+
+                {/* Hero Image Container Preview */}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-mono text-[#6b7280] uppercase tracking-wider font-bold block">
+                    Hero Banner Image
+                  </label>
+
+                  {heroImagePreview && !heroImageRemoved ? (
+                    <div className="relative w-full rounded-2xl overflow-hidden border border-[#e5e5e5] bg-neutral-950 group shadow-inner">
+                      <img
+                        src={heroImagePreview}
+                        alt="About Hero Preview"
+                        className="w-full max-h-96 object-cover object-center block"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                        <label className="btn-gold text-[10px] !py-2 !px-4 uppercase font-mono font-bold tracking-wider cursor-pointer flex items-center gap-1.5 shadow-lg">
+                          <Upload size={13} /> Change Image
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                if (file.size > 10 * 1024 * 1024) {
+                                  toast.error('Image size must be less than 10MB.');
+                                  return;
+                                }
+                                setHeroImageFile(file);
+                                setHeroImagePreview(URL.createObjectURL(file));
+                                setHeroImageRemoved(false);
+                              }
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={handleRemoveHeroImage}
+                          className="bg-red-600 hover:bg-red-700 text-white text-[10px] !py-2 !px-4 uppercase font-mono font-bold tracking-wider rounded-xl cursor-pointer flex items-center gap-1.5 shadow-lg transition-colors"
+                        >
+                          <Trash2 size={13} /> Remove Image
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="w-full h-64 rounded-2xl border-2 border-dashed border-[#d1d5db] hover:border-[#111111] bg-[#f9fafb] hover:bg-neutral-100 transition-all flex flex-col items-center justify-center cursor-pointer p-6 text-center group">
+                      <div className="w-14 h-14 rounded-full bg-white border border-[#e5e5e5] flex items-center justify-center text-[#6b7280] group-hover:text-[#111111] group-hover:border-[#111111] transition-all mb-3 shadow-xs">
+                        <Upload size={22} />
+                      </div>
+                      <span className="text-xs font-mono font-bold text-[#111111] uppercase tracking-wider block">
+                        Upload Hero Image
+                      </span>
+                      <span className="text-[11px] text-[#6b7280] font-mono mt-1 block">
+                        Recommended resolution: 1920×800 or 16:9 banner aspect ratio.
+                      </span>
+                      <span className="text-[10px] text-[#9ca3af] font-mono mt-2 block">
+                        Format: JPG, PNG, WEBP (Max: 10MB)
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            if (file.size > 10 * 1024 * 1024) {
+                              toast.error('Image size must be less than 10MB.');
+                              return;
+                            }
+                            setHeroImageFile(file);
+                            setHeroImagePreview(URL.createObjectURL(file));
+                            setHeroImageRemoved(false);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono text-[#6b7280] pt-2 gap-2">
+                    <span>Supported: JPG, PNG, WEBP</span>
+                    <span>Responsive adaptive display</span>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="pt-4 border-t border-[#e5e5e5] flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={saving || (!heroImageFile && !heroImageRemoved)}
+                    className="btn-gold text-[10px] !py-2.5 !px-6 uppercase font-mono font-bold tracking-widest cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
+                    Save Hero Image
+                  </button>
+                </div>
+              </div>
+            </form>
+          )}
+
           {/* ── 1. FOUNDER TAB ── */}
           {activeTab === 'founder' && (
             <form onSubmit={handleSaveFounder} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -634,59 +806,9 @@ export default function AdminAbout() {
             </form>
           )}
 
-          {/* ── 3. HERO & STORY TAB ── */}
+          {/* ── 3. BRAND NARRATIVE TAB ── */}
           {activeTab === 'story' && (
             <form onSubmit={handleSaveStory} className="space-y-6">
-              {/* Hero Section settings */}
-              <div className="bg-white border border-[#e5e5e5] rounded-2xl p-6 space-y-4 shadow-xs">
-                <h3 className="font-bold text-xs uppercase tracking-wider text-[#111111] border-b border-[#e5e5e5] pb-3">
-                  Hero Header Content
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
-                  <div>
-                    <label className="text-[10px] text-[#6b7280] uppercase block mb-1">Established Badge</label>
-                    <input
-                      type="text"
-                      value={storyForm.heroEstablished}
-                      onChange={(e) => setStoryForm({ ...storyForm, heroEstablished: e.target.value })}
-                      placeholder="ESTABLISHED 2026"
-                      className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs text-[#111111]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-[#6b7280] uppercase block mb-1">Title First Part</label>
-                    <input
-                      type="text"
-                      value={storyForm.heroTitle1}
-                      onChange={(e) => setStoryForm({ ...storyForm, heroTitle1: e.target.value })}
-                      placeholder="THE ART OF PURE"
-                      className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs text-[#111111]"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-[#6b7280] uppercase block mb-1">Title Highlight (Gold)</label>
-                    <input
-                      type="text"
-                      value={storyForm.heroHighlight}
-                      onChange={(e) => setStoryForm({ ...storyForm, heroHighlight: e.target.value })}
-                      placeholder="CURATION"
-                      className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl px-3 py-2 text-xs text-[#111111]"
-                    />
-                  </div>
-                </div>
-
-                <div className="font-mono text-xs">
-                  <label className="text-[10px] text-[#6b7280] uppercase block mb-1">Hero Subtitle</label>
-                  <textarea
-                    rows={2}
-                    value={storyForm.heroSubtitle}
-                    onChange={(e) => setStoryForm({ ...storyForm, heroSubtitle: e.target.value })}
-                    className="w-full bg-[#f9fafb] border border-[#e5e5e5] rounded-xl p-3 text-xs text-[#111111] font-sans"
-                  />
-                </div>
-              </div>
-
               {/* Story Narrative */}
               <div className="bg-white border border-[#e5e5e5] rounded-2xl p-6 space-y-4 shadow-xs">
                 <h3 className="font-bold text-xs uppercase tracking-wider text-[#111111] border-b border-[#e5e5e5] pb-3">

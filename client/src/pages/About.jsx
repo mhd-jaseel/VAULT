@@ -47,17 +47,9 @@ export default function About() {
     fetchAboutData();
   }, []);
 
-  const hero = aboutData?.hero || {
-    establishedYear: 'ESTABLISHED 2026',
-    titlePart1: 'THE ART OF PURE',
-    titleHighlight: 'CURATION',
-    subtitle:
-      "VAULT.CO was founded on a simple principle: to engineer elite, premium men's essentials that stand the test of time. No shortcuts. No compromise. Just pure craftsmanship.",
-  };
-
   // Helper: Format count into 0-999, 1k+, 10k+, 100k+, 1M+
   const formatUserCount = (count) => {
-    if (typeof count !== 'number' || count < 0) return '10k+'; // graceful fallback
+    if (typeof count !== 'number' || count < 0) return '10k+';
     if (count < 1000) return `${count}`;
     if (count < 1000000) {
       const thousands = Math.floor(count / 1000);
@@ -153,6 +145,8 @@ export default function About() {
     return resolveImage(img);
   };
 
+  const heroImageUrl = aboutData?.heroImage ? resolveImgUrl(aboutData.heroImage) : null;
+
   return (
     <div className="bg-white text-neutral-900 min-h-screen">
       {user && user.role === 'admin' && (
@@ -169,37 +163,19 @@ export default function About() {
         </div>
       )}
 
-      {/* Hero Section with Luxury Atelier Imagery */}
-      <section className="relative py-24 md:py-36 bg-neutral-950 text-white flex items-center justify-center overflow-hidden">
-        {/* Background Image with Dark Gradient & Vignette Overlay */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/assets/brand/about_hero.webp"
-            alt="VAULT.CO Atelier Craftsmanship"
-            className="w-full h-full object-cover object-center opacity-35 scale-105 transition-transform duration-1000 ease-out"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/75 to-neutral-950/90" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-transparent via-neutral-950/60 to-neutral-950" />
-        </div>
-
-        {/* Subtle decorative gold glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none z-0" />
-        
-        <div className="max-w-4xl mx-auto text-center px-6 relative z-10">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono tracking-[0.25em] text-amber-300 uppercase mb-5 backdrop-blur-md">
-            {hero.establishedYear || 'ESTABLISHED 2026'}
-          </span>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold font-display uppercase tracking-tight mb-6 text-white drop-shadow-sm">
-            {hero.titlePart1 || 'THE ART OF PURE'}{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200">
-              {hero.titleHighlight || 'CURATION'}
-            </span>
-          </h1>
-          <p className="text-xs sm:text-sm md:text-base text-neutral-300 font-sans max-w-2xl mx-auto leading-relaxed font-light">
-            {hero.subtitle}
-          </p>
-        </div>
-      </section>
+      {/* Dynamic Image-Only Hero Section (Renders only when configured by Admin) */}
+      {heroImageUrl && (
+        <section className="w-full overflow-hidden bg-neutral-950 flex items-center justify-center">
+          <div className="w-full max-w-[1920px] mx-auto">
+            <img
+              src={heroImageUrl}
+              alt="Vault.Co"
+              className="w-full h-auto max-h-[70vh] object-cover object-center block"
+              loading="eager"
+            />
+          </div>
+        </section>
+      )}
 
       {/* Brand Story Section */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">

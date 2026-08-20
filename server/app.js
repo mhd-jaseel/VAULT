@@ -135,7 +135,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const products = await Product.find({}).select('_id updatedAt').lean();
     const categories = await Category.find({}).select('_id updatedAt').lean();
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://vault.co';
+    const baseUrl = process.env.FRONTEND_URL || 'https://vaultco.online';
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -167,7 +167,7 @@ app.get('/sitemap.xml', async (req, res) => {
 });
 
 app.get('/robots.txt', (req, res) => {
-  const domain = process.env.FRONTEND_URL || 'https://vault.co';
+  const domain = process.env.FRONTEND_URL || 'https://vaultco.online';
   const robots = [
     'User-agent: *',
     'Allow: /',

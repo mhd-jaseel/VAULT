@@ -30,7 +30,8 @@ export const getReturnById = async (req, res) => {
     const returnRecord = await Return.findById(req.params.id)
       .populate('user', 'name email phone')
       .populate('order')
-      .populate('orderItem.product');
+      .populate('orderItem.product')
+      .populate('walletTransaction');
 
     if (!returnRecord) {
       return res.status(404).json({ success: false, message: 'Return record not found.' });

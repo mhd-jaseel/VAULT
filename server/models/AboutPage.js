@@ -111,6 +111,11 @@ const additionalSectionSchema = new mongoose.Schema(
 
 const aboutPageSchema = new mongoose.Schema(
   {
+    heroImage: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     hero: {
       establishedYear: {
         type: String,

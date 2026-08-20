@@ -93,7 +93,6 @@ const couponSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-couponSchema.index({ couponCode: 1 });
 couponSchema.index({ status: 1 });
 couponSchema.index({ isDeleted: 1 });
 

@@ -103,6 +103,32 @@ const returnSchema = new mongoose.Schema(
       type: Date,
     },
 
+    // ── Replacement Dispatch Details ───────────────────────────────────────
+    replacementShipment: {
+      courierName: {
+        type: String,
+        trim: true,
+      },
+      trackingNumber: {
+        type: String,
+        trim: true,
+      },
+      shippedAt: {
+        type: Date,
+      },
+      notes: {
+        type: String,
+        trim: true,
+      },
+    },
+    replacementShippedAt: {
+      type: Date,
+    },
+    stockReserved: {
+      type: Boolean,
+      default: false,
+    },
+
     // ── Return Shipping Address Snapshot (Captured when Approved) ───────────
     returnShippingAddressSnapshot: {
       recipientName: { type: String, trim: true },
@@ -148,6 +174,11 @@ const returnSchema = new mongoose.Schema(
       },
     ],
 
+    activeItemKey: {
+      type: String,
+      default: null,
+    },
+
     deliveredAtSnapshot: {
       type: Date,
       required: true,
@@ -158,6 +189,13 @@ const returnSchema = new mongoose.Schema(
 
 returnSchema.index({ user: 1, createdAt: -1 });
 returnSchema.index({ order: 1, 'orderItem.product': 1 });
+returnSchema.index(
+  { activeItemKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { activeItemKey: { $type: 'string' } },
+  }
+);
 
 const Return = mongoose.model('Return', returnSchema);
 export default Return;

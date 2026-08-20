@@ -64,15 +64,28 @@ export const createReturnRequest = async (req, res) => {
     }
 
     // ── 3-Day Return Window Rule (Strict Server-Side Enforcement) ────────────
-    const deliveredTime = order.deliveredAt ? new Date(order.deliveredAt).getTime() : new Date(order.updatedAt).getTime();
-    const nowTime = Date.now();
-    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-
-    if (nowTime - deliveredTime > THREE_DAYS_MS) {
-      return res.status(422).json({
+    if (!order.deliveredAt) {
+      return res.status(400).json({
         success: false,
-        message: 'Return period has expired. Returns can only be requested within 3 days of delivery.',
+        message: 'Order delivery timestamp is missing. Please contact customer support.',
+        code: 'DELIVERY_DATE_MISSING',
+      });
+    }
+
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000; // Exact 72 hours
+    const deliveredTime = new Date(order.deliveredAt).getTime();
+    const returnDeadline = deliveredTime + THREE_DAYS_MS;
+    const nowTime = Date.now();
+
+    if (nowTime > returnDeadline) {
+      return res.status(400).json({
+        success: false,
+        message: 'Return window has expired. Returns can only be requested within 3 days of delivery.',
         code: 'RETURN_PERIOD_EXPIRED',
+        data: {
+          deliveredAt: order.deliveredAt,
+          returnDeadline: new Date(returnDeadline),
+        },
       });
     }
 
@@ -83,6 +96,15 @@ export const createReturnRequest = async (req, res) => {
         success: false,
         message: 'Product not found in this order.',
         code: 'ITEM_NOT_FOUND',
+      });
+    }
+
+    // Verify item is active and eligible
+    if (['CANCELLED', 'RETURNED'].includes(orderItem.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `This item is already ${orderItem.status.toLowerCase()} and cannot be returned.`,
+        code: 'ITEM_NOT_ELIGIBLE',
       });
     }
 
@@ -133,6 +155,7 @@ export const createReturnRequest = async (req, res) => {
     // Create Return Record
     const returnRecord = new Return({
       returnId: generateReturnId(),
+      activeItemKey: `${order._id}_${orderItem.product}`,
       user: req.user._id,
       order: order._id,
       orderItem: {
@@ -183,6 +206,20 @@ export const createReturnRequest = async (req, res) => {
       data: savedReturn,
     });
   } catch (error) {
+    if (error.code === 11000) {
+      const existingReturn = await Return.findOne({
+        order: orderId,
+        'orderItem.product': productId,
+        status: { $ne: 'REJECTED' },
+      });
+      return res.status(409).json({
+        success: false,
+        message: 'A return request already exists for this item.',
+        code: 'RETURN_ALREADY_EXISTS',
+        data: existingReturn,
+      });
+    }
+
     console.error('[VAULT] createReturnRequest error:', error);
     res.status(500).json({
       success: false,

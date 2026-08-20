@@ -122,6 +122,12 @@ export const createRazorpayOrder = async (req, res) => {
       let hasEligibleItem = false;
 
       for (const item of orderItems) {
+        // Business Rule: Discounted items cannot receive coupon discounts
+        if (Number(item.itemDiscount || 0) > 0) {
+          item.isCouponEligible = false;
+          continue;
+        }
+
         const prodIdStr = String(item.product);
         const details = cartProductDetails.find((p) => String(p._id) === prodIdStr);
         if (!details) continue;
@@ -148,7 +154,15 @@ export const createRazorpayOrder = async (req, res) => {
         }
       }
 
-      if (!hasEligibleItem) return res.status(400).json({ success: false, message: 'This coupon is not applicable to any items in your cart.' });
+      if (!hasEligibleItem) {
+        const hasDiscounted = orderItems.some((i) => Number(i.itemDiscount || 0) > 0);
+        return res.status(400).json({
+          success: false,
+          message: hasDiscounted
+            ? 'Coupons cannot be applied to products that are already discounted.'
+            : 'This coupon is not applicable to any items in your cart.',
+        });
+      }
       if (eligibleSubtotal < (coupon.minimumPurchase || 0))
         return res.status(400).json({ success: false, message: `Minimum order amount of ₹${coupon.minimumPurchase} required to apply this coupon.` });
 
@@ -163,7 +177,7 @@ export const createRazorpayOrder = async (req, res) => {
       couponObj = coupon;
       freeShippingCoupon = coupon.freeShipping;
 
-      // Allocate coupon discount proportionally across eligible items
+      // Allocate coupon discount proportionally across eligible non-discounted items
       let allocatedTotal = 0;
       const eligibleItems = orderItems.filter(i => i.isCouponEligible);
       
@@ -183,7 +197,7 @@ export const createRazorpayOrder = async (req, res) => {
     orderItems.forEach(item => {
       delete item.isCouponEligible;
       const lineGross = item.price * item.quantity;
-      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.itemDiscount || 0) - (item.allocatedCouponDiscount || 0)) * 100) / 100);
+      item.linePaidAmount = Math.max(0, Math.round((lineGross - (item.allocatedCouponDiscount || 0)) * 100) / 100);
       item.unitPaidAmount = Math.round((item.linePaidAmount / item.quantity) * 100) / 100;
     });
 
