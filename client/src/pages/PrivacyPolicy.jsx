@@ -318,6 +318,10 @@ export default function PrivacyPolicy() {
                   <p className="font-bold text-neutral-900">Sole Proprietorship (Online E-Commerce)</p>
                 </div>
                 <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Jurisdiction / Location</span>
+                  <p className="font-bold text-neutral-900">Malappuram, Kerala, India</p>
+                </div>
+                <div>
                   <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Privacy &amp; Official Email</span>
                   <p className="font-bold text-neutral-900">
                     <a href="mailto:vault.co.6235@gmail.com" className="underline hover:text-amber-600">vault.co.6235@gmail.com</a>

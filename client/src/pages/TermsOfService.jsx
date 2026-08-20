@@ -344,7 +344,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              These Terms shall be governed by, interpreted, and construed in accordance with the substantive laws of the Republic of India. Any disputes, claims, or legal controversies arising out of or related to these Terms, orders, or transactions on the Website shall be subject to the exclusive jurisdiction of the competent courts located in <strong>[BUSINESS JURISDICTION / CITY — TO BE CONFIRMED BY PROPRIETOR]</strong>.
+              These Terms shall be governed by and construed in accordance with the laws of India. Any disputes, claims, or legal controversies arising out of or relating to these Terms, orders, or transactions on the Website shall be subject to the jurisdiction of the competent courts in <strong>Malappuram, Kerala, India</strong>.
             </p>
           </section>
 
@@ -375,6 +375,10 @@ export default function TermsOfService() {
                 <div>
                   <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Business Type</span>
                   <p className="font-bold text-neutral-900">Sole Proprietorship (Online E-Commerce)</p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Jurisdiction / Location</span>
+                  <p className="font-bold text-neutral-900">Malappuram, Kerala, India</p>
                 </div>
                 <div>
                   <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Customer Support &amp; Official Email</span>
