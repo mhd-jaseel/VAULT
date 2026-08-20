@@ -18,49 +18,11 @@ const SHOP_STOCK_OPTIONS = [
   { value: 'out_of_stock', label: 'Out of Stock' },
 ];
 
-const INITIAL_PRODUCTS = [
-  {
-    _id: '6a829a6018f9a808dccc1b55',
-    name: 'Chrome Hearts Edition',
-    description: 'Stainless steel \r\nGood Quality',
-    price: 299,
-    originalPrice: 299,
-    discountAmount: 99,
-    finalPrice: 200,
-    isDiscounted: true,
-    discountName: 'Product Discount',
-    discountType: 'fixed',
-    discountValue: 99,
-    stock: 4,
-    images: ['https://res.cloudinary.com/xthhn7yf/image/upload/v1787046235/vault/products/oovba6q5qa1tsjbu6h6y.jpg'],
-    isFeatured: true,
-    ratings: { average: 0, count: 0 },
-    brand: { _id: '6a7ffb23bf488be260690222', name: 'vault.co' },
-    category: { _id: '6a825c9365fa359dc98ff70d', name: 'BRACELTS' },
-  },
-  {
-    _id: '6a85b6129b75777d87270894',
-    name: 'Premium Wallet',
-    description: 'good quality',
-    price: 100,
-    originalPrice: 100,
-    discountAmount: 0,
-    finalPrice: 100,
-    isDiscounted: false,
-    stock: 10,
-    images: ['https://res.cloudinary.com/xthhn7yf/image/upload/v1787147793/vault/products/jgamk1ogxtkb2wr2rmci.jpg'],
-    isFeatured: true,
-    ratings: { average: 0, count: 0 },
-    brand: { _id: '6a7ffb23bf488be260690222', name: 'vault.co' },
-    category: { _id: '6a825bac65fa359dc98ff68f', name: 'WALLETS' },
-  },
-];
-
 export default function Shop() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const { user, loading: authLoading } = useContext(AuthContext);
   const [wishlistIds, setWishlistIds] = useState([]);
@@ -263,9 +225,13 @@ export default function Shop() {
     }
   };
 
+  // 1. Fetch dynamic products whenever filters or search parameters change
   useEffect(() => {
     fetchProducts();
+  }, [debouncedSearch, selectedCategory, sort, minPrice, maxPrice, stockFilter, page, mode, returnIdParam]);
 
+  // 2. Synchronize dynamic SEO metadata, canonical URLs, breadcrumbs, and catalog ItemList schema
+  useEffect(() => {
     const currentCat = categories.find((c) => c._id === selectedCategory);
     const catName = currentCat ? currentCat.name : null;
 
@@ -284,7 +250,7 @@ export default function Shop() {
       { name: catName || 'Shop', url: selectedCategory ? `/shop?category=${selectedCategory}` : '/shop' },
     ];
 
-    const itemListSchema = {
+    const itemListSchema = products.length > 0 ? {
       '@context': 'https://schema.org',
       '@type': 'ItemList',
       name: pageTitle,
@@ -296,7 +262,7 @@ export default function Shop() {
         name: prod.name,
         url: `https://vaultco.online/product/${prod._id}`,
       })),
-    };
+    } : undefined;
 
     setDocumentSEO({
       title: pageTitle,
@@ -305,7 +271,7 @@ export default function Shop() {
       jsonLd: itemListSchema,
       breadcrumbList: breadcrumbs,
     });
-  }, [debouncedSearch, selectedCategory, sort, minPrice, maxPrice, stockFilter, page, mode, returnIdParam, categories, products]);
+  }, [debouncedSearch, selectedCategory, categories, products]);
 
   const handleClearFilters = () => {
     setSearch('');
