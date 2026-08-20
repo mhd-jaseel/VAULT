@@ -15,14 +15,15 @@ import {
   Lock,
   Tag,
   MessageSquare,
-  Ban
+  Ban,
+  UserCheck
 } from 'lucide-react';
 
 export default function TermsOfService() {
   useEffect(() => {
     setDocumentSEO({
-      title: 'Terms of Service | Vault.Co',
-      description: 'Review the official Terms of Service for Vault.Co governing website use, orders, Razorpay payments, 3-day returns, and store credit policies.',
+      title: 'Terms of Service | VAULT.CO',
+      description: 'Review the official Terms of Service for VAULT.CO, operated by Mohammed Jabir A (Sole Proprietorship), governing website use, orders, payments, and 3-day returns.',
       canonicalPath: '/terms',
       breadcrumbList: [
         { name: 'Home', url: '/' },
@@ -54,11 +55,11 @@ export default function TermsOfService() {
             Terms of Service
           </h1>
           <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-mono text-neutral-500 pt-1 border-t border-neutral-100 mt-4">
-            <span><strong>Effective Date:</strong> August 2026</span>
+            <span><strong>Trading Name:</strong> VAULT.CO</span>
+            <span>•</span>
+            <span><strong>Proprietor:</strong> Mohammed Jabir A (Sole Proprietorship)</span>
             <span>•</span>
             <span><strong>Last Updated:</strong> August 2026</span>
-            <span>•</span>
-            <span><strong>Applicable Law:</strong> Republic of India</span>
           </div>
         </div>
 
@@ -76,10 +77,10 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              Welcome to <strong>Vault.Co</strong> (referred to herein as "Vault.Co", "we", "us", or "our"), operating the e-commerce website located at <strong className="text-neutral-900">https://vaultco.online</strong> and its authorized subdomains (the "Website").
+              Welcome to <strong>VAULT.CO</strong>, an online e-commerce business owned and operated by <strong>Mohammed Jabir A</strong> as a <strong>Sole Proprietorship</strong> (referred to herein as "VAULT.CO", "we", "us", or "our"), operating the e-commerce website located at <strong className="text-neutral-900">https://vaultco.online</strong> and its authorized subdomains (the "Website").
             </p>
             <p>
-              These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "Customer", or "You") and Vault.Co. By accessing, browsing, registering an account, or purchasing products on our Website, you acknowledge that you have read, understood, and agreed to be bound by these Terms and our companion <Link to="/privacy" className="text-neutral-900 underline font-medium hover:text-amber-600">Privacy Policy</Link>. If you do not agree with any part of these Terms, you must immediately discontinue your use of the Website.
+              These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "Customer", or "You") and VAULT.CO (operated by Mohammed Jabir A). By accessing, browsing, registering an account, or purchasing products on our Website, you acknowledge that you have read, understood, and agreed to be bound by these Terms and our companion <Link to="/privacy" className="text-neutral-900 underline font-medium hover:text-amber-600">Privacy Policy</Link>. If you do not agree with any part of these Terms, you must immediately discontinue your use of the Website.
             </p>
           </section>
 
@@ -94,13 +95,13 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              To create an account or complete transactions on Vault.Co, you represent and warrant that:
+              To create an account or complete transactions on VAULT.CO, you represent and warrant that:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>You are at least 18 years of age and competent to enter into a legally binding contract under the <em>Indian Contract Act, 1872</em>.</li>
-              <li>All registration details submitted by you—including your full legal name, email address, phone number, and delivery addresses—are accurate, true, and complete.</li>
+              <li>All registration details submitted by you—including your full name, email address, phone number, and delivery addresses—are accurate, true, and complete.</li>
               <li>You are solely responsible for maintaining the confidentiality of your login credentials, session authentication, and account activity.</li>
-              <li>Authentication may be conducted via verified credentials or Google OAuth 2.0 Single Sign-On. You agree to notify Vault.Co immediately upon discovering any unauthorized access to your account.</li>
+              <li>Authentication may be conducted via verified credentials or Google OAuth 2.0 Single Sign-On. You agree to notify VAULT.CO immediately upon discovering any unauthorized access to your account.</li>
             </ul>
           </section>
 
@@ -115,12 +116,12 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              Vault.Co curates and retails premium lifestyle accessories, including precision wristwatches, handcrafted leather wallets, belts, jewelry, sunglasses, caps, and accessories.
+              VAULT.CO curates and retails premium lifestyle accessories, including precision wristwatches, handcrafted leather wallets, belts, jewelry, sunglasses, caps, and accessories.
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
-              <li><strong>Artisanal &amp; Material Variations:</strong> Products crafted from natural full-grain leather, stainless steel, and specialty finishes may exhibit subtle natural grain textures and patina over time. These organic characteristics are hallmarks of authentic materials rather than manufacturing flaws.</li>
-              <li><strong>Visual Representation:</strong> We make reasonable efforts to display accurate high-resolution photography and dimensions. However, screen color calibration on individual display devices may vary slightly from physical pieces.</li>
-              <li><strong>Inventory Availability:</strong> Inventory levels are synchronized in real-time with our database. Placing an item in your shopping cart or wishlist does not reserve stock until order checkout is completed.</li>
+              <li><strong>Artisanal &amp; Material Variations:</strong> Products crafted from natural full-grain leather, stainless steel, and specialty finishes may exhibit subtle natural grain textures and patina over time. These organic characteristics are hallmarks of authentic materials rather than manufacturing defects.</li>
+              <li><strong>Visual Representation:</strong> We make reasonable efforts to display accurate high-resolution photography and dimensions. However, display calibration across individual devices may result in minor visual variations from physical pieces.</li>
+              <li><strong>Inventory Availability:</strong> Inventory levels are synchronized in real-time with our database. Placing an item in your shopping cart or wishlist does not reserve stock until checkout is successfully completed.</li>
             </ul>
           </section>
 
@@ -135,7 +136,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              All prices listed on Vault.Co are denominated in <strong>Indian Rupees (INR - ₹)</strong>.
+              All prices listed on VAULT.CO are denominated in <strong>Indian Rupees (INR - ₹)</strong>.
             </p>
             <div className="bg-neutral-50 rounded-2xl p-4 sm:p-5 border border-neutral-200/80 space-y-2">
               <h3 className="font-mono text-xs font-bold uppercase text-neutral-900">Transparent Cost Breakdown</h3>
@@ -166,7 +167,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              Vault.Co provides secure electronic payment processing through industry-certified gateways:
+              VAULT.CO provides secure electronic payment processing through industry-certified gateways:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
               <div className="p-4 rounded-2xl bg-neutral-50 border border-neutral-200">
@@ -188,7 +189,7 @@ export default function TermsOfService() {
               </div>
             </div>
             <p className="text-xs text-neutral-500 italic">
-              * Note: Cash on Delivery (COD) is not currently supported. Vault.Co never collects or stores raw credit card numbers, CVVs, or bank passwords on its servers.
+              * Note: Cash on Delivery (COD) is not currently supported. VAULT.CO never collects or stores raw credit card numbers, CVVs, or bank passwords on its servers.
             </p>
           </section>
 
@@ -256,7 +257,7 @@ export default function TermsOfService() {
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li><strong>Live Order Tracking:</strong> Real-time milestone updates (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">Pending</code> → <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">Confirmed</code> → <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">Packed</code> → <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">Shipped</code> → <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">Delivered</code>) are available within your account under <Link to="/profile?tab=orders" className="text-neutral-900 underline font-medium">Track Orders</Link>.</li>
               <li><strong>Delivery Timelines:</strong> Standard delivery generally takes 3 to 7 business days depending on customer location. Estimated transit times are indicative and may be impacted by logistics constraints, weather, or regional restrictions.</li>
-              <li><strong>Force Majeure:</strong> Vault.Co is not liable for delivery delays resulting from acts of God, strikes, natural disasters, governmental actions, or carrier logistics interruptions beyond reasonable control.</li>
+              <li><strong>Force Majeure:</strong> VAULT.CO is not liable for delivery delays resulting from acts of God, strikes, natural disasters, governmental actions, or carrier logistics interruptions beyond reasonable control.</li>
             </ul>
           </section>
 
@@ -271,7 +272,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              Promotional codes and automatic discount campaigns offered by Vault.Co are governed by specific eligibility criteria:
+              Promotional codes and automatic discount campaigns offered by VAULT.CO are governed by specific eligibility criteria:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 text-neutral-600">
               <li>Coupons must be entered before order completion and cannot be applied retroactively to completed purchases.</li>
@@ -298,7 +299,7 @@ export default function TermsOfService() {
               <li>Attempt to circumvent server-side authorization or compromise security controls.</li>
             </ul>
             <p className="text-neutral-600">
-              Vault.Co reserves the right to suspend, terminate, or block accounts (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">isBlocked: true</code>) that engage in prohibited conduct or fraudulent activity.
+              VAULT.CO reserves the right to suspend, terminate, or block accounts (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">isBlocked: true</code>) that engage in prohibited conduct or fraudulent activity.
             </p>
           </section>
 
@@ -313,7 +314,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              All content hosted on this Website—including but not limited to the brand name <strong>VAULT.CO</strong>, logos, vector icons, custom UI layouts, product photography, editorial copy, and source code—is the proprietary intellectual property of Vault.Co and protected under Indian and international copyright and trademark laws. Unauthorized reproduction, resale, or distribution is strictly prohibited.
+              All content hosted on this Website—including but not limited to the brand name <strong>VAULT.CO</strong>, logos, vector icons, custom UI layouts, product photography, editorial copy, and source code—is the proprietary intellectual property of VAULT.CO (operated by Mohammed Jabir A) and protected under Indian and international copyright and trademark laws. Unauthorized reproduction, resale, or distribution is strictly prohibited.
             </p>
           </section>
 
@@ -328,7 +329,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              To the maximum extent permitted by applicable Indian law, Vault.Co and its directors, officers, and employees shall not be liable for any indirect, incidental, punitive, special, or consequential damages resulting from website unavailability, delivery delays, or product misuse. Our aggregate liability arising out of any order is strictly limited to the actual net monetary amount paid by the customer for the specific product in dispute.
+              To the maximum extent permitted by applicable Indian law, VAULT.CO and its proprietor, Mohammed Jabir A, shall not be liable for any indirect, incidental, punitive, special, or exemplary damages resulting from website unavailability, carrier delivery delays, or product misuse. Our aggregate liability arising out of any order is strictly limited to the actual net monetary amount paid by the customer for the specific product in dispute.
             </p>
           </section>
 
@@ -343,7 +344,7 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              These Terms shall be governed by, interpreted, and construed in accordance with the substantive laws of the Republic of India. Any disputes, claims, or controversies arising out of or related to these Terms or transactions on the Website shall be subject to the exclusive jurisdiction of the competent courts in <strong>[BUSINESS JURISDICTION / CITY — E.G., MUMBAI, MAHARASHTRA]</strong>.
+              These Terms shall be governed by, interpreted, and construed in accordance with the substantive laws of the Republic of India. Any disputes, claims, or legal controversies arising out of or related to these Terms, orders, or transactions on the Website shall be subject to the exclusive jurisdiction of the competent courts located in <strong>[BUSINESS JURISDICTION / CITY — TO BE CONFIRMED BY PROPRIETOR]</strong>.
             </p>
           </section>
 
@@ -358,25 +359,25 @@ export default function TermsOfService() {
               </h2>
             </div>
             <p>
-              In accordance with the <em>Information Technology Act, 2000</em> and the <em>Consumer Protection (E-Commerce) Rules, 2020</em>, the contact details of our Customer Support and appointed Grievance Officer are set forth below:
+              In accordance with the <em>Information Technology Act, 2000</em> and the <em>Consumer Protection (E-Commerce) Rules, 2020</em>, the contact details of our Customer Support and appointed Grievance Contact are set forth below:
             </p>
 
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 sm:p-6 font-mono text-xs space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Commercial Brand</span>
-                  <p className="font-bold text-neutral-900">Vault.Co</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Commercial / Trading Name</span>
+                  <p className="font-bold text-neutral-900">VAULT.CO</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Legal Entity Name</span>
-                  <p className="font-bold text-neutral-900">[LEGAL BUSINESS NAME — CONFIRM]</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Proprietor / Responsible Person</span>
+                  <p className="font-bold text-neutral-900">Mohammed Jabir A</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Registered Office</span>
-                  <p className="font-bold text-neutral-900">[REGISTERED BUSINESS ADDRESS — CONFIRM], Mumbai, Maharashtra, India</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Business Type</span>
+                  <p className="font-bold text-neutral-900">Sole Proprietorship (Online E-Commerce)</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Customer Care Email</span>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Customer Support &amp; Official Email</span>
                   <p className="font-bold text-neutral-900">
                     <a href="mailto:vault.co.6235@gmail.com" className="underline hover:text-amber-600">vault.co.6235@gmail.com</a>
                   </p>
@@ -388,13 +389,13 @@ export default function TermsOfService() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Grievance Officer</span>
-                  <p className="font-bold text-neutral-900">[GRIEVANCE OFFICER NAME — CONFIRM]</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Grievance Contact</span>
+                  <p className="font-bold text-neutral-900">Mohammed Jabir A</p>
                 </div>
               </div>
             </div>
             <p className="text-[11px] text-neutral-500 italic">
-              Grievances are acknowledged within 48 hours and addressed within statutory resolution timeframes.
+              Customer grievances and support queries are acknowledged within 48 hours and processed within statutory resolution timeframes.
             </p>
           </section>
 

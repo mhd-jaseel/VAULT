@@ -19,8 +19,8 @@ import {
 export default function PrivacyPolicy() {
   useEffect(() => {
     setDocumentSEO({
-      title: 'Privacy Policy | Vault.Co',
-      description: 'Read the official Vault.Co Privacy Policy outlining our data protection practices under India\'s DPDPA 2023, data minimization, and payment security.',
+      title: 'Privacy Policy | VAULT.CO',
+      description: 'Read the official VAULT.CO Privacy Policy outlining our data protection practices under India\'s DPDPA 2023, data minimization, and payment security.',
       canonicalPath: '/privacy',
       breadcrumbList: [
         { name: 'Home', url: '/' },
@@ -52,11 +52,11 @@ export default function PrivacyPolicy() {
             Privacy Policy
           </h1>
           <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-mono text-neutral-500 pt-1 border-t border-neutral-100 mt-4">
-            <span><strong>Effective Date:</strong> August 2026</span>
+            <span><strong>Data Fiduciary:</strong> VAULT.CO</span>
+            <span>•</span>
+            <span><strong>Proprietor:</strong> Mohammed Jabir A (Sole Proprietorship)</span>
             <span>•</span>
             <span><strong>Last Updated:</strong> August 2026</span>
-            <span>•</span>
-            <span><strong>Regulatory Framework:</strong> Digital Personal Data Protection Act, 2023 (DPDPA)</span>
           </div>
         </div>
 
@@ -74,10 +74,10 @@ export default function PrivacyPolicy() {
               </h2>
             </div>
             <p>
-              At <strong>Vault.Co</strong> (referred to herein as "Vault.Co", "we", "us", or "our"), we respect your privacy and are committed to protecting the personal data of our users ("Data Principals"). This Privacy Policy describes how we collect, process, store, and safeguard your personal information when you visit <strong className="text-neutral-900">https://vaultco.online</strong> (the "Website"), create an account, or order products.
+              At <strong>VAULT.CO</strong>, owned and operated by <strong>Mohammed Jabir A</strong> as a <strong>Sole Proprietorship</strong> (referred to herein as "VAULT.CO", "we", "us", or "our"), we respect your privacy and are committed to protecting the personal data of our users ("Data Principals"). This Privacy Policy describes how we collect, process, store, and safeguard your personal information when you visit <strong className="text-neutral-900">https://vaultco.online</strong> (the "Website"), create an account, or order products.
             </p>
             <p>
-              Vault.Co acts as a <strong>Data Fiduciary</strong> in accordance with India's <em>Digital Personal Data Protection Act, 2023</em> (DPDPA), the <em>Digital Personal Data Protection Rules, 2025</em>, and the <em>Information Technology Act, 2000</em>.
+              VAULT.CO acts as a <strong>Data Fiduciary</strong> in accordance with India's <em>Digital Personal Data Protection Act, 2023</em> (DPDPA), the <em>Digital Personal Data Protection Rules, 2025</em>, and the <em>Information Technology Act, 2000</em>.
             </p>
           </section>
 
@@ -131,7 +131,7 @@ export default function PrivacyPolicy() {
                 <Ban size={14} /> Explicit Confirmation: What We Do NOT Collect
               </div>
               <p className="text-xs text-neutral-300 leading-relaxed">
-                Vault.Co does <strong>NOT</strong> collect, request, or store your GPS location data, biometric data, phone contacts, microphone or camera access, or browsing activity across third-party websites.
+                VAULT.CO does <strong>NOT</strong> collect, request, or store your GPS location data, biometric data, phone contacts, microphone or camera access, or browsing activity across third-party websites.
               </p>
             </div>
           </section>
@@ -154,7 +154,7 @@ export default function PrivacyPolicy() {
                 <ShieldCheck size={14} className="text-amber-600" /> Zero Raw Financial Data Stored
               </h3>
               <p className="text-xs text-neutral-700 leading-relaxed">
-                Vault.Co servers <strong>never collect, process, or store raw credit/debit card numbers, CVVs, card expiry dates, bank passwords, or UPI PINs</strong>. All payment credential entry occurs directly inside Razorpay’s PCI-DSS compliant checkout frame. Vault.Co receives only cryptographic transaction identifiers (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_order_id</code>, <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_payment_id</code>) and captured status confirmations.
+                VAULT.CO servers <strong>never collect, process, or store raw credit/debit card numbers, CVVs, card expiry dates, bank passwords, or UPI PINs</strong>. All payment credential entry occurs directly inside Razorpay’s PCI-DSS compliant checkout frame. VAULT.CO receives only cryptographic transaction identifiers (<code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_order_id</code>, <code className="font-mono text-[11px] bg-neutral-100 px-1 rounded">razorpay_payment_id</code>) and captured status confirmations.
               </p>
             </div>
           </section>
@@ -251,7 +251,7 @@ export default function PrivacyPolicy() {
               We implement reasonable technical and organizational measures designed to protect your personal data, including TLS 1.3 encryption in transit, bcrypt password hashing with salt rounds, HMAC-SHA256 signature verification for payment payloads, parameterized database queries, and server-level rate limiting.
             </p>
             <p>
-              Personal data is retained for the duration of your active account. Transactional order and invoice records are preserved for statutory retention periods mandated under Indian taxation and corporate accounting regulations.
+              Personal data is retained for the duration of your active account. Transactional order and invoice records are preserved for statutory retention periods mandated under Indian taxation and accounting regulations.
             </p>
           </section>
 
@@ -270,7 +270,7 @@ export default function PrivacyPolicy() {
               <li><strong>Right to Access:</strong> View and review personal details stored in your Vault Profile and Order History.</li>
               <li><strong>Right to Correction &amp; Updating:</strong> Modify, update, or correct inaccurate delivery addresses or profile information.</li>
               <li><strong>Right to Erasure / Deletion:</strong> Request deletion of your account and personal data, subject to legal and financial audit retention requirements.</li>
-              <li><strong>Right of Grievance Redressal:</strong> Submit inquiries or grievances to our appointed Grievance Officer.</li>
+              <li><strong>Right of Grievance Redressal:</strong> Submit inquiries or grievances to our appointed Grievance Contact.</li>
             </ul>
           </section>
 
@@ -285,7 +285,7 @@ export default function PrivacyPolicy() {
               </h2>
             </div>
             <p>
-              Vault.Co does not knowingly solicit or collect personal data from individuals under the age of 18 without parental consent. If we discover that personal data of a minor has been collected without parental consent, we take prompt steps to remove such information.
+              VAULT.CO does not knowingly solicit or collect personal data from individuals under the age of 18 without parental consent. If we discover that personal data of a minor has been collected without parental consent, we take prompt steps to remove such information.
             </p>
           </section>
 
@@ -306,32 +306,32 @@ export default function PrivacyPolicy() {
             <div className="bg-neutral-50 border border-neutral-200 rounded-2xl p-5 sm:p-6 font-mono text-xs space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Data Fiduciary</span>
-                  <p className="font-bold text-neutral-900">Vault.Co</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Data Fiduciary / Brand</span>
+                  <p className="font-bold text-neutral-900">VAULT.CO</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Legal Entity Name</span>
-                  <p className="font-bold text-neutral-900">[LEGAL BUSINESS NAME — CONFIRM]</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Proprietor / Responsible Person</span>
+                  <p className="font-bold text-neutral-900">Mohammed Jabir A</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Registered Address</span>
-                  <p className="font-bold text-neutral-900">[REGISTERED BUSINESS ADDRESS — CONFIRM], Mumbai, Maharashtra, India</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Business Type</span>
+                  <p className="font-bold text-neutral-900">Sole Proprietorship (Online E-Commerce)</p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Privacy &amp; Support Email</span>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Privacy &amp; Official Email</span>
                   <p className="font-bold text-neutral-900">
                     <a href="mailto:vault.co.6235@gmail.com" className="underline hover:text-amber-600">vault.co.6235@gmail.com</a>
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Support Contact</span>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Support Phone Contact</span>
                   <p className="font-bold text-neutral-900">
                     <a href="tel:+916235623868" className="underline hover:text-amber-600">+91 62356 23868</a>
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Grievance Officer</span>
-                  <p className="font-bold text-neutral-900">[GRIEVANCE OFFICER NAME — CONFIRM]</p>
+                  <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Grievance Contact</span>
+                  <p className="font-bold text-neutral-900">Mohammed Jabir A</p>
                 </div>
               </div>
             </div>

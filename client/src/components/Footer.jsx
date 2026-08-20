@@ -42,7 +42,7 @@ export default function Footer() {
       </div>
 
       <div className="max-w-7xl mx-auto border-t border-border-light mt-8 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-text-secondary">
-        <p>© {new Date().getFullYear()} VAULT.CO Inc. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} VAULT.CO. All rights reserved.</p>
         <div className="flex gap-4">
           <Link to="/privacy" className="hover:text-text-primary transition-colors cursor-pointer font-mono text-[10px]">
             PRIVACY POLICY
