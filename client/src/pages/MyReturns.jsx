@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { RotateCcw, ChevronRight, Package, Clock, ShieldCheck } from 'lucide-react';
 import Pagination from '../components/Pagination';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function MyReturns() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -10,6 +11,15 @@ export default function MyReturns() {
   const [pages, setPages] = useState(1);
   const [returns, setReturns] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'My Returns & Exchanges | Vault.Co',
+      description: 'Track and manage your return or exchange requests at Vault.Co.',
+      noIndex: true,
+      canonicalPath: '/my-returns',
+    });
+  }, []);
 
   const fetchReturns = async () => {
     setLoading(true);

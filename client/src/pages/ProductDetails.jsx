@@ -200,23 +200,25 @@ export default function ProductDetails() {
     const brandName = product.brand?.name || 'Vault.Co';
     const categoryName = product.category?.name || 'Accessories';
     const primaryImg = product.images && product.images[0] ? resolveImage(product.images[0]) : '';
+    const currentPrice = product.finalPrice || product.price;
 
     const productSchema = {
       '@context': 'https://schema.org',
       '@type': 'Product',
       name: product.name,
       image: product.images ? product.images.map((img) => resolveImage(img)) : [],
-      description: product.description,
+      description: product.description || `Shop the ${product.name} from Vault.Co. Premium craft and authentic design.`,
       sku: product.sku || product._id,
       brand: {
         '@type': 'Brand',
         name: brandName,
       },
+      category: categoryName,
       offers: {
         '@type': 'Offer',
-        url: window.location.href,
+        url: `https://vaultco.online/product/${product._id}`,
         priceCurrency: 'INR',
-        price: product.price,
+        price: currentPrice,
         itemCondition: 'https://schema.org/NewCondition',
         availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       },
@@ -225,7 +227,7 @@ export default function ProductDetails() {
     if (product.ratings && product.ratings.count > 0 && product.ratings.average > 0) {
       productSchema.aggregateRating = {
         '@type': 'AggregateRating',
-        ratingValue: product.ratings.average.toFixed(1),
+        ratingValue: Number(product.ratings.average).toFixed(1),
         reviewCount: product.ratings.count,
       };
     }
@@ -236,11 +238,13 @@ export default function ProductDetails() {
       { name: product.name, url: `/product/${product._id}` },
     ];
 
+    const productMetaDesc = product.description
+      ? `Shop the ${product.name} from Vault.Co. ${product.description.slice(0, 130).trim()}...`
+      : `Shop the ${product.name} from Vault.Co. Explore product details, pricing, availability and more.`;
+
     setDocumentSEO({
       title: `${product.name} | Vault.Co`,
-      description: product.description
-        ? product.description.slice(0, 160)
-        : `Shop ${product.name} at Vault.Co. Premium craft and authentic design.`,
+      description: productMetaDesc,
       canonicalPath: `/product/${product._id}`,
       ogType: 'product',
       ogImage: primaryImg,
@@ -388,7 +392,7 @@ export default function ProductDetails() {
               <>
                 <img 
                   src={resolveImage(activeImage)} 
-                  alt={product.name} 
+                  alt={`${product.name} - Vault.Co`} 
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"

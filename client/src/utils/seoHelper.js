@@ -1,9 +1,10 @@
 /**
  * Centralized SEO & Metadata Utility for VAULT.CO
+ * Strictly enforces https://vaultco.online as the canonical/primary domain.
  */
 
 const SITE_NAME = 'Vault.Co';
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : 'https://vault.co';
+const CANONICAL_DOMAIN = 'https://vaultco.online';
 
 export const setDocumentSEO = ({
   title,
@@ -20,7 +21,7 @@ export const setDocumentSEO = ({
   // 1. Page Title
   const formattedTitle = title
     ? (title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`)
-    : `${SITE_NAME} | Online Shopping`;
+    : `${SITE_NAME} | Premium Watches, Wallets, Belts, Chains & Accessories`;
   document.title = formattedTitle;
 
   // Helper to upsert meta tags
@@ -37,17 +38,17 @@ export const setDocumentSEO = ({
 
   // 2. Meta Description
   const defaultDesc =
-    'Shop premium luxury accessories at Vault.Co. Curated collection of masterfully engineered watches, leather wallets, belts, jewelry and fragrances for the modern gentleman.';
+    'Shop premium watches, wallets, belts, chains, rings, glasses, caps, earrings and accessories at Vault.Co. Discover stylish collections with a smooth online shopping experience.';
   const finalDesc = description || defaultDesc;
   setMetaTag('name', 'description', finalDesc);
 
   // 3. Robots Meta Tag
   setMetaTag('name', 'robots', noIndex ? 'noindex, nofollow' : 'index, follow');
 
-  // 4. Canonical URL
-  const canonicalUrl = canonicalPath
-    ? `${BASE_URL}${canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`}`
-    : `${BASE_URL}${window.location.pathname}`;
+  // 4. Canonical URL (Always anchored to authoritative https://vaultco.online)
+  let cleanPath = canonicalPath || (typeof window !== 'undefined' ? window.location.pathname : '/');
+  if (!cleanPath.startsWith('/')) cleanPath = `/${cleanPath}`;
+  const canonicalUrl = `${CANONICAL_DOMAIN}${cleanPath}`;
 
   let linkCanonical = document.querySelector('link[rel="canonical"]');
   if (!linkCanonical) {
@@ -63,24 +64,22 @@ export const setDocumentSEO = ({
   setMetaTag('property', 'og:type', ogType);
   setMetaTag('property', 'og:url', canonicalUrl);
   setMetaTag('property', 'og:site_name', SITE_NAME);
-  if (ogImage) {
-    const fullOgImage = ogImage.startsWith('http') ? ogImage : `${BASE_URL}${ogImage.startsWith('/') ? ogImage : `/${ogImage}`}`;
-    setMetaTag('property', 'og:image', fullOgImage);
-  }
+  
+  const ogImgUrl = ogImage
+    ? (ogImage.startsWith('http') ? ogImage : `${CANONICAL_DOMAIN}${ogImage.startsWith('/') ? ogImage : `/${ogImage}`}`)
+    : `${CANONICAL_DOMAIN}/android-chrome-512x512.png`;
+  setMetaTag('property', 'og:image', ogImgUrl);
 
   // 6. Twitter / X Cards
   setMetaTag('name', 'twitter:card', 'summary_large_image');
   setMetaTag('name', 'twitter:title', formattedTitle);
   setMetaTag('name', 'twitter:description', finalDesc);
-  if (ogImage) {
-    const fullOgImage = ogImage.startsWith('http') ? ogImage : `${BASE_URL}${ogImage.startsWith('/') ? ogImage : `/${ogImage}`}`;
-    setMetaTag('name', 'twitter:image', fullOgImage);
-  }
+  setMetaTag('name', 'twitter:image', ogImgUrl);
 
   // 7. Dynamic JSON-LD Structured Data
+  const scriptId = 'page-jsonld-schema';
+  let scriptTag = document.getElementById(scriptId);
   if (jsonLd) {
-    const scriptId = 'page-jsonld-schema';
-    let scriptTag = document.getElementById(scriptId);
     if (!scriptTag) {
       scriptTag = document.createElement('script');
       scriptTag.id = scriptId;
@@ -88,12 +87,14 @@ export const setDocumentSEO = ({
       document.head.appendChild(scriptTag);
     }
     scriptTag.textContent = JSON.stringify(jsonLd);
+  } else if (scriptTag) {
+    scriptTag.remove();
   }
 
   // 8. Breadcrumb JSON-LD Schema
+  const breadcrumbScriptId = 'breadcrumb-jsonld-schema';
+  let breadcrumbScript = document.getElementById(breadcrumbScriptId);
   if (breadcrumbList && breadcrumbList.length > 0) {
-    const breadcrumbScriptId = 'breadcrumb-jsonld-schema';
-    let breadcrumbScript = document.getElementById(breadcrumbScriptId);
     if (!breadcrumbScript) {
       breadcrumbScript = document.createElement('script');
       breadcrumbScript.id = breadcrumbScriptId;
@@ -107,9 +108,11 @@ export const setDocumentSEO = ({
         '@type': 'ListItem',
         position: index + 1,
         name: item.name,
-        item: item.url.startsWith('http') ? item.url : `${BASE_URL}${item.url.startsWith('/') ? item.url : `/${item.url}`}`,
+        item: item.url.startsWith('http') ? item.url : `${CANONICAL_DOMAIN}${item.url.startsWith('/') ? item.url : `/${item.url}`}`,
       })),
     };
     breadcrumbScript.textContent = JSON.stringify(breadcrumbData);
+  } else if (breadcrumbScript) {
+    breadcrumbScript.remove();
   }
 };

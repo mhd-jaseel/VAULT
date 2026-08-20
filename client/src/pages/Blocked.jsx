@@ -3,11 +3,19 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ShieldX, Phone, Mail, ArrowLeft } from 'lucide-react';
 import VaultLogo from '../components/VaultLogo';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Blocked() {
   const [settings, setSettings] = useState(null);
 
   useEffect(() => {
+    setDocumentSEO({
+      title: 'Account Suspended | Vault.Co',
+      description: 'Your account access has been suspended. Please contact customer support.',
+      noIndex: true,
+      canonicalPath: '/blocked',
+    });
+
     // Fetch store settings for real support contact info
     axios.get('/settings').then(res => {
       if (res.data.success) setSettings(res.data.data);

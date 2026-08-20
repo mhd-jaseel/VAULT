@@ -23,12 +23,12 @@ export default function About() {
 
   useEffect(() => {
     setDocumentSEO({
-      title: 'About Vault.Co',
-      description: 'Learn about Vault.Co — engineered for the modern gentleman with artisanal craft, timeless horology, and uncompromised quality.',
+      title: 'About Vault.Co | Premium Fashion & Accessories',
+      description: 'Learn more about Vault.Co, our approach to premium fashion accessories, and our mission to make stylish everyday essentials accessible online.',
       canonicalPath: '/about',
       breadcrumbList: [
         { name: 'Home', url: '/' },
-        { name: 'About', url: '/about' },
+        { name: 'About Vault.Co', url: '/about' },
       ],
     });
 
@@ -179,13 +179,26 @@ export default function About() {
 
       {/* Brand Story Section */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+        {/* Main H1 for SEO */}
+        <div className="mb-12 border-b border-neutral-100 pb-8">
+          <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase block mb-2">
+            BRAND HERITAGE &amp; IDENTITY
+          </span>
+          <h1 className="text-3xl md:text-5xl font-display font-extrabold uppercase tracking-tight text-neutral-900">
+            About Vault.Co
+          </h1>
+          <p className="text-xs md:text-sm text-neutral-500 font-sans mt-3 max-w-2xl leading-relaxed">
+            Crafting premium men's accessories and daily essentials with enduring materials, artisanal attention to detail, and a commitment to modern style.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="text-[10px] font-mono tracking-widest text-neutral-400 uppercase block mb-2">
               {story.tagline || 'OUR NARRATIVE'}
             </span>
             <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-neutral-900 font-display mb-6">
-              {story.heading || 'REDEFINING MODERN LUXURY'}
+              {story.heading || 'Our Story'}
             </h2>
             <div className="space-y-4 text-xs md:text-sm text-neutral-600 leading-relaxed">
               {story.paragraphs && story.paragraphs.length > 0 ? (
@@ -368,6 +381,60 @@ export default function About() {
           </section>
         );
       })}
+
+      {/* Structured SEO Editorial Section */}
+      <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto border-t border-neutral-100 bg-neutral-50/50">
+        <div className="max-w-5xl mx-auto space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-3">
+              <h2 className="text-xl font-display font-bold uppercase tracking-tight text-neutral-900">
+                What Vault.Co Offers
+              </h2>
+              <p className="text-xs md:text-sm text-neutral-600 font-sans leading-relaxed">
+                Vault.Co curates a distinct selection of daily lifestyle essentials. From precision-engineered wristwatches with Japanese quartz movements to handcrafted full-grain leather wallets, solid brass buckle belts, stainless steel jewelry, and modern sunglasses, each category is curated for longevity and aesthetic appeal.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-xl font-display font-bold uppercase tracking-tight text-neutral-900">
+                Our Approach to Quality
+              </h2>
+              <p className="text-xs md:text-sm text-neutral-600 font-sans leading-relaxed">
+                We believe premium items should withstand daily use. We source durable 316L stainless steel, vegetable-tanned leathers, and scratch-resistant crystals. Every product undergoes strict multi-point physical inspections before packing and dispatch.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-neutral-200/80 pt-10 grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-3">
+              <h2 className="text-xl font-display font-bold uppercase tracking-tight text-neutral-900">
+                Our Collection
+              </h2>
+              <p className="text-xs md:text-sm text-neutral-600 font-sans leading-relaxed">
+                Explore our full line of curated men's accessories. Find the perfect minimalist wallet, statement timepiece, or signature chain to elevate your daily style.
+              </p>
+              <div className="pt-2">
+                <Link
+                  to="/shop"
+                  className="inline-flex items-center gap-2 text-xs font-mono font-bold uppercase px-5 py-2.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 transition-colors"
+                >
+                  Explore The Collection →
+                </Link>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-xl font-display font-bold uppercase tracking-tight text-neutral-900">
+                Our Commitment to Customers
+              </h2>
+              <p className="text-xs md:text-sm text-neutral-600 font-sans leading-relaxed">
+                Your satisfaction is our foundation. We provide end-to-end order tracking, prompt customer support, secure encrypted transactions, and a straightforward 3-day return policy on all eligible orders.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }

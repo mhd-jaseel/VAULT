@@ -26,17 +26,17 @@ export default function Home() {
   // SEO metadata setup
   useEffect(() => {
     setDocumentSEO({
-      title: 'Vault.Co | Online Shopping',
-      description: 'Discover luxury men\'s accessories at Vault.Co. Curated collection of masterfully engineered watches, premium leather wallets, belts, jewelry and fragrances.',
+      title: 'Vault.Co | Premium Watches, Wallets, Belts, Chains & Accessories',
+      description: 'Shop premium watches, wallets, belts, chains, rings, glasses, caps, earrings and accessories at Vault.Co. Discover stylish collections with a smooth online shopping experience.',
       canonicalPath: '/',
       jsonLd: {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: 'Vault.Co',
-        url: window.location.origin,
+        url: 'https://vaultco.online',
         potentialAction: {
           '@type': 'SearchAction',
-          target: `${window.location.origin}/shop?search={search_term_string}`,
+          target: 'https://vaultco.online/shop?search={search_term_string}',
           'query-input': 'required name=search_term_string',
         },
       },
@@ -198,6 +198,15 @@ export default function Home() {
 
       {/* ── CATEGORIES ── */}
       <section className="px-4 md:px-12 py-8 max-w-7xl mx-auto w-full">
+        {/* Semantic H1 & Brand Introduction */}
+        <div className="text-center mb-6 max-w-3xl mx-auto">
+          <h1 className="text-xl md:text-3xl font-display font-extrabold text-neutral-900 uppercase tracking-tight">
+            Premium Fashion Accessories &amp; Essentials
+          </h1>
+          <p className="text-xs md:text-sm text-neutral-500 font-sans mt-2 leading-relaxed">
+            Curated collections of precision watches, leather wallets, classic belts, chains, rings, sunglasses, and caps designed for everyday refinement.
+          </p>
+        </div>
         <div className="glass-card">
           {loading ? (
             <div className="grid grid-cols-3 gap-6">
@@ -697,6 +706,85 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* ── RICH SEO INFORMATION SECTION ── */}
+        <section className="px-4 md:px-12 py-16 max-w-7xl mx-auto w-full border-t border-neutral-100/80 mt-10">
+          <div className="max-w-5xl mx-auto space-y-12">
+            
+            {/* Section 1: Intro */}
+            <div className="space-y-3">
+              <h2 className="text-lg md:text-2xl font-display font-bold uppercase tracking-tight text-neutral-900">
+                Premium Accessories for Your Everyday Style
+              </h2>
+              <p className="text-xs md:text-sm text-neutral-600 font-sans leading-relaxed">
+                At Vault.Co, we believe exceptional personal style begins with the details. Our curated store brings together timeless craftsmanship, modern minimalism, and durable materials across a versatile lineup of daily essentials. Whether you are searching for precision analog timepieces, handcrafted leather wallets, durable brass-buckle belts, sleek chains, statement rings, premium sunglasses, or structured caps, our collections are engineered to complement your wardrobe seamlessly.
+              </p>
+            </div>
+
+            {/* Section 2: Collections & Internal Linking */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <h2 className="text-base md:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                  Explore Our Collections
+                </h2>
+                <p className="text-xs text-neutral-600 font-sans leading-relaxed">
+                  Discover thoughtfully designed pieces across our core categories:
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat._id}
+                      to={`/shop?category=${cat._id}`}
+                      className="text-xs font-mono font-medium px-3 py-1.5 rounded-full bg-neutral-100 hover:bg-neutral-900 hover:text-white transition-all text-neutral-700 border border-neutral-200/60"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                  <Link
+                    to="/shop"
+                    className="text-xs font-mono font-bold px-3 py-1.5 rounded-full bg-neutral-900 text-white hover:bg-neutral-800 transition-all"
+                  >
+                    View All Products →
+                  </Link>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h2 className="text-base md:text-lg font-display font-bold uppercase tracking-tight text-neutral-900">
+                  Why Choose Vault.Co
+                </h2>
+                <p className="text-xs text-neutral-600 font-sans leading-relaxed">
+                  We prioritize transparent customer experience, authoritative server-side security, and dependable logistics. Enjoy straightforward shopping with real-time stock visibility, dynamic eligible discounts, secure Razorpay checkout, and our customer-first 3-day hassle-free return window.
+                </p>
+                <div className="flex items-center gap-4 text-xs font-mono text-neutral-500 pt-1">
+                  <span className="flex items-center gap-1"><ShieldCheck size={14} className="text-neutral-700" /> Secure Payments</span>
+                  <span className="flex items-center gap-1"><Truck size={14} className="text-neutral-700" /> Express Shipping</span>
+                  <span className="flex items-center gap-1"><RefreshCw size={14} className="text-neutral-700" /> 3-Day Returns</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Quality & Commitment */}
+            <div className="bg-neutral-50 rounded-2xl p-6 md:p-8 border border-neutral-100 space-y-3">
+              <h2 className="text-sm md:text-base font-display font-bold uppercase tracking-wide text-neutral-900">
+                Quality, Style and Everyday Essentials
+              </h2>
+              <p className="text-xs text-neutral-600 font-sans leading-relaxed">
+                From durable stainless steel jewelry that resists everyday tarnishing to genuine leather accessories developed to patina gracefully over time, each Vault.Co piece is selected to deliver enduring value. Learn more about our story, vision, and craftsmanship on our{' '}
+                <Link to="/about" className="text-neutral-900 font-semibold underline hover:text-amber-600">
+                  About Vault.Co page
+                </Link>
+                , or browse our complete catalog on the{' '}
+                <Link to="/shop" className="text-neutral-900 font-semibold underline hover:text-amber-600">
+                  Shop Collection page
+                </Link>
+                .
+              </p>
+            </div>
+
+          </div>
+        </section>
+
       </div>
     </div>
     </>

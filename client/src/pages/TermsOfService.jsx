@@ -6,12 +6,12 @@ import { ShieldCheck, FileText, Lock, Clock, HelpCircle, ArrowLeft } from 'lucid
 export default function TermsOfService() {
   useEffect(() => {
     setDocumentSEO({
-      title: 'Terms of Service | Vault.Co',
-      description: 'Read the official Terms of Service governing access, purchases, shipping, cancellations, and returns at Vault.Co.',
+      title: 'Terms & Conditions | Vault.Co',
+      description: 'Read the Vault.Co terms and conditions covering purchases, orders, payments, delivery, returns and use of the website.',
       canonicalPath: '/terms',
       breadcrumbList: [
         { name: 'Home', url: '/' },
-        { name: 'Terms of Service', url: '/terms' },
+        { name: 'Terms & Conditions', url: '/terms' },
       ],
     });
   }, []);
@@ -34,10 +34,10 @@ export default function TermsOfService() {
           <FileText size={12} /> LEGAL &amp; POLICIES
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold font-sans uppercase tracking-tight text-neutral-900 mb-3">
-          TERMS OF SERVICE
+          Terms &amp; Conditions
         </h1>
         <p className="text-xs font-mono text-neutral-500">
-          Last Updated: [INSERT EFFECTIVE DATE] · Effective Date: [INSERT EFFECTIVE DATE]
+          Last Updated: August 2026 · Effective Date: August 2026
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function TermsOfService() {
             1. Introduction &amp; Acceptance of Terms
           </h2>
           <p>
-            Welcome to <strong>Vault.Co</strong> (referred to herein as "Vault.Co", "we", "us", or "our"). These Terms of Service ("Terms") govern your access to and use of our website located at <strong>[PRODUCTION WEBSITE URL]</strong> (the "Website"), as well as any orders, purchases, and related services provided through the platform.
+            Welcome to <strong>Vault.Co</strong> (referred to herein as "Vault.Co", "we", "us", or "our"). These Terms of Service ("Terms") govern your access to and use of our website located at <strong>https://vaultco.online</strong> (the "Website"), as well as any orders, purchases, and related services provided through the platform.
           </p>
           <p>
             By accessing our Website, creating an account, or placing an order, you agree to be bound by these Terms and our Privacy Policy. If you do not agree with any part of these Terms, you must discontinue your use of the Website immediately.

@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, Home } from 'lucide-react';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function Forbidden() {
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Access Denied | Vault.Co',
+      description: 'You do not have permission to view this page.',
+      noIndex: true,
+      canonicalPath: '/403',
+    });
+  }, []);
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center font-sans">
       <div className="max-w-md w-full bg-neutral-50 border border-neutral-200 rounded-3xl p-8 shadow-xs space-y-5">

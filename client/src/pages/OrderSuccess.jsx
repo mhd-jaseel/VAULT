@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle2, ArrowRight, ClipboardCheck, Package } from 'lucide-react';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -9,6 +10,13 @@ export default function OrderSuccess() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setDocumentSEO({
+      title: 'Order Confirmed | Vault.Co',
+      description: 'Your Vault.Co order has been successfully placed.',
+      noIndex: true,
+      canonicalPath: `/order-success/${orderId || ''}`,
+    });
+
     const fetchOrder = async () => {
       try {
         const res = await axios.get(`/orders/${orderId}`);

@@ -14,8 +14,7 @@ import {
   ShieldCheck,
   AlertTriangle,
 } from 'lucide-react';
-
-
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function ReturnDetails() {
   const { id } = useParams();
@@ -28,6 +27,15 @@ export default function ReturnDetails() {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [shipNote, setShipNote] = useState('');
   const [submittingShip, setSubmittingShip] = useState(false);
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Return Request Details | Vault.Co',
+      description: 'View return timeline, status, and shipping information.',
+      noIndex: true,
+      canonicalPath: `/returns/${id || ''}`,
+    });
+  }, [id]);
 
   const fetchReturn = async () => {
     try {

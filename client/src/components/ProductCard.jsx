@@ -162,7 +162,7 @@ export default function ProductCard({
             <>
               <img
                 src={resolveImage(product.images[0])}
-                alt={product.name}
+                alt={`${product.name} - Vault.Co`}
                 loading={loadingAttr}
                 fetchPriority={fetchPriorityAttr}
                 decoding="async"
@@ -280,7 +280,7 @@ export default function ProductCard({
             <>
               <img
                 src={resolveImage(product.images[0])}
-                alt={product.name}
+                alt={`${product.name} - Vault.Co`}
                 loading={loadingAttr}
                 fetchPriority={fetchPriorityAttr}
                 decoding="async"

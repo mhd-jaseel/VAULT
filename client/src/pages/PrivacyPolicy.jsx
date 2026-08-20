@@ -7,7 +7,7 @@ export default function PrivacyPolicy() {
   useEffect(() => {
     setDocumentSEO({
       title: 'Privacy Policy | Vault.Co',
-      description: 'Understand how Vault.Co collects, processes, and protects your personal data in accordance with India\'s Digital Personal Data Protection standards.',
+      description: 'Read the Vault.Co privacy policy to understand how customer information is collected, used and protected.',
       canonicalPath: '/privacy',
       breadcrumbList: [
         { name: 'Home', url: '/' },
@@ -34,10 +34,10 @@ export default function PrivacyPolicy() {
           <Lock size={12} /> DATA PROTECTION &amp; PRIVACY
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold font-sans uppercase tracking-tight text-neutral-900 mb-3">
-          PRIVACY POLICY
+          Privacy Policy
         </h1>
         <p className="text-xs font-mono text-neutral-500">
-          Last Updated: [INSERT EFFECTIVE DATE] · Effective Date: [INSERT EFFECTIVE DATE]
+          Last Updated: August 2026 · Effective Date: August 2026
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function PrivacyPolicy() {
             1. Introduction &amp; Commitment to Privacy
           </h2>
           <p>
-            At <strong>Vault.Co</strong> (operated under <strong>[LEGAL BUSINESS NAME]</strong>), we take the security and privacy of your personal data seriously. This Privacy Policy describes how we collect, handle, store, and protect your information when you visit <strong>[PRODUCTION WEBSITE URL]</strong>, create a customer account, browse our collections, or purchase products.
+            At <strong>Vault.Co</strong>, we take the security and privacy of your personal data seriously. This Privacy Policy describes how we collect, handle, store, and protect your information when you visit <strong>https://vaultco.online</strong>, create a customer account, browse our collections, or purchase products.
           </p>
           <p>
             This policy aligns with applicable data protection principles, including India's <em>Digital Personal Data Protection Act, 2023</em> (DPDPA) and notified Data Protection Rules.

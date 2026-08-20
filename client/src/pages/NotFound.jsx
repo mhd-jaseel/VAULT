@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Compass, Home, ArrowLeft } from 'lucide-react';
+import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function NotFound() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setDocumentSEO({
+      title: 'Page Not Found | Vault.Co',
+      description: 'The page you are looking for does not exist on Vault.Co.',
+      noIndex: true,
+      canonicalPath: '/404',
+    });
+  }, []);
 
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center p-6 text-center font-sans">
