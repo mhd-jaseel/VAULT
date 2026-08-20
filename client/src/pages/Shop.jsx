@@ -664,20 +664,6 @@ export default function Shop() {
 
         {/* Product Catalog Grid */}
         <div className="flex-1">
-          {/* Dynamic Category & Catalog Header */}
-          <div className="mb-6 bg-white border border-border-light rounded-2xl p-4 sm:p-6 shadow-xs">
-            <h1 className="text-xl sm:text-2xl font-display font-extrabold text-neutral-900 uppercase tracking-tight">
-              {selectedCategory 
-                ? (categories.find(c => c._id === selectedCategory)?.name || 'Shop Collection')
-                : 'Shop Premium Accessories'}
-            </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 font-sans mt-1.5 leading-relaxed max-w-2xl">
-              {selectedCategory
-                ? `Explore our curated selection of ${categories.find(c => c._id === selectedCategory)?.name?.toLowerCase() || 'accessories'} designed with exceptional craft and everyday refinement.`
-                : 'Explore Vault.Co\'s complete collection of premium watches, wallets, belts, rings, glasses, chains, caps, earrings, and lifestyle accessories.'}
-            </p>
-          </div>
-
           {loading ? (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
