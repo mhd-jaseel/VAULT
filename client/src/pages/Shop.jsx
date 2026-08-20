@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { Search, SlidersHorizontal, ArrowUpDown, RefreshCw, Heart, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ export default function Shop() {
   const fetchWishlist = async () => {
     if (!user) return;
     try {
-      const res = await axios.get('/wishlist');
+      const res = await api.get('/wishlist');
       if (res.data.success) {
         setWishlistIds(res.data.data.products.map(p => p._id));
       }
@@ -58,13 +58,13 @@ export default function Shop() {
     try {
       setWishlistPendingId(productId);
       if (isCurrentlyWishlisted) {
-        const res = await axios.delete(`/wishlist/${productId}`);
+        const res = await api.delete(`/wishlist/${productId}`);
         if (res.data.success) {
           setWishlistIds(prev => prev.filter(id => id !== productId));
           toast.success('Removed from wishlist');
         }
       } else {
-        const res = await axios.post('/wishlist', { productId });
+        const res = await api.post('/wishlist', { productId });
         if (res.data.success) {
           setWishlistIds(prev => [...prev, productId]);
           toast.success('Added to wishlist');
@@ -162,7 +162,7 @@ export default function Shop() {
 
   // Fetch categories
   useEffect(() => {
-    axios.get('/categories')
+    api.get('/categories')
       .then((res) => {
         if (res.data.success) setCategories(res.data.data);
       })
@@ -208,9 +208,9 @@ export default function Shop() {
       params.append('page', page);
       params.append('limit', 21);
 
-      const res = await axios.get(`/products?${params.toString()}`);
-      if (res.data.success) {
-        setProducts(res.data.data);
+      const res = await api.get(`/products?${params.toString()}`);
+      if (res.data && res.data.success) {
+        setProducts(res.data.data || []);
         setPages(res.data.pages || 1);
         if (res.data.replacementContext) {
           setReplacementContext(res.data.replacementContext);
