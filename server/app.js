@@ -135,7 +135,7 @@ app.get('/sitemap.xml', async (req, res) => {
     const products = await Product.find({}).select('_id updatedAt').lean();
     const categories = await Category.find({}).select('_id updatedAt').lean();
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://vaultco.online';
+    const baseUrl = (process.env.FRONTEND_URL || '').split(',')[0].trim() || 'https://vaultco.online';
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
@@ -144,6 +144,8 @@ app.get('/sitemap.xml', async (req, res) => {
     xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
     xml += `  <url>\n    <loc>${baseUrl}/shop</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
     xml += `  <url>\n    <loc>${baseUrl}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${baseUrl}/terms</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+    xml += `  <url>\n    <loc>${baseUrl}/privacy</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
 
     // 2. Dynamic Product Pages (Only indexable public products)
     products.forEach((p) => {
@@ -167,18 +169,21 @@ app.get('/sitemap.xml', async (req, res) => {
 });
 
 app.get('/robots.txt', (req, res) => {
-  const domain = process.env.FRONTEND_URL || 'https://vaultco.online';
+  const domain = (process.env.FRONTEND_URL || '').split(',')[0].trim() || 'https://vaultco.online';
   const robots = [
     'User-agent: *',
     'Allow: /',
     'Allow: /shop',
     'Allow: /product/',
     'Allow: /about',
+    'Allow: /terms',
+    'Allow: /privacy',
     'Disallow: /admin',
     'Disallow: /admin/*',
     'Disallow: /checkout',
     'Disallow: /cart',
     'Disallow: /profile',
+    'Disallow: /wishlist',
     'Disallow: /my-returns',
     'Disallow: /my-wallet',
     'Disallow: /returns/',

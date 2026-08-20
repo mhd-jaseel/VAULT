@@ -1,7 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon.ico|robots.txt|sitemap.xml|icons.svg|.*\\..*).*)",
+      "source": "/sitemap.xml",
+      "destination": "https://vault-co-api.onrender.com/sitemap.xml"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico|robots.txt|icons.svg|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
