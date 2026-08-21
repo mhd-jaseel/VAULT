@@ -335,7 +335,7 @@ export default function Checkout() {
       if (res.data.fullWalletPayment) {
         toast.success(res.data.message || 'Order placed successfully using Vault Wallet!');
         clearCart();
-        navigate('/order-success', {
+        navigate(`/order-success/${res.data.data.internalOrderId}`, {
           state: {
             orderId: res.data.data.internalOrderId,
             order: {
@@ -395,7 +395,7 @@ export default function Checkout() {
             if (verifyRes.data.success) {
               toast.success('Payment verified successfully!');
               clearCart();
-              navigate('/order-success', {
+              navigate(`/order-success/${internalOrderId}`, {
                 state: {
                   orderId: internalOrderId,
                   order: verifyRes.data.data,
@@ -405,7 +405,7 @@ export default function Checkout() {
               const msg = verifyRes.data.message || 'Payment verification failed.';
               toast.error(msg);
               setPaymentError(msg);
-              navigate('/order-success', {
+              navigate(`/order-success/${internalOrderId}`, {
                 state: {
                   orderId: internalOrderId,
                   paymentFailed: true,
@@ -418,7 +418,7 @@ export default function Checkout() {
             const msg = verifyErr.response?.data?.message || 'Payment verification failed. Please contact support.';
             toast.error(msg);
             setPaymentError(msg);
-            navigate('/order-success', {
+            navigate(`/order-success/${internalOrderId}`, {
               state: {
                 orderId: internalOrderId,
                 paymentFailed: true,

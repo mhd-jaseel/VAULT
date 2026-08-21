@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle2, ArrowRight, ClipboardCheck, Package } from 'lucide-react';
 import { setDocumentSEO } from '../utils/seoHelper';
 
 export default function OrderSuccess() {
-  const { orderId } = useParams();
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { orderId: paramOrderId } = useParams();
+  const location = useLocation();
+  const orderId = paramOrderId || location.state?.orderId;
+  const initialOrder = location.state?.order || null;
+  const [order, setOrder] = useState(initialOrder);
+  const [loading, setLoading] = useState(!initialOrder);
 
   useEffect(() => {
     setDocumentSEO({
@@ -16,6 +19,11 @@ export default function OrderSuccess() {
       noIndex: true,
       canonicalPath: `/order-success/${orderId || ''}`,
     });
+
+    if (!orderId) {
+      setLoading(false);
+      return;
+    }
 
     const fetchOrder = async () => {
       try {
