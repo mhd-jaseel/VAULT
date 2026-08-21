@@ -314,7 +314,7 @@ export default function Checkout() {
         });
       }
 
-      const res = await axios.post('/payment/create-order', {
+      const res = await axios.post('/payments/razorpay/create-order', {
         shippingAddress: addressData,
         items: cartItems.map((item) => ({
           product: item.product,
@@ -385,7 +385,7 @@ export default function Checkout() {
         },
         handler: async (response) => {
           try {
-            const verifyRes = await axios.post('/payment/verify', {
+            const verifyRes = await axios.post('/payments/razorpay/verify', {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
@@ -574,6 +574,7 @@ export default function Checkout() {
                   <input
                     type="tel"
                     placeholder='Enter phone number'
+
                     maxLength={14}
                     className={`form-input text-xs ${errors.phone ? 'border-red-500/50' : ''}`}
                     {...register('phone', {
