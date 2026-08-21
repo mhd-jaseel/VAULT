@@ -8,9 +8,8 @@ export default function OrderSuccess() {
   const { orderId: paramOrderId } = useParams();
   const location = useLocation();
   const orderId = paramOrderId || location.state?.orderId;
-  const initialOrder = location.state?.order || null;
-  const [order, setOrder] = useState(initialOrder);
-  const [loading, setLoading] = useState(!initialOrder);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setDocumentSEO({
@@ -27,10 +26,13 @@ export default function OrderSuccess() {
 
     const fetchOrder = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(`/orders/${orderId}`);
-        if (res.data.success) setOrder(res.data.data);
+        if (res.data.success && res.data.data) {
+          setOrder(res.data.data);
+        }
       } catch (error) {
-        console.error(error);
+        console.error('Failed to fetch order in OrderSuccess:', error);
       } finally {
         setLoading(false);
       }
@@ -54,7 +56,7 @@ export default function OrderSuccess() {
     );
   }
 
-  const isPaid = order.paymentStatus === 'captured';
+  const isPaid = ['captured', 'SUCCESS', 'verified'].includes(order.paymentStatus);
 
   return (
     <div className="py-12 px-4 md:px-12 max-w-xl mx-auto w-full min-h-screen text-center flex flex-col justify-center">
@@ -112,7 +114,7 @@ export default function OrderSuccess() {
           <Package size={12} /> Order Summary
         </h4>
         <div className="space-y-2">
-          {order.items.map((item) => (
+          {(order.items || []).map((item) => (
             <div key={item._id} className="flex justify-between items-center text-[10px] font-mono">
               <span className="text-text-secondary truncate max-w-[70%]">
                 {item.name} <span className="text-text-secondary">× {item.quantity}</span>
