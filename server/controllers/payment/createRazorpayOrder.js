@@ -213,15 +213,20 @@ export const createRazorpayOrder = async (req, res) => {
     const grandTotal = totalAmount - discountAmount + shippingCharges + handlingCharge;
 
     // ── 3b. Wallet Balance Calculation & Partial/Full Wallet Application ────
+    const User = (await import('../../models/User.js')).default;
     const Wallet = (await import('../../models/Wallet.js')).default;
     const WalletTransaction = (await import('../../models/WalletTransaction.js')).default;
+    const { isReplicaSet } = await import('../../config/db.js');
 
     let walletUsed = 0;
     const useWallet = req.body.useWallet === true;
 
     if (useWallet) {
+      const userDoc = await User.findById(req.user._id).select('walletBalance');
       const userWallet = await Wallet.findOne({ user: req.user._id });
-      const availableWallet = userWallet ? userWallet.balance : 0;
+      const availableWallet = userDoc && userDoc.walletBalance !== undefined 
+        ? userDoc.walletBalance 
+        : (userWallet ? userWallet.balance : 0);
       walletUsed = Math.min(availableWallet, grandTotal);
     }
 
@@ -230,103 +235,178 @@ export const createRazorpayOrder = async (req, res) => {
 
     // If wallet covers 100% of the order total
     if (useWallet && walletUsed >= grandTotal && remainingRazorpayTotal === 0) {
-      // Perform atomic debit from user wallet
-      const userWallet = await Wallet.findOne({ user: req.user._id });
-      if (!userWallet || userWallet.balance < walletUsed) {
-        return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
-      }
+      let session = null;
+      let supportsTransactions = false;
 
-      const balanceBefore = userWallet.balance;
-      userWallet.balance -= walletUsed;
-      await userWallet.save();
-
-      const order = new Order({
-        user: req.user._id,
-        items: orderItems,
-        shippingAddress,
-        totalAmount,
-        shippingCharges,
-        handlingCharge,
-        shippingCampaign,
-        isFreeShippingApplied,
-        grandTotal,
-        walletAmountPaid: walletUsed,
-        razorpayAmountPaid: 0,
-        paymentMethod: 'VAULT_WALLET',
-        paymentStatus: 'captured',
-        status: 'confirmed',
-        coupon: couponObj ? couponObj._id : undefined,
-        couponCode: couponObj ? couponObj.couponCode : undefined,
-        discountAmount,
-        timeline: [{ status: 'confirmed', note: `Paid 100% via Vault Wallet (₹${walletUsed}).` }],
-      });
-      const savedOrder = await order.save();
-
-      // Create Wallet Transaction ledger entry
-      const randTxn = Math.floor(10000 + Math.random() * 90000);
-      await WalletTransaction.create({
-        transactionId: `WLT-TXN-${randTxn}`,
-        user: req.user._id,
-        wallet: userWallet._id,
-        type: 'DEBIT',
-        amount: walletUsed,
-        balanceBefore,
-        balanceAfter: userWallet.balance,
-        source: 'ORDER_PAYMENT',
-        referenceId: String(savedOrder._id),
-        description: `Order #${savedOrder._id.toString().slice(-6).toUpperCase()} Paid via Vault Wallet`,
-        createdBy: 'SYSTEM',
-      });
-
-      // Deduct stock for 100% wallet paid order
-      const { deductStockForOrder } = await import('./paymentHelper.js');
-      await deductStockForOrder(savedOrder);
-
-      // Trigger Admin Notification
+      // Determine replica set / multi-document transaction capability
       try {
-        const { createNotificationHelper } = await import('../../services/notificationHelper.js');
-        await createNotificationHelper({
-          type: 'NEW_ORDER',
-          title: 'New Checkout Order',
-          message: `New order #${savedOrder._id.toString().slice(-6).toUpperCase()} placed by ${req.user.name || 'Customer'} (₹${savedOrder.grandTotal})`,
-          relatedId: savedOrder._id,
-          relatedType: 'Order',
-          action: 'REVIEW_ORDER',
-        });
-      } catch (notifErr) {
-        console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+        const topology = mongoose.connection?.client?.topology;
+        const topType = topology?.description?.type;
+        const canUseTxn = isReplicaSet || topType === 'ReplicaSetWithPrimary' || topType === 'Sharded';
+        if (canUseTxn) {
+          session = await mongoose.startSession();
+          session.startTransaction();
+          supportsTransactions = true;
+        }
+      } catch (sessErr) {
+        console.warn('[VAULT] Transaction session unavailable, falling back to sequential execution:', sessErr.message);
+        if (session) {
+          try { await session.endSession(); } catch (_) {}
+          session = null;
+        }
+        supportsTransactions = false;
       }
 
-      // Log Coupon Usage for full wallet paid orders
-      if (couponObj) {
-        const updateCondition = { _id: couponObj._id };
-        if (couponObj.usageLimit > 0) {
-          updateCondition.usedCount = { $lt: couponObj.usageLimit };
-        }
-        const updatedCoupon = await Coupon.findOneAndUpdate(
-          updateCondition,
-          { $inc: { usedCount: 1 } },
-          { new: true }
-        );
-        if (updatedCoupon) {
-          await CouponUsage.create({
-            userId: req.user._id,
-            couponId: couponObj._id,
-            orderId: savedOrder._id,
-            discountAmount,
-          });
-        }
-      }
+      const sessionOpt = session ? { session } : {};
 
-      return res.status(201).json({
-        success: true,
-        fullWalletPayment: true,
-        message: 'Order placed successfully using Vault Wallet!',
-        data: {
-          internalOrderId: String(savedOrder._id),
+      try {
+        const userDoc = await User.findById(req.user._id, null, sessionOpt);
+        let userWallet = await Wallet.findOne({ user: req.user._id }, null, sessionOpt);
+        if (!userWallet) {
+          userWallet = new Wallet({ user: req.user._id, balance: userDoc?.walletBalance || 0, currency: 'INR' });
+        }
+
+        const balanceBefore = Number(userDoc?.walletBalance !== undefined ? userDoc.walletBalance : userWallet.balance);
+        if (balanceBefore < walletUsed) {
+          if (session) {
+            await session.abortTransaction();
+            await session.endSession();
+          }
+          return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
+        }
+
+        const balanceAfter = Math.round((balanceBefore - walletUsed) * 100) / 100;
+
+        // 1. Update User balance
+        if (userDoc) {
+          userDoc.walletBalance = balanceAfter;
+          if (session) {
+            await userDoc.save({ session });
+          } else {
+            await userDoc.save();
+          }
+        }
+
+        // 2. Update Wallet model balance
+        userWallet.balance = balanceAfter;
+        if (session) {
+          await userWallet.save({ session });
+        } else {
+          await userWallet.save();
+        }
+
+        // 3. Create confirmed Order
+        const order = new Order({
+          user: req.user._id,
+          items: orderItems,
+          shippingAddress,
+          totalAmount,
+          shippingCharges,
+          handlingCharge,
+          shippingCampaign,
+          isFreeShippingApplied,
           grandTotal,
-        },
-      });
+          walletAmountPaid: walletUsed,
+          razorpayAmountPaid: 0,
+          paymentMethod: 'VAULT_WALLET',
+          paymentStatus: 'captured',
+          status: 'confirmed',
+          coupon: couponObj ? couponObj._id : undefined,
+          couponCode: couponObj ? couponObj.couponCode : undefined,
+          discountAmount,
+          timeline: [{ status: 'confirmed', note: `Paid 100% via Vault Wallet (₹${walletUsed}).` }],
+        });
+        const savedOrder = session ? await order.save({ session }) : await order.save();
+
+        // 4. Create WalletTransaction ledger entry
+        const randTxn = Math.floor(10000 + Math.random() * 90000);
+        const walletTxnDoc = new WalletTransaction({
+          transactionId: `WLT-TXN-${randTxn}`,
+          user: req.user._id,
+          wallet: userWallet._id,
+          type: 'DEBIT',
+          amount: walletUsed,
+          balanceBefore,
+          balanceAfter,
+          source: 'ORDER_PAYMENT',
+          referenceId: String(savedOrder._id),
+          description: `Order #${savedOrder._id.toString().slice(-6).toUpperCase()} Paid via Vault Wallet`,
+          createdBy: 'SYSTEM',
+        });
+        if (session) {
+          await walletTxnDoc.save({ session });
+        } else {
+          await walletTxnDoc.save();
+        }
+
+        // 5. Deduct stock for 100% wallet paid order
+        const { deductStockForOrder } = await import('./paymentHelper.js');
+        await deductStockForOrder(savedOrder, sessionOpt);
+
+        // 6. Log Coupon Usage if coupon applied
+        if (couponObj) {
+          const updateCondition = { _id: couponObj._id };
+          if (couponObj.usageLimit > 0) {
+            updateCondition.usedCount = { $lt: couponObj.usageLimit };
+          }
+          const updatedCoupon = await Coupon.findOneAndUpdate(
+            updateCondition,
+            { $inc: { usedCount: 1 } },
+            { new: true, ...sessionOpt }
+          );
+          if (updatedCoupon) {
+            const couponUsageDoc = new CouponUsage({
+              userId: req.user._id,
+              couponId: couponObj._id,
+              orderId: savedOrder._id,
+              discountAmount,
+            });
+            if (session) {
+              await couponUsageDoc.save({ session });
+            } else {
+              await couponUsageDoc.save();
+            }
+          }
+        }
+
+        // Commit transaction if active
+        if (session) {
+          await session.commitTransaction();
+          await session.endSession();
+        }
+
+        // Trigger Admin Notification (non-blocking outside transaction)
+        try {
+          const { createNotificationHelper } = await import('../../services/notificationHelper.js');
+          await createNotificationHelper({
+            type: 'NEW_ORDER',
+            title: 'New Checkout Order',
+            message: `New order #${savedOrder._id.toString().slice(-6).toUpperCase()} placed by ${req.user.name || 'Customer'} (₹${savedOrder.grandTotal})`,
+            relatedId: savedOrder._id,
+            relatedType: 'Order',
+            action: 'REVIEW_ORDER',
+          });
+        } catch (notifErr) {
+          console.error('[VAULT] Failed to create notification for NEW_ORDER', notifErr);
+        }
+
+        return res.status(201).json({
+          success: true,
+          fullWalletPayment: true,
+          message: 'Order placed successfully using Vault Wallet!',
+          data: {
+            internalOrderId: String(savedOrder._id),
+            grandTotal,
+          },
+        });
+      } catch (txnError) {
+        if (session) {
+          try { await session.abortTransaction(); } catch (_) {}
+          try { await session.endSession(); } catch (_) {}
+        }
+        console.error('[VAULT] 100% Wallet checkout transaction failed:', txnError);
+        return res.status(500).json({ success: false, message: txnError.message || 'Wallet checkout failed. Please try again.' });
+      }
     }
 
     // ── 4. Create internal pending Order (Hybrid Wallet + Razorpay or Pure Razorpay) ─
