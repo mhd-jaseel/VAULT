@@ -34,12 +34,15 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // If order is cancelled, return items back to stock
+    // If order is cancelled, return active items back to stock (avoid double-restoring already cancelled items)
     if (status === 'cancelled' && currentStatus !== 'cancelled') {
       for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: item.quantity },
-        });
+        if (item.status !== 'CANCELLED') {
+          item.status = 'CANCELLED';
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: item.quantity },
+          });
+        }
       }
     }
 
@@ -364,21 +367,23 @@ export const adminCancelOrder = async (req, res) => {
       });
     }
 
-    // Mark items as CANCELLED
+    // Stock Restoration: Restore stock only for active items if stock was deducted previously
+    if (order.stockDeducted) {
+      for (const item of order.items) {
+        if (item.status !== 'CANCELLED') {
+          await Product.findByIdAndUpdate(item.product, {
+            $inc: { stock: item.quantity },
+          });
+        }
+      }
+      order.stockDeducted = false;
+    }
+
+    // Mark all items as CANCELLED
     for (const item of order.items) {
       if (item.status !== 'CANCELLED') {
         item.status = 'CANCELLED';
       }
-    }
-
-    // Stock Restoration: Restore stock only if stock was deducted previously
-    if (order.stockDeducted) {
-      for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { stock: item.quantity },
-        });
-      }
-      order.stockDeducted = false;
     }
 
     // Check if order was paid

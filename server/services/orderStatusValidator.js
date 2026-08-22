@@ -6,6 +6,7 @@
  * - packed
  * - shipped
  * - delivered
+ * - partially_cancelled
  * - cancelled
  */
 
@@ -15,6 +16,7 @@ export const ORDER_STATUSES = {
   PACKED: 'packed',
   SHIPPED: 'shipped',
   DELIVERED: 'delivered',
+  PARTIALLY_CANCELLED: 'partially_cancelled',
   CANCELLED: 'cancelled',
 };
 
@@ -24,6 +26,7 @@ export const ALLOWED_TRANSITIONS = {
   confirmed: ['packed'],
   packed: ['shipped'],
   shipped: ['delivered'],
+  partially_cancelled: ['packed'],
   delivered: [], // Terminal state for normal transitions
   cancelled: [], // Terminal state for normal transitions
 };
@@ -34,6 +37,7 @@ export const ALLOWED_CORRECTIONS = {
   shipped: ['packed', 'confirmed'],
   packed: ['confirmed'],
   confirmed: ['pending'],
+  partially_cancelled: ['confirmed'],
   cancelled: [], // Cancelled orders cannot be corrected backwards
   pending: [],
 };

@@ -31,6 +31,7 @@ const ALLOWED_NEXT_STATUSES = {
   confirmed: ['packed'],
   packed: ['shipped'],
   shipped: ['delivered'],
+  partially_cancelled: ['packed'],
   delivered: [],
   cancelled: [],
 };
@@ -41,6 +42,7 @@ const ALLOWED_CORRECTION_TARGETS = {
   shipped: ['packed', 'confirmed'],
   packed: ['confirmed'],
   confirmed: ['pending'],
+  partially_cancelled: ['confirmed'],
   cancelled: [],
   pending: [],
 };
@@ -64,6 +66,7 @@ const ORDER_STATUS_OPTIONS = [
   { value: 'packed', label: 'Packed' },
   { value: 'shipped', label: 'Shipped' },
   { value: 'delivered', label: 'Delivered' },
+  { value: 'partially_cancelled', label: 'Partially Cancelled' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
@@ -801,6 +804,8 @@ export default function AdminOrders() {
                               ? 'bg-[#f0fdf4] border-[#bbf7d0] text-[#16a34a]'
                               : ord.status === 'cancelled'
                               ? 'bg-[#fef2f2] border-[#fecaca] text-[#dc2626]'
+                              : ord.status === 'partially_cancelled'
+                              ? 'bg-[#fff7ed] border-[#fed7aa] text-[#c2410c]'
                               : 'bg-[#fffbeb] border-[#fde68a] text-[#d97706]'
                           }`}
                         >
@@ -895,6 +900,8 @@ export default function AdminOrders() {
                           ? 'bg-[#f0fdf4] border-[#bbf7d0] text-[#16a34a]'
                           : ord.status === 'cancelled'
                           ? 'bg-[#fef2f2] border-[#fecaca] text-[#dc2626]'
+                          : ord.status === 'partially_cancelled'
+                          ? 'bg-[#fff7ed] border-[#fed7aa] text-[#c2410c]'
                           : 'bg-[#fffbeb] border-[#fde68a] text-[#d97706]'
                       }`}
                     >
