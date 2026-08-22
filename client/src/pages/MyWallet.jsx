@@ -13,6 +13,7 @@ export default function MyWallet() {
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
 
   useEffect(() => {
     setDocumentSEO({
@@ -42,6 +43,7 @@ export default function MyWallet() {
         setTransactions(res.data.data);
         setPages(res.data.pages || 1);
         setPage(res.data.page || 1);
+        setTotalRecords(res.data.total || 0);
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to load wallet transactions.');
@@ -163,7 +165,7 @@ export default function MyWallet() {
             </h3>
           </div>
           <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-wider">
-            {transactions.length} Records
+            {totalRecords} Records
           </span>
         </div>
 
@@ -183,8 +185,8 @@ export default function MyWallet() {
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {transactions.map((txn) => {
-              const isCredit = txn.type === 'CREDIT' || txn.amount > 0;
-              const sourceLabel = txn.source ? txn.source.replace(/_/g, ' ') : (isCredit ? 'Return Credit' : 'Order Payment');
+              const isCredit = txn.type === 'CREDIT';
+              const sourceLabel = txn.source ? txn.source.replace(/_/g, ' ') : (isCredit ? 'Credit' : 'Debit');
               const formattedDate = new Date(txn.createdAt).toLocaleDateString('en-IN', {
                 day: 'numeric',
                 month: 'short',

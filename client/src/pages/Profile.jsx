@@ -737,7 +737,7 @@ if (!user) return null;
                 ) : (
                   <div className="space-y-2.5">
                     {walletTransactions.map((txn) => {
-                      const isCredit = txn.type === 'CREDIT' || txn.amount > 0;
+                      const isCredit = txn.type === 'CREDIT';
                       return (
                         <div
                           key={txn._id}
@@ -753,7 +753,7 @@ if (!user) return null;
                             </div>
                             <div className="min-w-0">
                               <h4 className="text-xs font-bold uppercase text-text-primary truncate font-sans">
-                                {txn.source ? txn.source.replace('_', ' ') : (isCredit ? 'Return Credit' : 'Order Payment')}
+                                {txn.source ? txn.source.replace(/_/g, ' ') : (isCredit ? 'Credit' : 'Debit')}
                               </h4>
                               <p className="text-[9px] text-text-secondary mt-0.5 truncate font-mono">
                                 Ref #{txn.referenceId || txn.transactionId} · {new Date(txn.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
