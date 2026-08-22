@@ -4,17 +4,17 @@ import { DrawerSection, DrawerRow, DrawerBadge } from '../AdminDetailsDrawer';
 export default function TransactionDetailsView({ transaction }) {
   if (!transaction) return null;
 
-  const isCredit = transaction.type === 'RETURN_REPLACEMENT_CREDIT' || (transaction.type === 'ADJUSTMENT' && transaction.amount > 0);
+  const isCredit = transaction.type === 'CREDIT' || transaction.type === 'RETURN_REPLACEMENT_CREDIT' || (transaction.type === 'ADJUSTMENT' && transaction.amount > 0);
 
-  const getTransactionTypeBadge = (type) => {
-    if (type === 'RETURN_REPLACEMENT_CREDIT') {
-      return <DrawerBadge variant="success">Credit / Refund</DrawerBadge>;
-    } else if (type === 'REPLACEMENT_DEBIT' || type === 'ORDER_WALLET_PAYMENT') {
-      return <DrawerBadge variant="danger">Debit / Payment</DrawerBadge>;
+  const getTransactionTypeBadge = (type, source) => {
+    if (type === 'CREDIT' || type === 'RETURN_REPLACEMENT_CREDIT') {
+      return <DrawerBadge variant="success">{source ? source.replace(/_/g, ' ') : 'Credit / Refund'}</DrawerBadge>;
+    } else if (type === 'DEBIT' || type === 'REPLACEMENT_DEBIT' || type === 'ORDER_WALLET_PAYMENT') {
+      return <DrawerBadge variant="danger">{source ? source.replace(/_/g, ' ') : 'Debit / Payment'}</DrawerBadge>;
     } else if (type === 'ADJUSTMENT') {
       return <DrawerBadge variant="warning">Adjustment</DrawerBadge>;
     }
-    return <DrawerBadge variant="neutral">{type}</DrawerBadge>;
+    return <DrawerBadge variant="neutral">{source ? source.replace(/_/g, ' ') : type}</DrawerBadge>;
   };
 
   return (
@@ -28,7 +28,7 @@ export default function TransactionDetailsView({ transaction }) {
         />
         <DrawerRow 
           label="Type" 
-          valueNode={getTransactionTypeBadge(transaction.type)} 
+          valueNode={getTransactionTypeBadge(transaction.type, transaction.source)} 
         />
         <DrawerRow 
           label="Amount" 

@@ -43,3 +43,5 @@ pnpm-debug.log*
 .eslintcache
 .cache/
 tmp/
+backups/
+server/backups/
